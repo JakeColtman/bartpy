@@ -131,6 +131,10 @@ class Data:
 
         return SplitData(lhs, rhs)
 
+    @property
+    def n_obsv(self) -> int:
+        return len(self.X)
+
     @staticmethod
     def normalize_y(y: np.ndarray) -> np.ndarray:
         """

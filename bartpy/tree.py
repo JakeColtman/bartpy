@@ -83,6 +83,9 @@ class TreeNode:
     def is_leaf_node(self) -> bool:
         return self.left_child is None and self.right_child is None
 
+    def likihood(self) -> float:
+        return 1.0
+
 
 class SplitNode(TreeNode):
 
@@ -107,6 +110,23 @@ class LeafNode(TreeNode):
         self.update_value()
         return self.data.y - self.value
 
+    def likihood(self) -> float:
+        var = np.power(SIGMA, 2)
+        var_mu = np.power(SIGMA_MU, 2)
+
+        n = self.data.n_obsv
+
+        first_term = np.power(2 * np.pi * var, - n / 2.)
+        second_term = np.power(var / (var + n * var_mu), 0.5)
+        third_term = - (1 / (2 * var))
+        residuals = self.residuals()
+        mean_residual = np.mean(residuals)
+        sum_sq_error = np.sum(np.power(residuals - mean_residual, 2))
+
+        fourth_term = (np.power(mean_residual, 2) * np.power(n, 2)) / (n + (var / var_mu))
+        fifth_term = n * np.power(mean_residual, 2)
+
+        return first_term * second_term * np.exp(third_term * (sum_sq_error - fourth_term + fifth_term))
 
 class TreeStructure:
     """
@@ -263,7 +283,7 @@ def is_terminal(depth: int, alpha: float, beta: float) -> bool:
         True means no more splits should be done
     """
     r = np.random.uniform(0, 1)
-    return r < alpha * np.power(1 + depth, beta)
+    return r < alpha * np.power(1 + depth, -beta)
 
 
 def sample_tree_structure_from_node(node: TreeNode, depth: int, alpha: float, beta: float, variable_prior=None) -> TreeNode:
