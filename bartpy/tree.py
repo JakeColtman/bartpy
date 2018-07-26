@@ -77,7 +77,7 @@ class TreeNode:
     def update_left_child(self, node: Optional['TreeNode']):
         self._left_child = node
 
-    def update_right_child(self, node: 'TreeNode'):
+    def update_right_child(self, node: Optional['TreeNode']):
         self._right_child = node
 
     def is_leaf_node(self) -> bool:
