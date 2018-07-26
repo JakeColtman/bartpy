@@ -1,16 +1,9 @@
+from typing import List, Set
+
 import numpy as np
 import pandas as pd
 
 from bartpy.data import Split, Data, sample_split
-
-
-class TreeStructure:
-
-    def __init__(self):
-        pass
-
-    def predict(self, X):
-        pass
 
 
 class TreeNode:
@@ -19,6 +12,13 @@ class TreeNode:
         self._data = data
         self._left_child = left_child
         self._right_child = right_child
+
+    def downstream_iterator(self):
+        if self.left_child is not None:
+            yield self.left_child.downstream_iterator()
+        if self.right_child is not None:
+            yield self.right_child.downstream_iterator()
+        yield self
 
     @property
     def data(self) -> Data:
@@ -38,12 +38,44 @@ class TreeNode:
     def update_right_child(self, node: 'TreeNode'):
         self._right_child = node
 
+    def is_leaf_node(self) -> bool:
+        return self.left_child is None and self.right_child is None
+
 
 class SplitNode(TreeNode):
 
     def __init__(self, data: Data, split: Split, left_child_node: TreeNode, right_child_node: TreeNode):
         self.split = split
         super().__init__(data, left_child_node, right_child_node)
+
+
+class TreeStructure:
+    """
+    An encapsulation of the structure of the tree as a whole
+    """
+
+    def __init__(self, head: TreeNode):
+        self.head = head
+
+    def nodes(self) -> List[TreeNode]:
+        all_nodes = []
+        for n in self.head.downstream_iterator():
+            all_nodes.append(n)
+        return all_nodes
+
+    def leaf_nodes(self) -> Set[TreeNode]:
+        return {x for x in self.nodes() if x.is_leaf_node()}
+
+    def split_nodes(self) -> Set[TreeNode]:
+        return {x for x in self.nodes() if not x.is_leaf_node()}
+
+    def random_leaf_node(self) -> TreeNode:
+        return np.random.choice(list(self.leaf_nodes()))
+
+    def random_leaf_parent(self) -> SplitNode:
+        split_nodes = self.split_nodes()
+        leaf_parents = [x for x in split_nodes if x.left_child.is_leaf_node() and x.right_child.is_leaf_node()]
+        return np.random.choice(leaf_parents)
 
 
 def split_node(node: TreeNode, variable_prior=None) -> TreeNode:
@@ -75,8 +107,15 @@ def split_node(node: TreeNode, variable_prior=None) -> TreeNode:
     True
     >>> len(new_node.left_child.data.data) + len(new_node.right_child.data.data)
     3
+
+    >>> unsplittable_data = Data(pd.DataFrame({"a": [1, 1], "b": [1, 1]}))
+    >>> unsplittable_node = TreeNode(unsplittable_data)
+    >>> split_node(unsplittable_node) == unsplittable_node
+    True
     """
     split = sample_split(node.data, variable_prior)
+    if split is None:
+        return node
     split_data = node.data.split_data(split)
     left_child_node = TreeNode(split_data.left_data)
     right_child_node = TreeNode(split_data.right_data)
@@ -103,21 +142,29 @@ def is_terminal(depth: int, alpha: float, beta: float) -> bool:
     return r < alpha * np.power(1 + depth, beta)
 
 
-def sample_tree_structure_from_node(node: TreeNode, depth: int, alpha: float, beta: float, variable_prior=None):
+def sample_tree_structure_from_node(node: TreeNode, depth: int, alpha: float, beta: float, variable_prior=None) -> TreeNode:
+    if depth == 0:
+        updated_node = split_node(node)
+        updated_node.update_left_child(sample_tree_structure_from_node(updated_node.left_child, depth + 1, alpha, beta, variable_prior))
+        updated_node.update_right_child(sample_tree_structure_from_node(updated_node.right_child, depth + 1, alpha, beta, variable_prior))
+        return updated_node
+
     terminal = is_terminal(depth, alpha, beta)
     if terminal:
         return node
     else:
         updated_node = split_node(node, variable_prior)
-        updated_node.update_left_child(sample_tree_structure_from_node(split_node.left_child, depth + 1, alpha, beta, variable_prior))
-        updated_node.update_right_child(sample_tree_structure_from_node(split_node.right_child, depth + 1, alpha, beta, variable_prior))
+        if updated_node == node:
+            return updated_node
+        updated_node.update_left_child(sample_tree_structure_from_node(updated_node.left_child, depth + 1, alpha, beta, variable_prior))
+        updated_node.update_right_child(sample_tree_structure_from_node(updated_node.right_child, depth + 1, alpha, beta, variable_prior))
         return updated_node
 
 
-def sample_tree_structure(data: Data, alpha: float = 0.95, beta: float = 2, variable_prior=None):
-    head = TreeNode(data)
-    tree = sample_tree_structure_from_node(head, 0, alpha, beta, variable_prior)
-    return tree
+def sample_tree_structure(data: Data, alpha: float = 0.95, beta: float = 2, variable_prior=None) -> TreeStructure:
+    node = TreeNode(data)
+    head = sample_tree_structure_from_node(node, 0, alpha, beta, variable_prior)
+    return TreeStructure(head)
 
 
 if __name__ == "__main__":
@@ -126,3 +173,9 @@ if __name__ == "__main__":
     new_node = split_node(node)
     print(new_node.left_child.data.data)
     print(new_node.right_child.data.data)
+
+    tree_structure = sample_tree_structure(data, 0.5)
+    head = tree_structure.head
+    print(head.split)
+    print(head.left_child.data.data)
+    print(head.right_child.data.data)

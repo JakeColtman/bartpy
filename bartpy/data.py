@@ -11,6 +11,9 @@ class Split:
         self.splitting_variable = splitting_variable
         self.splitting_value = splitting_value
 
+    def __str__(self):
+        return self.splitting_variable + ": " + str(self.splitting_value)
+
 
 SplitData = namedtuple("SplitData", ["left_data", "right_data"])
 
@@ -88,9 +91,13 @@ class Data:
         >>> random_b = [data.random_value("b") for _ in range(100)]
         >>> np.all([x in [1] for x in random_b])
         True
+        >>> unsplittable_data = Data(pd.DataFrame({"a": [1, 1], "b": [1, 1]}))
+        >>> unsplittable_data.random_value("a")
         """
         possible_values = self.unique_values(variable)
         possible_values = possible_values - {np.max(list(possible_values))}
+        if len(possible_values) == 0:
+            return None
         return np.random.choice(np.array(list(possible_values)))
 
     def unique_values(self, variable: str) -> Set[Any]:
@@ -145,4 +152,6 @@ def sample_split(data: Data, variable_prior=None) -> Split:
     """
     split_variable = data.random_variable()
     split_value = data.random_value(split_variable)
+    if split_value is None:
+        return None
     return Split(split_variable, split_value)
