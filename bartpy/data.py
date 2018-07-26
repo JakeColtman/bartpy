@@ -38,7 +38,7 @@ class Data:
     def __init__(self, X: pd.DataFrame, y: np.ndarray):
         self._unique_values_cache: MutableMapping[str, Set[Any]] = {}
         self._X = X
-        self._y = y
+        self._y = self.normalize_y(y)
 
     @property
     def y(self) -> np.ndarray:
@@ -130,6 +130,29 @@ class Data:
         rhs = Data(self.X[rhs_condition], self.y[rhs_condition])
 
         return SplitData(lhs, rhs)
+
+    @staticmethod
+    def normalize_y(y: np.ndarray) -> np.ndarray:
+        """
+        Normalize y into the range (-0.5, 0.5)
+        Useful for allowing the leaf parameter prior to be 0, and to standardize the sigma prior
+
+        Parameters
+        ----------
+        y - np.ndarray
+
+        Returns
+        -------
+        np.ndarray
+
+        Examples
+        --------
+        >>> Data.normalize_y([1, 2, 3])
+        array([-0.5,  0. ,  0.5])
+        """
+        y_min, y_max = np.min(y), np.max(y)
+        return -0.5 + (y - y_min) / (y_max - y_min)
+
 
 
 def sample_split(data: Data, variable_prior=None) -> Split:
