@@ -47,6 +47,35 @@ class SplitNode(TreeNode):
 
 
 def split_node(node: TreeNode, variable_prior=None) -> TreeNode:
+    """
+    Split a leaf node into an internal node with two lead children
+    The variable and value to split on is determined by sampling from their respective distributions
+
+    Parameters
+    ----------
+    node - TreeNode
+        The node to split
+    variable_prior - np.ndarray
+        Multinomial potentials to use as weights for selecting variable to split on
+    Returns
+    -------
+        TreeNode
+            New node with two leaf children
+
+    Examples
+    --------
+    >>> data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 1, 2]}))
+    >>> node = TreeNode(data)
+    >>> new_node = split_node(node)
+    >>> new_node.left_child is not None
+    True
+    >>> new_node.right_child is not None
+    True
+    >>> isinstance(new_node, SplitNode)
+    True
+    >>> len(new_node.left_child.data.data) + len(new_node.right_child.data.data)
+    3
+    """
     split = sample_split(node.data, variable_prior)
     split_data = node.data.split_data(split)
     left_child_node = TreeNode(split_data.left_data)
@@ -89,3 +118,11 @@ def sample_tree_structure(data: Data, alpha: float = 0.95, beta: float = 2, vari
     head = TreeNode(data)
     tree = sample_tree_structure_from_node(head, 0, alpha, beta, variable_prior)
     return tree
+
+
+if __name__ == "__main__":
+    data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 1, 2]}))
+    node = TreeNode(data)
+    new_node = split_node(node)
+    print(new_node.left_child.data.data)
+    print(new_node.right_child.data.data)
