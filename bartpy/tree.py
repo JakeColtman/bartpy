@@ -1,4 +1,4 @@
-from typing import List, Set
+from typing import List, Set, Generator
 
 import numpy as np
 import pandas as pd
@@ -13,11 +13,32 @@ class TreeNode:
         self._left_child = left_child
         self._right_child = right_child
 
-    def downstream_iterator(self):
+    def downstream_generator(self) -> Generator['TreeNode', None, None]:
+        """
+        An generator of all descendants of a node
+        i.e. the children of the node and their children and so on
+        Returns
+        -------
+            Generator['TreeNode', None, None]
+
+        Examples
+        --------
+        >>> a, b, c, = TreeNode(None), TreeNode(None), TreeNode(None)
+        >>> a.update_left_child(b)
+        >>> b.update_left_child(c)
+        >>> nodes = list(a.downstream_generator())
+        >>> np.all([x[0] == x[1] for x in zip([c, b, a], nodes)])
+        True
+        >>> nodes = list(b.downstream_generator())
+        >>> np.all([x[0] == x[1] for x in zip([c, b], nodes)])
+        True
+        """
         if self.left_child is not None:
-            yield self.left_child.downstream_iterator()
+            for x in self.left_child.downstream_generator():
+                yield x
         if self.right_child is not None:
-            yield self.right_child.downstream_iterator()
+            for x in self.right_child.downstream_generator():
+                yield x
         yield self
 
     @property
@@ -58,15 +79,71 @@ class TreeStructure:
         self.head = head
 
     def nodes(self) -> List[TreeNode]:
+        """
+
+        Returns
+        -------
+            List[TreeNode]
+
+        Examples
+        --------
+        >>> a, b, c, = TreeNode(None), TreeNode(None), TreeNode(None)
+        >>> a.update_left_child(b)
+        >>> b.update_left_child(c)
+        >>> structure = TreeStructure(a)
+        >>> nodes = structure.nodes()
+        >>> len(nodes)
+        3
+        >>> a in nodes
+        True
+        >>> 1 in nodes
+        False
+        """
         all_nodes = []
-        for n in self.head.downstream_iterator():
+        for n in self.head.downstream_generator():
             all_nodes.append(n)
         return all_nodes
 
     def leaf_nodes(self) -> Set[TreeNode]:
+        """
+
+        Returns
+        -------
+            List[TreeNode]
+
+        Examples
+        --------
+        >>> a, b, c, = TreeNode(None), TreeNode(None), TreeNode(None)
+        >>> a.update_left_child(b)
+        >>> b.update_left_child(c)
+        >>> structure = TreeStructure(a)
+        >>> nodes = structure.leaf_nodes()
+        >>> len(nodes)
+        1
+        >>> c == list(nodes)[0]
+        True
+        """
         return {x for x in self.nodes() if x.is_leaf_node()}
 
     def split_nodes(self) -> Set[TreeNode]:
+        """
+
+        Returns
+        -------
+            List[TreeNode]
+
+        Examples
+        --------
+        >>> a, b, c, = TreeNode(None), TreeNode(None), TreeNode(None)
+        >>> a.update_left_child(b)
+        >>> a.update_right_child(c)
+        >>> structure = TreeStructure(a)
+        >>> nodes = structure.split_nodes()
+        >>> len(nodes)
+        1
+        >>> a == list(nodes)[0]
+        True
+        """
         return {x for x in self.nodes() if not x.is_leaf_node()}
 
     def random_leaf_node(self) -> TreeNode:
@@ -166,16 +243,19 @@ def sample_tree_structure(data: Data, alpha: float = 0.95, beta: float = 2, vari
     head = sample_tree_structure_from_node(node, 0, alpha, beta, variable_prior)
     return TreeStructure(head)
 
-
+#
+# if __name__ == "__main__":
+#     data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 1, 2]}))
+#     node = TreeNode(data)
+#     new_node = split_node(node)
+#     print(new_node.left_child.data.data)
+#     print(new_node.right_child.data.data)
+#
+#     tree_structure = sample_tree_structure(data, 0.5)
+#     head = tree_structure.head
+#     print(head.split)
+#     print(head.left_child.data.data)
+#     print(head.right_child.data.data)
 if __name__ == "__main__":
-    data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 1, 2]}))
-    node = TreeNode(data)
-    new_node = split_node(node)
-    print(new_node.left_child.data.data)
-    print(new_node.right_child.data.data)
-
-    tree_structure = sample_tree_structure(data, 0.5)
-    head = tree_structure.head
-    print(head.split)
-    print(head.left_child.data.data)
-    print(head.right_child.data.data)
+    import doctest
+    doctest.testmod()#extraglobs={'t': TreeNode()})
