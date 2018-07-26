@@ -26,7 +26,7 @@ class Data:
     Examples
     --------
     >>> data_pd = pd.DataFrame({"a": [1, 2, 3], "b": [1, 1, 2]})
-    >>> data = Data(data_pd)
+    >>> data = Data(data_pd, np.array([1, 1, 1]))
     >>> data.variables == {"a", "b"}
     True
     >>> data.unique_values("a")
@@ -35,13 +35,18 @@ class Data:
     {1, 2}
     """
 
-    def __init__(self, data):
+    def __init__(self, X: pd.DataFrame, y: np.ndarray):
         self._unique_values_cache: MutableMapping[str, Set[Any]] = {}
-        self._data = data
+        self._X = X
+        self._y = y
 
     @property
-    def data(self) -> pd.DataFrame:
-        return self._data
+    def y(self) -> np.ndarray:
+        return self._y
+
+    @property
+    def X(self) -> pd.DataFrame:
+        return self._X
 
     @property
     def variables(self) -> Set[str]:
@@ -53,7 +58,7 @@ class Data:
         -------
         Set[str]
         """
-        return set(self._data.columns)
+        return set(self.X.columns)
 
     def random_variable(self) -> str:
         """
@@ -84,14 +89,14 @@ class Data:
 
         Examples
         --------
-        >>> data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 1, 2]}))
+        >>> data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 1, 2]}), np.array([1, 1, 1]))
         >>> random_a = [data.random_value("a") for _ in range(100)]
         >>> np.all([x in [1, 2] for x in random_a])
         True
         >>> random_b = [data.random_value("b") for _ in range(100)]
         >>> np.all([x in [1] for x in random_b])
         True
-        >>> unsplittable_data = Data(pd.DataFrame({"a": [1, 1], "b": [1, 1]}))
+        >>> unsplittable_data = Data(pd.DataFrame({"a": [1, 1], "b": [1, 1]}), np.array([1, 1, 1]))
         >>> unsplittable_data.random_value("a")
         """
         possible_values = self.unique_values(variable)
@@ -114,12 +119,16 @@ class Data:
         Set[Any] - all possible values
         """
         if variable not in self._unique_values_cache:
-            self._unique_values_cache[variable] = set(self._data[variable])
+            self._unique_values_cache[variable] = set(self.X[variable])
         return self._unique_values_cache[variable]
 
     def split_data(self, split):
-        lhs = Data(self.data[self.data[split.splitting_variable] <= split.splitting_value])
-        rhs = Data(self.data[self.data[split.splitting_variable] > split.splitting_value])
+        lhs_condition = self.X[split.splitting_variable] <= split.splitting_value
+        rhs_condition = self.X[split.splitting_variable] > split.splitting_value
+
+        lhs = Data(self.X[lhs_condition], self.y[lhs_condition])
+        rhs = Data(self.X[rhs_condition], self.y[rhs_condition])
+
         return SplitData(lhs, rhs)
 
 
@@ -143,11 +152,11 @@ def sample_split(data: Data, variable_prior=None) -> Split:
 
     Examples
     --------
-    >>> data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 1, 2]}))
+    >>> data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 1, 2]}), np.array([1, 1, 1]))
     >>> split = sample_split(data)
     >>> split.splitting_variable in data.variables
     True
-    >>> split.splitting_value in data.data[split.splitting_variable]
+    >>> split.splitting_value in data.X[split.splitting_variable]
     True
     """
     split_variable = data.random_variable()
@@ -155,3 +164,8 @@ def sample_split(data: Data, variable_prior=None) -> Split:
     if split_value is None:
         return None
     return Split(split_variable, split_value)
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

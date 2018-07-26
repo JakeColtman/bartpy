@@ -1,4 +1,4 @@
-from typing import List, Set, Generator
+from typing import List, Set, Generator, Optional
 
 import numpy as np
 import pandas as pd
@@ -12,6 +12,21 @@ class TreeNode:
         self._data = data
         self._left_child = left_child
         self._right_child = right_child
+
+    def update_node(self, existing_node: 'TreeNode', updated_node: Optional['TreeNode']) -> bool:
+        if self.left_child == existing_node:
+            self._left_child = updated_node
+            return True
+        elif self.right_child == existing_node:
+            self._right_child = updated_node
+            return True
+        else:
+            found_left = self.left_child.update_node(existing_node, updated_node)
+            if found_left:
+                return True
+            else:
+                found_right = self.right_child.update_node(existing_node, updated_node)
+                return found_right
 
     def downstream_generator(self) -> Generator['TreeNode', None, None]:
         """
@@ -41,6 +56,12 @@ class TreeNode:
                 yield x
         yield self
 
+    def residuals(self) -> np.ndarray:
+        return np.zeros_like(self.data.y)
+
+    def downstream_residuals(self):
+        return self.residuals() + self.left_child.residuals() + self.right_child.residuals()
+
     @property
     def data(self) -> Data:
         return self._data
@@ -68,6 +89,23 @@ class SplitNode(TreeNode):
     def __init__(self, data: Data, split: Split, left_child_node: TreeNode, right_child_node: TreeNode):
         self.split = split
         super().__init__(data, left_child_node, right_child_node)
+
+
+class LeafNode(TreeNode):
+
+    def __init__(self, data):
+        self.value = 0.0
+        super().__init__(data, None, None)
+
+    def sample_value(self) -> np.ndarray:
+        return self.data.y.mean()
+
+    def update_value(self) -> None:
+        self.value = self.sample_value()
+
+    def residuals(self) -> np.ndarray:
+        self.update_value()
+        return self.data.y - self.value
 
 
 class TreeStructure:
@@ -146,7 +184,7 @@ class TreeStructure:
         """
         return {x for x in self.nodes() if not x.is_leaf_node()}
 
-    def random_leaf_node(self) -> TreeNode:
+    def random_leaf_node(self) -> LeafNode:
         return np.random.choice(list(self.leaf_nodes()))
 
     def random_leaf_parent(self) -> SplitNode:
@@ -154,8 +192,14 @@ class TreeStructure:
         leaf_parents = [x for x in split_nodes if x.left_child.is_leaf_node() and x.right_child.is_leaf_node()]
         return np.random.choice(leaf_parents)
 
+    def residuals(self) -> np.ndarray:
+        return self.head.downstream_residuals()
 
-def split_node(node: TreeNode, variable_prior=None) -> TreeNode:
+    def update_node(self, existing_node: TreeNode, new_node: TreeNode):
+        self.head.update_node(existing_node, new_node)
+
+
+def split_node(node: LeafNode, variable_prior=None) -> SplitNode:
     """
     Split a leaf node into an internal node with two lead children
     The variable and value to split on is determined by sampling from their respective distributions
@@ -173,7 +217,7 @@ def split_node(node: TreeNode, variable_prior=None) -> TreeNode:
 
     Examples
     --------
-    >>> data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 1, 2]}))
+    >>> data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 1, 2]}), np.array([1, 1, 1]))
     >>> node = TreeNode(data)
     >>> new_node = split_node(node)
     >>> new_node.left_child is not None
@@ -182,10 +226,10 @@ def split_node(node: TreeNode, variable_prior=None) -> TreeNode:
     True
     >>> isinstance(new_node, SplitNode)
     True
-    >>> len(new_node.left_child.data.data) + len(new_node.right_child.data.data)
+    >>> len(new_node.left_child.data.X) + len(new_node.right_child.data.X)
     3
 
-    >>> unsplittable_data = Data(pd.DataFrame({"a": [1, 1], "b": [1, 1]}))
+    >>> unsplittable_data = Data(pd.DataFrame({"a": [1, 1], "b": [1, 1]}), np.array([1, 1, 1]))
     >>> unsplittable_node = TreeNode(unsplittable_data)
     >>> split_node(unsplittable_node) == unsplittable_node
     True
@@ -256,6 +300,7 @@ def sample_tree_structure(data: Data, alpha: float = 0.95, beta: float = 2, vari
 #     print(head.split)
 #     print(head.left_child.data.data)
 #     print(head.right_child.data.data)
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()#extraglobs={'t': TreeNode()})
