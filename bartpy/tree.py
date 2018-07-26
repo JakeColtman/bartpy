@@ -1,6 +1,7 @@
 import numpy as np
+import pandas as pd
 
-from bartpy.data import Data
+from bartpy.data import Split, Data, sample_split
 
 
 class TreeStructure:
@@ -21,7 +22,7 @@ class TreeNode:
 
     @property
     def data(self) -> Data:
-        return self._data()
+        return self._data
 
     @property
     def left_child(self) -> 'TreeNode':
@@ -38,70 +39,50 @@ class TreeNode:
         self._right_child = node
 
 
-class Split:
-
-    def __init__(self, splitting_variable: str, splitting_value: float):
-        self.splitting_variable = splitting_variable
-        self.splitting_value = splitting_value
-
-
 class SplitNode(TreeNode):
 
-    def __init__(self, data: Data, split: Split):
+    def __init__(self, data: Data, split: Split, left_child_node: TreeNode, right_child_node: TreeNode):
         self.split = split
-        super(TreeNode, self).__init__(data)
+        super().__init__(data, left_child_node, right_child_node)
 
 
-def sample_split(node: TreeNode, variable_prior=None) -> Split:
-    """
-    Randomly sample a splitting rule for a particular leaf node
-    Works based on two random draws
-        - draw a node to split on based on multinomial distribution
-        - draw an observation within that variable to split on
-
-    Parameters
-    ----------
-    node - TreeNode
-    variable_prior - np.ndarray
-        Array of potentials to split on different variables
-        Doesn't need to sum to one
-
-    Returns
-    -------
-    Split
-    """
-    variables = node.data.variables()
-    if variable_prior is None:
-        variable_prior = [1.0] * len(variables)
-    split_variable = np.choose(node.data.variables(), variable_prior)
-    split_value = np.choose(node.data.unique_values(split_variable))
-    return Split(split_variable, split_value)
-
-
-def sample_splitting_node(node: TreeNode, variable_prior=None) -> TreeNode:
-    split = sample_split(variable_prior)
-    left_child_data = node.data[split.splitting_variable <= split.splitting_value]
-    right_child_data = node.data[split.splitting_variable > split.splitting_value]
-    left_child_node = TreeNode(left_child_data)
-    right_child_node = TreeNode(right_child_data)
+def split_node(node: TreeNode, variable_prior=None) -> TreeNode:
+    split = sample_split(node.data, variable_prior)
+    split_data = node.data.split_data(split)
+    left_child_node = TreeNode(split_data.left_data)
+    right_child_node = TreeNode(split_data.right_data)
 
     return SplitNode(node.data, split, left_child_node, right_child_node)
 
 
-def is_terminal(depth: int, alpha: float, beta: float):
+def is_terminal(depth: int, alpha: float, beta: float) -> bool:
+    """
+    Determine whether a node is a leaf node or should be split on
+
+    Parameters
+    ----------
+    depth
+    alpha
+    beta
+
+    Returns
+    -------
+    bool
+        True means no more splits should be done
+    """
     r = np.random.uniform(0, 1)
     return r < alpha * np.power(1 + depth, beta)
 
 
-def sample_tree_structure_from_node(node: TreeNode, depth: int, alpha: float, beta: float, variable_prior=None)
+def sample_tree_structure_from_node(node: TreeNode, depth: int, alpha: float, beta: float, variable_prior=None):
     terminal = is_terminal(depth, alpha, beta)
     if terminal:
         return node
     else:
-        split_node = sample_splitting_node(node, variable_prior)
-        split_node.update_left_child(sample_tree_structure_from_node(split_node.left_child, depth + 1, alpha, beta, variable_prior))
-        split_node.update_right_child(sample_tree_structure_from_node(split_node.left_child, depth + 1, alpha, beta, variable_prior))
-        return split_node
+        updated_node = split_node(node, variable_prior)
+        updated_node.update_left_child(sample_tree_structure_from_node(split_node.left_child, depth + 1, alpha, beta, variable_prior))
+        updated_node.update_right_child(sample_tree_structure_from_node(split_node.right_child, depth + 1, alpha, beta, variable_prior))
+        return updated_node
 
 
 def sample_tree_structure(data: Data, alpha: float = 0.95, beta: float = 2, variable_prior=None):

@@ -1,13 +1,133 @@
+from collections import namedtuple
+from typing import Any, MutableMapping, Set
+
+import pandas as pd
+import numpy as np
+
+
+class Split:
+
+    def __init__(self, splitting_variable: str, splitting_value: float):
+        self.splitting_variable = splitting_variable
+        self.splitting_value = splitting_value
+
+
+SplitData = namedtuple("SplitData", ["left_data", "right_data"])
+
+
 class Data:
+    """
+    Encapsulates feature data
+    Useful for providing cached access to commonly used functions of the data
+
+    Examples
+    --------
+    >>> data_pd = pd.DataFrame({"a": [1, 2, 3], "b": [1, 1, 2]})
+    >>> data = Data(data_pd)
+    >>> data.variables == {"a", "b"}
+    True
+    >>> data.unique_values("a")
+    {1, 2, 3}
+    >>> data.unique_values("b")
+    {1, 2}
+    """
 
     def __init__(self, data):
-        self.unique_values_cache = {}
-        self.data = data
+        self._unique_values_cache: MutableMapping[str, Set[Any]] = {}
+        self._data = data
 
-    def variables(self):
-        return set(self.data.columns)
+    @property
+    def data(self) -> pd.DataFrame:
+        return self._data
 
-    def unique_values(self, variable: str):
-        if variable not in self.unique_values_cache:
-            self.unique_values_cache[variable] = set(self.data[variable])
-        return self.unique_values_cache[variable]
+    @property
+    def variables(self) -> Set[str]:
+        """
+        The set of variable names the data contains.
+        Of dimensionality p
+
+        Returns
+        -------
+        Set[str]
+        """
+        return set(self._data.columns)
+
+    def random_variable(self) -> str:
+        """
+        Choose a variable at random from the set of splittable variables
+        Returns
+        -------
+            str - a variable name that can be split on
+        """
+        return np.random.choice(np.array(list(self.variables)))[0][0]
+
+    def random_value(self, variable: str) -> Any:
+        """
+        Return a random value of a variable
+        Useful for choosing a variable to split on
+
+        Parameters
+        ----------
+        variable - str
+            Name of the variable to split on
+
+        Returns
+        -------
+        Any
+        """
+        possible_values = self.unique_values(variable)
+        return np.random.choice(np.array(list(possible_values)))
+
+    def unique_values(self, variable: str) -> Set[Any]:
+        """
+        Set of all values a variable takes in the feature set
+
+        Parameters
+        ----------
+        variable - str
+            name of the variable
+
+        Returns
+        -------
+        Set[Any] - all possible values
+        """
+        if variable not in self._unique_values_cache:
+            self._unique_values_cache[variable] = set(self._data[variable])
+        return self._unique_values_cache[variable]
+
+    def split_data(self, split):
+        lhs = Data(self.data[self.data[split.splitting_variable] <= split.splitting_value])
+        rhs = Data(self.data[self.data[split.splitting_variable] > split.splitting_value])
+        return SplitData(lhs, rhs)
+
+
+def sample_split(data: Data, variable_prior=None) -> Split:
+    """
+    Randomly sample a splitting rule for a particular leaf node
+    Works based on two random draws
+        - draw a node to split on based on multinomial distribution
+        - draw an observation within that variable to split on
+
+    Parameters
+    ----------
+    node - TreeNode
+    variable_prior - np.ndarray
+        Array of potentials to split on different variables
+        Doesn't need to sum to one
+
+    Returns
+    -------
+    Split
+
+    Examples
+    --------
+    >>> data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 1, 2]}))
+    >>> split = sample_split(data)
+    >>> split.splitting_variable in data.variables
+    True
+    >>> split.splitting_value in data.data[split.splitting_variable]
+    True
+    """
+    split_variable = data.random_variable()
+    split_value = data.random_value(split_variable)
+    return Split(split_variable, split_value)
