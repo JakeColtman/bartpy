@@ -58,12 +58,38 @@ class TreeSampler:
         return grow_prune_ratio * prob_selection_ratio
 
     def transition_ratio_change(self, proposal: Proposal) -> float:
-        prob_value_selected_within_attribute_existing = 1.0 / len(proposal.existing_node.data.unique_values(proposal.existing_node.split.splitting_variable))
-        prob_value_selected_within_attribute_updated = 1.0 / len(proposal.updated_node.data.unique_values(proposal.updated_node.split.splitting_variable))
-        return prob_value_selected_within_attribute_updated / prob_value_selected_within_attribute_existing
+        return 1.0
 
     def tree_structure_ratio(self, proposal: Proposal):
+        if proposal.kind == "grow":
+            return self.likihood_ratio_grow(proposal)
+        if proposal.kind == "prune":
+            return self.likihood_ratio_prune(proposal)
+        if proposal.kind == "change":
+            return self.tree_structure_ratio_change(proposal)
+
+    def tree_structure_ratio_change(self, proposal: Proposal):
         return 1.0
 
     def likihood_ratio(self, proposal: Proposal):
-        return 1.0
+        if proposal.kind == "grow":
+            return self.likihood_ratio_grow(proposal)
+        if proposal.kind == "prune":
+            return self.likihood_ratio_prune(proposal)
+        if proposal.kind == "change":
+            return self.likihood_ratio_change(proposal)
+
+    def likihood_ratio_grow(self, proposal: Proposal):
+        numerator = proposal.updated_node.left_child.likihood() + proposal.updated_node.right_child.likihood()
+        denom = proposal.existing_node.likihood()
+        return numerator / denom
+
+    def likihood_ratio_prune(self, proposal: Proposal):
+        numerator = proposal.updated_node.likihood()
+        denom = proposal.existing_node.left_child.likihood() + proposal.existing_node.right_child.likihood()
+        return numerator / denom
+
+    def likihood_ratio_change(self, proposal: Proposal):
+        numerator = proposal.updated_node.left_child.likihood() + proposal.updated_node.right_child.likihood()
+        denom = proposal.existing_node.left_child.likihood() + proposal.existing_node.right_child.likihood()
+        return numerator / denom
