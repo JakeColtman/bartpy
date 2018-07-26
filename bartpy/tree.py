@@ -184,13 +184,16 @@ class TreeStructure:
         """
         return {x for x in self.nodes() if not x.is_leaf_node()}
 
+    def leaf_parents(self) -> Set[SplitNode]:
+        split_nodes = self.split_nodes()
+        leaf_parents = {x for x in split_nodes if x.left_child.is_leaf_node() and x.right_child.is_leaf_node()}
+        return leaf_parents
+
     def random_leaf_node(self) -> LeafNode:
         return np.random.choice(list(self.leaf_nodes()))
 
     def random_leaf_parent(self) -> SplitNode:
-        split_nodes = self.split_nodes()
-        leaf_parents = [x for x in split_nodes if x.left_child.is_leaf_node() and x.right_child.is_leaf_node()]
-        return np.random.choice(leaf_parents)
+        return np.random.choice(list(self.leaf_parents()))
 
     def residuals(self) -> np.ndarray:
         return self.head.downstream_residuals()
