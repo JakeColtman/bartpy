@@ -104,18 +104,14 @@ class SplitNode(TreeNode):
 class LeafNode(TreeNode):
 
     def __init__(self, data):
-        self.value = 0.0
+        self._value = 0.0
         super().__init__(data, None, None)
 
-    def sample_value(self) -> np.ndarray:
-        return self.data.y.mean()
-
-    def update_value(self) -> None:
-        self.value = self.sample_value()
+    def set_value(self, value: float) -> None:
+        self._value = value
 
     def residuals(self) -> np.ndarray:
-        self.update_value()
-        return self.data.y - self.value
+        return self.data.y - self._value
 
 
 class TreeStructure:
@@ -152,7 +148,7 @@ class TreeStructure:
             all_nodes.append(n)
         return all_nodes
 
-    def leaf_nodes(self) -> Set[TreeNode]:
+    def leaf_nodes(self) -> Set[LeafNode]:
         """
 
         Returns

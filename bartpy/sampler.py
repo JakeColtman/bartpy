@@ -3,8 +3,8 @@ from typing import Optional
 import numpy as np
 
 from bartpy.model import Model
-from bartpy.mutation import Proposer, TreeMutation
-from bartpy.tree import TreeStructure, LeafNode
+from bartpy.proposer import Proposer
+from bartpy.tree import TreeStructure, LeafNode, TreeMutation
 from bartpy.sigma import Sigma
 
 
@@ -25,6 +25,23 @@ def likihood_node(node: LeafNode, sigma: Sigma, sigma_mu: float) -> float:
     fifth_term = n * np.power(mean_residual, 2)
 
     return first_term * second_term * np.exp(third_term * (sum_sq_error - fourth_term + fifth_term))
+
+
+class LeafNodeSampler:
+
+    def __init__(self, model: Model, node: LeafNode):
+        self.model = model
+        self.node = node
+
+    def sample(self) -> float:
+        prior_var = self.model.sigma_m ** 2
+        n = self.node.data.n_obsv
+        likihood_var = (self.model.sigma.current_value() ** 2) / n
+        likihood_mean = np.mean(self.node.residuals())
+
+        posterior_variance = 1. / (1. / prior_var + 1. / likihood_var)
+        posterior_mean = likihood_mean * (prior_var / (likihood_var + prior_var))
+        return np.random.normal(posterior_mean, posterior_variance)
 
 
 class TreeMutationSampler:
@@ -132,8 +149,20 @@ class Sampler:
         self.model = model
         self.proposer = proposer
 
-    def sample(self):
+    def step(self):
         for tree in self.model.trees:
             tree_sampler = TreeMutationSampler(self.model, tree, self.proposer)
             tree_mutation = tree_sampler.sample()
             tree.update_node(tree_mutation)
+
+            for node in tree.leaf_nodes():
+                leaf_sampler = LeafNodeSampler(self.model, node)
+                node.set_value(leaf_sampler.sample())
+
+    def samples(self, n_samples: int, n_burn: int):
+        for _ in range(n_burn):
+            self.step()
+        trace = []
+        for _ in range(n_samples):
+            self.step()
+            trace.append(self.model.predict())
