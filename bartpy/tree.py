@@ -204,8 +204,8 @@ class TreeStructure:
     def residuals(self) -> np.ndarray:
         return self.head.downstream_residuals()
 
-    def update_node(self, existing_node: TreeNode, new_node: TreeNode):
-        self.head.update_node(existing_node, new_node)
+    def update_node(self, mutation: TreeMutation):
+        self.head.update_node(mutation)
 
 
 def split_node(node: LeafNode, variable_prior=None) -> SplitNode:
