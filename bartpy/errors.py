@@ -1,0 +1,3 @@
+
+class NoSplittableVariableException(Exception):
+    pass

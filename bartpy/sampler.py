@@ -88,7 +88,7 @@ class TreeMutationSampler:
     def transition_ratio_grow(self, proposal: TreeMutation):
         prob_grow_node_selected = 1.0 / len(self.tree_structure.leaf_nodes())
         prob_attribute_selected = 1.0 / len(proposal.existing_node.data.variables)
-        prob_value_selected_within_attribute = 1.0 / len(proposal.existing_node.data.unique_values(proposal.updated_node.split.splitting_variable))
+        prob_value_selected_within_attribute = 1.0 / len(proposal.existing_node.data.unique_values(proposal.existing_node.split.splitting_variable))
 
         prob_grow_selected = prob_grow_node_selected * prob_attribute_selected * prob_value_selected_within_attribute
         prob_prune_selected = 1.0 * len(self.tree_structure.leaf_parents()) + 1
@@ -191,3 +191,32 @@ class Sampler:
             self.step()
             trace.append(self.model.predict())
         return np.array(trace)
+
+
+if __name__ == "__main__":
+    from bartpy.data import Data
+    import pandas as pd
+    from bartpy.sigma import Sigma
+    from bartpy.model import Model
+
+    data = Data(pd.DataFrame({"b": [1, 2, 3]}), pd.Series([1, 2, 3]), normalize=True)
+    sigma = Sigma(1., 2.)
+    model = Model(data, sigma)
+
+    prune_proposer = Proposer(0.5, 0.5, 0)
+
+    sampler = TreeMutationSampler(model, model.trees[0], prune_proposer)
+    sample = None
+    while sample is None:
+        sample = sampler.sample()
+
+    print(sample)
+    tree = model.trees[0]
+    print(tree.leaf_nodes())
+    tree.update_node(sample)
+    print(tree.leaf_nodes())
+    # proposal = prune_proposer.propose(model.trees[0])
+    # print(proposal)
+    # ratio = sampler.proposal_ratio(proposal)
+    # print(proposal)
+    # print(ratio)

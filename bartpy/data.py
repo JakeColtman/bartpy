@@ -51,6 +51,9 @@ class Data:
     def X(self) -> pd.DataFrame:
         return self._X
 
+    def splittable_variables(self) -> Set[str]:
+        return {x for x in self.X.columns if len(set(self.X[x])) > 0}
+
     @property
     def variables(self) -> Set[str]:
         """

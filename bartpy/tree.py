@@ -16,6 +16,8 @@ class TreeMutation:
         self.existing_node = existing_node
         self.updated_node = updated_node
 
+    def __str__(self):
+        return "{} - {} => {}".format(self.kind, self.existing_node, self.updated_node)
 
 class TreeNode:
 
@@ -131,6 +133,9 @@ class LeafNode(TreeNode):
     def residuals(self) -> np.ndarray:
         return self.data.y - self.current_value
 
+    def update_node(self, mutation: TreeMutation) -> bool:
+        return False
+
     def update_data(self, data: Data):
         self._data = data
 
@@ -142,8 +147,10 @@ class LeafNode(TreeNode):
         y = data.y.reset_index()
         y["prediction"] = self.current_value
         y = y.set_index("index")
-        print(y["prediction"])
         return y["prediction"]
+
+    def is_splittable(self) -> bool:
+        return len(self.data.splittable_variables()) > 1
 
 
 class TreeStructure:
@@ -230,13 +237,23 @@ class TreeStructure:
     def random_leaf_node(self) -> LeafNode:
         return np.random.choice(list(self.leaf_nodes()))
 
+    def random_splittable_leaf_node(self) -> LeafNode:
+        splittable_nodes = ([x for x in self.leaf_nodes() if x.is_splittable()])
+        if len(splittable_nodes) > 0:
+            return np.random.choice(splittable_nodes)
+        else:
+            return None
+
     def random_leaf_parent(self) -> SplitNode:
         return np.random.choice(list(self.leaf_parents()))
 
     def residuals(self) -> np.ndarray:
         return self.head.downstream_residuals()
 
-    def update_node(self, mutation: TreeMutation):
+    def update_node(self, mutation: TreeMutation) -> None:
+        if self.head == mutation.existing_node:
+            self.head = mutation.updated_node
+            return
         self.head.update_node(mutation)
 
     def predict(self, data: Data) -> pd.Series:
@@ -244,6 +261,7 @@ class TreeStructure:
 
     def update_data(self, data: Data) -> None:
         return self.head.update_data(data)
+
 
 def split_node(node: LeafNode, variable_prior=None) -> SplitNode:
     """
@@ -351,4 +369,4 @@ def sample_tree_structure(data: Data, alpha: float, beta: float, variable_prior=
 
 if __name__ == "__main__":
     import doctest
-    doctest.testmod()#extraglobs={'t': TreeNode()})
+    doctest.testmod()

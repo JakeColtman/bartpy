@@ -67,7 +67,7 @@ if __name__ == "__main__":
     full_prediction = model.predict()
     tree_prediction = model.trees[1].predict(data)
 
-    #print(model.residuals())
-    print(model.residuals_without_tree(0))
+    for tree in model.refreshed_trees():
+        print(tree)
     #print(tree_prediction)
     #print(full_prediction)
