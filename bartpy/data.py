@@ -35,13 +35,16 @@ class Data:
     {1, 2}
     """
 
-    def __init__(self, X: pd.DataFrame, y: np.ndarray):
+    def __init__(self, X: pd.DataFrame, y: pd.Series, normalize=False):
         self._unique_values_cache: MutableMapping[str, Set[Any]] = {}
         self._X = X
-        self._y = self.normalize_y(y)
+        if normalize:
+            self._y = self.normalize_y(y)
+        else:
+            self._y = y
 
     @property
-    def y(self) -> np.ndarray:
+    def y(self) -> pd.Series:
         return self._y
 
     @property
@@ -136,7 +139,7 @@ class Data:
         return len(self.X)
 
     @staticmethod
-    def normalize_y(y: np.ndarray) -> np.ndarray:
+    def normalize_y(y: pd.Series) -> pd.Series:
         """
         Normalize y into the range (-0.5, 0.5)
         Useful for allowing the leaf parameter prior to be 0, and to standardize the sigma prior
@@ -155,7 +158,8 @@ class Data:
         array([-0.5,  0. ,  0.5])
         """
         y_min, y_max = np.min(y), np.max(y)
-        return -0.5 + (y - y_min) / (y_max - y_min)
+        print(-0.5 + (y - y_min) / (y_max - y_min))
+        return pd.Series(-0.5 + (y - y_min) / (y_max - y_min))
 
 
 

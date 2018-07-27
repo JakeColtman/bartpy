@@ -1,3 +1,4 @@
+from abc import abstractclassmethod
 from typing import List, Set, Generator, Optional
 
 import numpy as np
@@ -69,6 +70,9 @@ class TreeNode:
     def residuals(self) -> np.ndarray:
         return np.zeros_like(self.data.y)
 
+    def update_data(self, data: Data) -> None:
+        raise NotImplementedError()
+
     def downstream_residuals(self):
         return self.residuals() + self.left_child.residuals() + self.right_child.residuals()
 
@@ -93,6 +97,10 @@ class TreeNode:
     def is_leaf_node(self) -> bool:
         return self.left_child is None and self.right_child is None
 
+    @abstractclassmethod
+    def predict(self, data: Data) -> pd.Series:
+        raise NotImplementedError()
+
 
 class SplitNode(TreeNode):
 
@@ -100,18 +108,42 @@ class SplitNode(TreeNode):
         self.split = split
         super().__init__(data, left_child_node, right_child_node)
 
+    def update_data(self, data: Data):
+        left_data, right_data = data.split_data(self.split)
+        self.left_child.update_data(left_data)
+        self.right_child.update_data(right_data)
+
+    def predict(self, data: Data) -> pd.Series:
+        left_predict_data, right_predict_data = data.split_data(self.split)
+        return pd.concat([self.left_child.predict(left_predict_data), self.right_child.predict(right_predict_data)])
+
 
 class LeafNode(TreeNode):
 
     def __init__(self, data):
         self._value = 0.0
+        self._residuals = 0.0
         super().__init__(data, None, None)
 
     def set_value(self, value: float) -> None:
         self._value = value
 
     def residuals(self) -> np.ndarray:
-        return self.data.y - self._value
+        return self.data.y - self.current_value
+
+    def update_data(self, data: Data):
+        self._data = data
+
+    @property
+    def current_value(self):
+        return self._value
+
+    def predict(self, data: Data) -> pd.Series:
+        y = data.y.reset_index()
+        y["prediction"] = self.current_value
+        y = y.set_index("index")
+        print(y["prediction"])
+        return y["prediction"]
 
 
 class TreeStructure:
@@ -207,6 +239,11 @@ class TreeStructure:
     def update_node(self, mutation: TreeMutation):
         self.head.update_node(mutation)
 
+    def predict(self, data: Data) -> pd.Series:
+        return self.head.predict(data).sort_index()
+
+    def update_data(self, data: Data) -> None:
+        return self.head.update_data(data)
 
 def split_node(node: LeafNode, variable_prior=None) -> SplitNode:
     """
@@ -247,8 +284,8 @@ def split_node(node: LeafNode, variable_prior=None) -> SplitNode:
     if split is None:
         return node
     split_data = node.data.split_data(split)
-    left_child_node = TreeNode(split_data.left_data)
-    right_child_node = TreeNode(split_data.right_data)
+    left_child_node = LeafNode(split_data.left_data)
+    right_child_node = LeafNode(split_data.right_data)
 
     return SplitNode(node.data, split, left_child_node, right_child_node)
 
@@ -291,7 +328,7 @@ def sample_tree_structure_from_node(node: TreeNode, depth: int, alpha: float, be
         return updated_node
 
 
-def sample_tree_structure(data: Data, alpha: float = 0.95, beta: float = 2, variable_prior=None) -> TreeStructure:
+def sample_tree_structure(data: Data, alpha: float, beta: float, variable_prior=None) -> TreeStructure:
     node = TreeNode(data)
     head = sample_tree_structure_from_node(node, 0, alpha, beta, variable_prior)
     return TreeStructure(head)
