@@ -1,6 +1,7 @@
 from typing import Optional
 
 import numpy as np
+from scipy.stats import invgamma
 
 from bartpy.model import Model
 from bartpy.proposer import Proposer
@@ -25,6 +26,18 @@ def likihood_node(node: LeafNode, sigma: Sigma, sigma_mu: float) -> float:
     fifth_term = n * np.power(mean_residual, 2)
 
     return first_term * second_term * np.exp(third_term * (sum_sq_error - fourth_term + fifth_term))
+
+
+class SigmaSampler:
+
+    def __init__(self, model: Model, sigma: Sigma):
+        self.model = model
+        self.sigma = sigma
+
+    def sample(self) -> float:
+        posterior_alpha = self.sigma.alpha + self.model.data.n_obsv
+        posterior_beta = self.sigma.beta + (0.5 * (np.sum(self.model.residuals())))
+        return invgamma(posterior_alpha, posterior_beta).rvs(1)
 
 
 class LeafNodeSampler:
@@ -149,20 +162,32 @@ class Sampler:
         self.model = model
         self.proposer = proposer
 
+    def step_leaf(self, node: LeafNode) -> None:
+        leaf_sampler = LeafNodeSampler(self.model, node)
+        node.set_value(leaf_sampler.sample())
+
+    def step_tree(self, tree: TreeStructure) -> None:
+        tree_sampler = TreeMutationSampler(self.model, tree, self.proposer)
+        tree_mutation = tree_sampler.sample()
+        tree.update_node(tree_mutation)
+
+        for node in tree.leaf_nodes():
+            self.step_leaf(node)
+
+    def step_sigma(self, sigma: Sigma) -> None:
+        sampler = SigmaSampler(self.model, sigma)
+        sigma.set_value(sampler.sample())
+
     def step(self):
         for tree in self.model.trees:
-            tree_sampler = TreeMutationSampler(self.model, tree, self.proposer)
-            tree_mutation = tree_sampler.sample()
-            tree.update_node(tree_mutation)
+            self.step_tree(tree)
+        self.step_sigma(self.model.sigma)
 
-            for node in tree.leaf_nodes():
-                leaf_sampler = LeafNodeSampler(self.model, node)
-                node.set_value(leaf_sampler.sample())
-
-    def samples(self, n_samples: int, n_burn: int):
+    def samples(self, n_samples: int, n_burn: int) -> np.ndarray:
         for _ in range(n_burn):
             self.step()
         trace = []
         for _ in range(n_samples):
             self.step()
             trace.append(self.model.predict())
+        return np.array(trace)
