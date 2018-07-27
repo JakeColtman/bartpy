@@ -6,6 +6,16 @@ import pandas as pd
 from bartpy.data import Split, Data, sample_split
 
 
+class TreeMutation:
+
+    def __init__(self, kind: str, existing_node: 'TreeNode', updated_node: Optional['TreeNode']):
+        if kind not in ["grow", "change", "prune"]:
+            raise NotImplementedError("{} is not a supported proposal".format(kind))
+        self.kind = kind
+        self.existing_node = existing_node
+        self.updated_node = updated_node
+
+
 class TreeNode:
 
     def __init__(self, data: Data, left_child: 'TreeNode'=None, right_child: 'TreeNode'=None):
@@ -13,19 +23,19 @@ class TreeNode:
         self._left_child = left_child
         self._right_child = right_child
 
-    def update_node(self, existing_node: 'TreeNode', updated_node: Optional['TreeNode']) -> bool:
-        if self.left_child == existing_node:
-            self._left_child = updated_node
+    def update_node(self, mutation: TreeMutation) -> bool:
+        if self.left_child == mutation.existing_node:
+            self._left_child = mutation.updated_node
             return True
-        elif self.right_child == existing_node:
-            self._right_child = updated_node
+        elif self.right_child == mutation.existing_node:
+            self._right_child = mutation.updated_node
             return True
         else:
-            found_left = self.left_child.update_node(existing_node, updated_node)
+            found_left = self.left_child.update_node(mutation)
             if found_left:
                 return True
             else:
-                found_right = self.right_child.update_node(existing_node, updated_node)
+                found_right = self.right_child.update_node(mutation)
                 return found_right
 
     def downstream_generator(self) -> Generator['TreeNode', None, None]:
@@ -83,9 +93,6 @@ class TreeNode:
     def is_leaf_node(self) -> bool:
         return self.left_child is None and self.right_child is None
 
-    def likihood(self) -> float:
-        return 1.0
-
 
 class SplitNode(TreeNode):
 
@@ -110,23 +117,6 @@ class LeafNode(TreeNode):
         self.update_value()
         return self.data.y - self.value
 
-    def likihood(self) -> float:
-        var = np.power(SIGMA, 2)
-        var_mu = np.power(SIGMA_MU, 2)
-
-        n = self.data.n_obsv
-
-        first_term = np.power(2 * np.pi * var, - n / 2.)
-        second_term = np.power(var / (var + n * var_mu), 0.5)
-        third_term = - (1 / (2 * var))
-        residuals = self.residuals()
-        mean_residual = np.mean(residuals)
-        sum_sq_error = np.sum(np.power(residuals - mean_residual, 2))
-
-        fourth_term = (np.power(mean_residual, 2) * np.power(n, 2)) / (n + (var / var_mu))
-        fifth_term = n * np.power(mean_residual, 2)
-
-        return first_term * second_term * np.exp(third_term * (sum_sq_error - fourth_term + fifth_term))
 
 class TreeStructure:
     """
@@ -309,6 +299,8 @@ def sample_tree_structure(data: Data, alpha: float = 0.95, beta: float = 2, vari
     node = TreeNode(data)
     head = sample_tree_structure_from_node(node, 0, alpha, beta, variable_prior)
     return TreeStructure(head)
+
+
 
 #
 # if __name__ == "__main__":
