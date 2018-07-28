@@ -1,7 +1,37 @@
-from bartpy.tree import TreeStructure, TreeNode, LeafNode, SplitNode, TreeMutation
-
-from copy import deepcopy
 from unittest import TestCase
+
+from bartpy.tree import TreeStructure, TreeNode, LeafNode, SplitNode, TreeMutation
+from bartpy.data import Data, Split
+
+import pandas as pd
+
+
+
+class TestTreeStructureDataUpdate(TestCase):
+
+    def setUp(self):
+        self.d = LeafNode(None)
+        self.e = LeafNode(None)
+        self.c = SplitNode(None, None, self.d, self.e)
+        self.b = LeafNode(None)
+        self.a = SplitNode(None, None, self.b, self.c)
+        self.tree_structure = TreeStructure(self.a)
+
+    def test_leaf_node_data_update(self):
+        self.assertIsNone(self.b.data)
+        self.b.update_data(10)
+        self.assertEqual(self.b.data, 10)
+
+    def test_update_pushed_through_split(self):
+        data_pd = pd.DataFrame({"a": [1, 2]})
+        updated_data = Data(data_pd, pd.Series([0, 1]))
+        split = Split("a", 1)
+        self.c = SplitNode(None, split, self.d, self.e)
+        self.c.update_data(updated_data)
+        self.assertListEqual([1], list(self.c.left_child.data.X["a"]))
+        self.assertListEqual([2], list(self.c.right_child.data.X["a"]))
+        self.assertListEqual([1], list(self.c.right_child.data.y))
+
 
 
 class TestTreeStructureMutation(TestCase):

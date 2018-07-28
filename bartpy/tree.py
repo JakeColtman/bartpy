@@ -19,6 +19,7 @@ class TreeMutation:
     def __str__(self):
         return "{} - {} => {}".format(self.kind, self.existing_node, self.updated_node)
 
+
 class TreeNode:
 
     def __init__(self, data: Data, left_child: 'TreeNode'=None, right_child: 'TreeNode'=None):
