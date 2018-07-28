@@ -6,6 +6,48 @@ from bartpy.data import Data, Split
 import pandas as pd
 
 
+class TestTreeStructureNodeRetrieval(TestCase):
+
+    def setUp(self):
+        self.d = LeafNode(None)
+        self.e = LeafNode(None)
+        self.c = SplitNode(None, None, self.d, self.e)
+        self.b = LeafNode(None)
+        self.a = SplitNode(None, None, self.b, self.c)
+        self.tree_structure = TreeStructure(self.a)
+
+    def test_retrieve_all_nodes(self):
+        all_nodes = self.tree_structure.nodes()
+        for node in [self.a, self.b, self.c, self.d, self.e]:
+            self.assertIn(node, all_nodes)
+        for node in all_nodes:
+            self.assertIn(node, [self.a, self.b, self.c, self.d, self.e])
+
+    def test_retrieve_all_leaf_nodes(self):
+        all_nodes = self.tree_structure.leaf_nodes()
+        true_all_nodes = [self.d, self.e, self.b]
+        for node in true_all_nodes:
+            self.assertIn(node, all_nodes)
+        for node in all_nodes:
+            self.assertIn(node, true_all_nodes)
+
+    def test_retrieve_all_leaf_parents(self):
+        all_nodes = self.tree_structure.leaf_parents()
+        true_all_nodes = [self.c]
+        for node in true_all_nodes:
+            self.assertIn(node, all_nodes)
+        for node in all_nodes:
+            self.assertIn(node, true_all_nodes)
+
+    def test_retrieve_all_split_nodes(self):
+        all_nodes = self.tree_structure.split_nodes()
+        true_all_nodes = [self.c, self.a]
+        for node in true_all_nodes:
+            self.assertIn(node, all_nodes)
+        for node in all_nodes:
+            self.assertIn(node, true_all_nodes)
+
+
 class TestTreeStructureDataUpdate(TestCase):
 
     def setUp(self):
