@@ -112,6 +112,7 @@ class SplitNode(TreeNode):
         super().__init__(data, left_child_node, right_child_node)
 
     def update_data(self, data: Data):
+        self._data = data
         left_data, right_data = data.split_data(self.split)
         self.left_child.update_data(left_data)
         self.right_child.update_data(right_data)

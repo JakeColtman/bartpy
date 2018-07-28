@@ -6,7 +6,6 @@ from bartpy.data import Data, Split
 import pandas as pd
 
 
-
 class TestTreeStructureDataUpdate(TestCase):
 
     def setUp(self):
@@ -28,10 +27,13 @@ class TestTreeStructureDataUpdate(TestCase):
         split = Split("a", 1)
         self.c = SplitNode(None, split, self.d, self.e)
         self.c.update_data(updated_data)
+        # Split node keeps updated copy of data
+        self.assertListEqual([1, 2], list(self.c.data.X["a"]))
+        # Left child keeps LTE condition
         self.assertListEqual([1], list(self.c.left_child.data.X["a"]))
+        # Right child keeps GT condition
         self.assertListEqual([2], list(self.c.right_child.data.X["a"]))
         self.assertListEqual([1], list(self.c.right_child.data.y))
-
 
 
 class TestTreeStructureMutation(TestCase):
