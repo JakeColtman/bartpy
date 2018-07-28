@@ -25,8 +25,6 @@ class GrowTreeMutationProposer(TreeMutationProposer):
 
     def proposal(self) -> TreeMutation:
         node = self.tree_structure.random_splittable_leaf_node()
-        if node is None:
-            raise NoSplittableVariableException()
         updated_node = split_node(node)
         return TreeMutation("grow", node, updated_node)
 
@@ -64,7 +62,6 @@ class Proposer:
 
     def sample_mutation_method(self) -> Callable[[TreeStructure], TreeMutationProposer]:
         method = np.random.choice([ChangeTreeMutationProposer, GrowTreeMutationProposer, PruneTreeMutationProposer], p=[self.p_change, self.p_grow, self.p_prune])
-        print(method)
         return method
 
     def propose(self, tree_structure: TreeStructure) -> TreeMutation:

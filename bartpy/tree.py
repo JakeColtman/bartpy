@@ -153,7 +153,7 @@ class LeafNode(TreeNode):
         return y["prediction"]
 
     def is_splittable(self) -> bool:
-        return len(self.data.splittable_variables()) > 1
+        return len(self.data.splittable_variables()) > 0
 
 
 class TreeStructure:
@@ -240,12 +240,12 @@ class TreeStructure:
     def random_leaf_node(self) -> LeafNode:
         return np.random.choice(list(self.leaf_nodes()))
 
-    def random_splittable_leaf_node(self) -> Optional[LeafNode]:
+    def random_splittable_leaf_node(self) -> LeafNode:
         splittable_nodes = [x for x in self.leaf_nodes() if x.is_splittable()]
         if len(splittable_nodes) > 0:
             return np.random.choice(splittable_nodes)
         else:
-            return None
+            raise NoSplittableVariableException()
 
     def random_leaf_parent(self) -> SplitNode:
         return np.random.choice(list(self.leaf_parents()))
