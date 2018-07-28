@@ -4,6 +4,8 @@ from typing import Any, MutableMapping, Set
 import pandas as pd
 import numpy as np
 
+from bartpy.errors import NoSplittableVariableException
+
 
 class Split:
 
@@ -52,7 +54,7 @@ class Data:
         return self._X
 
     def splittable_variables(self) -> Set[str]:
-        return {x for x in self.X.columns if len(set(self.X[x])) > 0}
+        return {x for x in self.X.columns if len(set(self.X[x])) > 1}
 
     @property
     def variables(self) -> Set[str]:
@@ -66,16 +68,19 @@ class Data:
         """
         return set(self.X.columns)
 
-    def random_variable(self) -> str:
+    def random_splittable_variable(self) -> str:
         """
         Choose a variable at random from the set of splittable variables
         Returns
         -------
             str - a variable name that can be split on
         """
-        return np.random.choice(np.array(list(self.variables)))[0][0]
+        splittable_variables = list(self.splittable_variables())
+        if len(splittable_variables) == 0:
+            raise NoSplittableVariableException()
+        return np.random.choice(np.array(list(splittable_variables)), 1)[0][0]
 
-    def random_value(self, variable: str) -> Any:
+    def random_splittable_value(self, variable: str) -> Any:
         """
         Return a random value of a variable
         Useful for choosing a variable to split on
@@ -96,14 +101,14 @@ class Data:
         Examples
         --------
         >>> data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 1, 2]}), np.array([1, 1, 1]))
-        >>> random_a = [data.random_value("a") for _ in range(100)]
+        >>> random_a = [data.random_splittable_value("a") for _ in range(100)]
         >>> np.all([x in [1, 2] for x in random_a])
         True
-        >>> random_b = [data.random_value("b") for _ in range(100)]
+        >>> random_b = [data.random_splittable_value("b") for _ in range(100)]
         >>> np.all([x in [1] for x in random_b])
         True
         >>> unsplittable_data = Data(pd.DataFrame({"a": [1, 1], "b": [1, 1]}), np.array([1, 1, 1]))
-        >>> unsplittable_data.random_value("a")
+        >>> unsplittable_data.random_splittable_value("a")
         """
         possible_values = self.unique_values(variable)
         possible_values = possible_values - {np.max(list(possible_values))}
@@ -161,9 +166,7 @@ class Data:
         array([-0.5,  0. ,  0.5])
         """
         y_min, y_max = np.min(y), np.max(y)
-        print(-0.5 + (y - y_min) / (y_max - y_min))
         return pd.Series(-0.5 + (y - y_min) / (y_max - y_min))
-
 
 
 def sample_split(data: Data, variable_prior=None) -> Split:
@@ -193,8 +196,8 @@ def sample_split(data: Data, variable_prior=None) -> Split:
     >>> split.splitting_value in data.X[split.splitting_variable]
     True
     """
-    split_variable = data.random_variable()
-    split_value = data.random_value(split_variable)
+    split_variable = data.random_splittable_variable()
+    split_value = data.random_splittable_value(split_variable)
     if split_value is None:
         return None
     return Split(split_variable, split_value)
