@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 from bartpy.data import Split, Data, sample_split
+from bartpy.errors import NoSplittableVariableException
 
 
 class TreeMutation:
@@ -239,8 +240,8 @@ class TreeStructure:
     def random_leaf_node(self) -> LeafNode:
         return np.random.choice(list(self.leaf_nodes()))
 
-    def random_splittable_leaf_node(self) -> LeafNode:
-        splittable_nodes = ([x for x in self.leaf_nodes() if x.is_splittable()])
+    def random_splittable_leaf_node(self) -> Optional[LeafNode]:
+        splittable_nodes = [x for x in self.leaf_nodes() if x.is_splittable()]
         if len(splittable_nodes) > 0:
             return np.random.choice(splittable_nodes)
         else:
@@ -300,14 +301,15 @@ def split_node(node: LeafNode, variable_prior=None) -> SplitNode:
     >>> split_node(unsplittable_node) == unsplittable_node
     True
     """
-    split = sample_split(node.data, variable_prior)
-    if split is None:
-        return node
-    split_data = node.data.split_data(split)
-    left_child_node = LeafNode(split_data.left_data)
-    right_child_node = LeafNode(split_data.right_data)
+    if not node.is_splittable():
+        raise NoSplittableVariableException()
+    else:
+        split = sample_split(node.data, variable_prior)
+        split_data = node.data.split_data(split)
+        left_child_node = LeafNode(split_data.left_data)
+        right_child_node = LeafNode(split_data.right_data)
 
-    return SplitNode(node.data, split, left_child_node, right_child_node)
+        return SplitNode(node.data, split, left_child_node, right_child_node)
 
 
 def is_terminal(depth: int, alpha: float, beta: float) -> bool:
