@@ -1,4 +1,4 @@
-from abc import abstractclassmethod
+from abc import abstractmethod, ABC
 from typing import List, Set, Generator, Optional
 
 import numpy as np
@@ -21,7 +21,7 @@ class TreeMutation:
         return "{} - {} => {}".format(self.kind, self.existing_node, self.updated_node)
 
 
-class TreeNode:
+class TreeNode(ABC):
 
     def __init__(self, data: Data, left_child: 'TreeNode'=None, right_child: 'TreeNode'=None):
         self._data = data
@@ -101,26 +101,9 @@ class TreeNode:
     def is_leaf_node(self) -> bool:
         return self.left_child is None and self.right_child is None
 
-    @abstractclassmethod
+    @abstractmethod
     def predict(self, data: Data) -> pd.Series:
         raise NotImplementedError()
-
-
-class SplitNode(TreeNode):
-
-    def __init__(self, data: Data, split: Split, left_child_node: TreeNode, right_child_node: TreeNode):
-        self.split = split
-        super().__init__(data, left_child_node, right_child_node)
-
-    def update_data(self, data: Data):
-        self._data = data
-        left_data, right_data = data.split_data(self.split)
-        self.left_child.update_data(left_data)
-        self.right_child.update_data(right_data)
-
-    def predict(self, data: Data) -> pd.Series:
-        left_predict_data, right_predict_data = data.split_data(self.split)
-        return pd.concat([self.left_child.predict(left_predict_data), self.right_child.predict(right_predict_data)])
 
 
 class LeafNode(TreeNode):
@@ -154,6 +137,23 @@ class LeafNode(TreeNode):
 
     def is_splittable(self) -> bool:
         return len(self.data.splittable_variables()) > 0
+
+
+class SplitNode(TreeNode):
+
+    def __init__(self, data: Data, split: Split, left_child_node: LeafNode, right_child_node: LeafNode):
+        self.split = split
+        super().__init__(data, left_child_node, right_child_node)
+
+    def update_data(self, data: Data):
+        self._data = data
+        left_data, right_data = data.split_data(self.split)
+        self.left_child.update_data(left_data)
+        self.right_child.update_data(right_data)
+
+    def predict(self, data: Data) -> pd.Series:
+        left_predict_data, right_predict_data = data.split_data(self.split)
+        return pd.concat([self.left_child.predict(left_predict_data), self.right_child.predict(right_predict_data)])
 
 
 class TreeStructure:
@@ -331,7 +331,7 @@ def is_terminal(depth: int, alpha: float, beta: float) -> bool:
     return r < alpha * np.power(1 + depth, -beta)
 
 
-def sample_tree_structure_from_node(node: TreeNode, depth: int, alpha: float, beta: float, variable_prior=None) -> TreeNode:
+def sample_tree_structure_from_node(node: LeafNode, depth: int, alpha: float, beta: float, variable_prior=None) -> TreeNode:
     if depth == 0:
         updated_node = split_node(node)
         updated_node.update_left_child(sample_tree_structure_from_node(updated_node.left_child, depth + 1, alpha, beta, variable_prior))
@@ -341,17 +341,18 @@ def sample_tree_structure_from_node(node: TreeNode, depth: int, alpha: float, be
     terminal = is_terminal(depth, alpha, beta)
     if terminal:
         return node
-    else:
+
+    try:
         updated_node = split_node(node, variable_prior)
-        if updated_node == node:
-            return updated_node
         updated_node.update_left_child(sample_tree_structure_from_node(updated_node.left_child, depth + 1, alpha, beta, variable_prior))
         updated_node.update_right_child(sample_tree_structure_from_node(updated_node.right_child, depth + 1, alpha, beta, variable_prior))
         return updated_node
+    except NoSplittableVariableException:
+        return node
 
 
 def sample_tree_structure(data: Data, alpha: float, beta: float, variable_prior=None) -> TreeStructure:
-    node = TreeNode(data)
+    node = LeafNode(data)
     head = sample_tree_structure_from_node(node, 0, alpha, beta, variable_prior)
     return TreeStructure(head)
 
