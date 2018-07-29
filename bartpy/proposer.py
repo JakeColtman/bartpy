@@ -4,7 +4,7 @@ from typing import Callable
 
 import numpy as np
 
-from bartpy.errors import NoSplittableVariableException
+from bartpy.errors import NoSplittableVariableException, NoPrunableNodeException
 from bartpy.tree import LeafNode, TreeStructure, split_node, TreeMutation
 
 
@@ -69,6 +69,8 @@ class Proposer:
         try:
             return method(tree_structure).proposal()
         except NoSplittableVariableException:
+            return self.propose(tree_structure)
+        except NoPrunableNodeException:
             return self.propose(tree_structure)
 
 

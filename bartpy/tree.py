@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from bartpy.data import Split, Data, sample_split
-from bartpy.errors import NoSplittableVariableException
+from bartpy.errors import NoSplittableVariableException, NoPrunableNodeException
 
 
 class TreeMutation:
@@ -114,7 +114,10 @@ class LeafNode(TreeNode):
         super().__init__(data, None, None)
 
     def set_value(self, value: float) -> None:
-        self._value = value
+        if isinstance(value, float):
+            self._value = value
+        else:
+            raise TypeError("LeafNode values can only be floats, found {}".format(type(value)))
 
     def residuals(self) -> np.ndarray:
         return self.data.y - self.current_value
@@ -248,7 +251,10 @@ class TreeStructure:
             raise NoSplittableVariableException()
 
     def random_leaf_parent(self) -> SplitNode:
-        return np.random.choice(list(self.leaf_parents()))
+        leaf_parents = list(self.leaf_parents())
+        if len(leaf_parents) == 0:
+            raise NoPrunableNodeException
+        return np.random.choice(leaf_parents)
 
     def residuals(self) -> np.ndarray:
         return self.head.downstream_residuals()

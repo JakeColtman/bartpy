@@ -37,7 +37,7 @@ class SigmaSampler:
     def sample(self) -> float:
         posterior_alpha = self.sigma.alpha + self.model.data.n_obsv
         posterior_beta = self.sigma.beta + (0.5 * (np.sum(self.model.residuals())))
-        return invgamma(posterior_alpha, posterior_beta).rvs(1)
+        return invgamma(posterior_alpha, posterior_beta).rvs(1)[0]
 
 
 class LeafNodeSampler:
@@ -87,8 +87,8 @@ class TreeMutationSampler:
 
     def transition_ratio_grow(self, proposal: TreeMutation):
         prob_grow_node_selected = 1.0 / len(self.tree_structure.leaf_nodes())
-        prob_attribute_selected = 1.0 / len(proposal.existing_node.data.variables)
-        prob_value_selected_within_attribute = 1.0 / len(proposal.existing_node.data.unique_values(proposal.existing_node.split.splitting_variable))
+        prob_attribute_selected = 1.0 / len(proposal.existing_node.data.splittable_variables())
+        prob_value_selected_within_attribute = 1.0 / len(proposal.existing_node.data.unique_values(proposal.updated_node.split.splitting_variable))
 
         prob_grow_selected = prob_grow_node_selected * prob_attribute_selected * prob_value_selected_within_attribute
         prob_prune_selected = 1.0 * len(self.tree_structure.leaf_parents()) + 1
@@ -169,7 +169,8 @@ class Sampler:
     def step_tree(self, tree: TreeStructure) -> None:
         tree_sampler = TreeMutationSampler(self.model, tree, self.proposer)
         tree_mutation = tree_sampler.sample()
-        tree.update_node(tree_mutation)
+        if tree_mutation is not None:
+            tree.update_node(tree_mutation)
 
         for node in tree.leaf_nodes():
             self.step_leaf(node)
