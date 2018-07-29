@@ -180,7 +180,7 @@ class Sampler:
         sigma.set_value(sampler.sample())
 
     def step(self):
-        for tree in self.model.trees:
+        for tree in self.model.refreshed_trees():
             self.step_tree(tree)
         self.step_sigma(self.model.sigma)
 

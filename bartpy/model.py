@@ -30,15 +30,13 @@ class Model:
         return self.data.y - self.predict()
 
     def residuals_without_tree(self, index: int) -> np.ndarray:
-        return self.residuals() + self.prediction_without_tree(index)
+        return self.data.y - self.prediction_without_tree(index)
 
     def predict(self) -> pd.Series:
-        return pd.Series(np.sum([tree.predict(self.data) for tree in self.trees], axis=0))
+        return pd.Series(np.sum([tree.predict() for tree in self.trees], axis=0))
 
     def prediction_without_tree(self, index: int) -> pd.Series:
-        full_prediction = self.predict()
-        tree_prediction = self.trees[index].predict(self.data)
-        return full_prediction - tree_prediction
+        return pd.Series(np.sum([tree.predict() for ii, tree in enumerate(self.trees) if ii != index], axis=0))
 
     @property
     def trees(self) -> List[TreeStructure]:
@@ -69,5 +67,3 @@ if __name__ == "__main__":
 
     for tree in model.refreshed_trees():
         print(tree)
-    #print(tree_prediction)
-    #print(full_prediction)

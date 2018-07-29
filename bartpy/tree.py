@@ -102,7 +102,7 @@ class TreeNode(ABC):
         return self.left_child is None and self.right_child is None
 
     @abstractmethod
-    def predict(self, data: Data) -> pd.Series:
+    def predict(self) -> pd.Series:
         raise NotImplementedError()
 
 
@@ -114,10 +114,11 @@ class LeafNode(TreeNode):
         super().__init__(data, None, None)
 
     def set_value(self, value: float) -> None:
-        if isinstance(value, float):
-            self._value = value
-        else:
-            raise TypeError("LeafNode values can only be floats, found {}".format(type(value)))
+        self._value = value
+        # if isinstance(value, float):
+        #     self._value = value
+        # else:
+        #     raise TypeError("LeafNode values can only be floats, found {}".format(type(value)))
 
     def residuals(self) -> np.ndarray:
         return self.data.y - self.current_value
@@ -132,8 +133,8 @@ class LeafNode(TreeNode):
     def current_value(self):
         return self._value
 
-    def predict(self, data: Data) -> pd.Series:
-        y = data.y.reset_index()
+    def predict(self) -> pd.Series:
+        y = self.data.y.reset_index()
         y["prediction"] = self.current_value
         y = y.set_index("index")
         return y["prediction"]
@@ -154,9 +155,8 @@ class SplitNode(TreeNode):
         self.left_child.update_data(left_data)
         self.right_child.update_data(right_data)
 
-    def predict(self, data: Data) -> pd.Series:
-        left_predict_data, right_predict_data = data.split_data(self.split)
-        return pd.concat([self.left_child.predict(left_predict_data), self.right_child.predict(right_predict_data)])
+    def predict(self) -> pd.Series:
+        return pd.concat([self.left_child.predict(), self.right_child.predict()])
 
 
 class TreeStructure:
@@ -166,6 +166,8 @@ class TreeStructure:
 
     def __init__(self, head: TreeNode):
         self.head = head
+        self.cache_up_to_date = False
+        self._prediction = self.predict()
 
     def nodes(self) -> List[TreeNode]:
         """
@@ -262,13 +264,17 @@ class TreeStructure:
     def update_node(self, mutation: TreeMutation) -> None:
         if self.head == mutation.existing_node:
             self.head = mutation.updated_node
-            return
-        self.head.update_node(mutation)
+        else:
+            self.head.update_node(mutation)
+        self.cache_up_to_date = False
 
-    def predict(self, data: Data) -> pd.Series:
-        return self.head.predict(data).sort_index()
+    def predict(self) -> pd.Series:
+        if self.cache_up_to_date:
+            return self._prediction
+        return self.head.predict().sort_index()
 
     def update_data(self, data: Data) -> None:
+        self.cache_up_to_date = False
         return self.head.update_data(data)
 
 
