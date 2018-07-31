@@ -38,6 +38,8 @@ class TestTreeStructureNodeRetrieval(TestCase):
     def test_retrieve_all_leaf_parents(self):
         all_nodes = self.tree_structure.leaf_parents()
         true_all_nodes = [self.c]
+        print(self.c.is_leaf_parent())
+        print(all_nodes)
         for node in true_all_nodes:
             self.assertIn(node, all_nodes)
         for node in all_nodes:
@@ -103,8 +105,10 @@ class TestTreeStructureMutation(TestCase):
         updated_d = SplitNode(None, None, f, g)
         grow_mutation = TreeMutation("grow", self.d, updated_d)
         self.tree_structure.update_node(grow_mutation)
-        self.assertEqual(self.tree_structure.head.right_child.left_child, updated_d)
-        self.assertIsNone(self.tree_structure.head.right_child.left_child.left_child.left_child)
+        self.assertIn(updated_d, self.tree_structure.split_nodes())
+        self.assertIn(updated_d, self.tree_structure.leaf_parents())
+        self.assertIn(f, self.tree_structure.leaf_nodes())
+        self.assertNotIn(self.d, self.tree_structure.nodes())
 
     def test_head_prune(self):
         a = SplitNode(self.data, None, LeafNode(None), LeafNode(None))
@@ -113,12 +117,14 @@ class TestTreeStructureMutation(TestCase):
         print(a.is_leaf_parent())
         prune_mutation = PruneMutation(a, updated_a)
         tree_structure.update_node(prune_mutation)
-        self.assertEqual(tree_structure.head, updated_a)
-        self.assertIsNone(tree_structure.head.left_child)
+        self.assertIn(updated_a, tree_structure.leaf_nodes())
+        self.assertNotIn(self.a, tree_structure.nodes())
 
     def test_internal_prune(self):
         updated_c = LeafNode(None)
         prune_mutation = TreeMutation("prune", self.c, updated_c)
         self.tree_structure.update_node(prune_mutation)
-        self.assertEqual(self.tree_structure.head.right_child, updated_c)
-        self.assertIsNone(self.tree_structure.head.right_child.left_child)
+        self.assertIn(updated_c, self.tree_structure.leaf_nodes())
+        self.assertNotIn(self.c, self.tree_structure.nodes())
+        self.assertNotIn(self.d, self.tree_structure.nodes())
+        self.assertNotIn(self.e, self.tree_structure.nodes())

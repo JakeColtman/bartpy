@@ -134,6 +134,9 @@ class TreeNode(ABC):
     def predict(self) -> pd.Series:
         raise NotImplementedError()
 
+    def is_split_node(self) -> bool:
+        return False
+
 
 class LeafNode(TreeNode):
 
@@ -189,6 +192,9 @@ class SplitNode(TreeNode):
     def is_leaf_parent(self) -> bool:
         return self.left_child.is_leaf_node() and self.right_child.is_leaf_node()
 
+    def is_split_node(self) -> bool:
+        return True
+
     def update_data(self, data: Data):
         self._data = data
         left_data = self.left_child.split.split_data(data)
@@ -215,15 +221,7 @@ class TreeStructure:
         starting_leaf_parents = [x for x in head_downstream if x.is_leaf_parent()]
         self._leaf_parents = starting_leaf_parents
         self._leaf_node_map = np.array([self.head] * self.head.data.n_obsv)
-
-    def update_leaf_node_map(self, mutation: TreeMutation) -> None:
-        if mutation.kind == "grow":
-            self._leaf_node_map[mutation.updated_node.left_child.split] = mutation.updated_node.left_child
-            self._leaf_node_map[mutation.updated_node.right_child.split] = mutation.updated_node.right_child
-        if mutation.kind == "prune":
-            self._leaf_node_map[mutation.existing_node.split] = mutation.updated_node
-        if mutation.kind == "change":
-            self._leaf_node_map[mutation.existing_node.split] = mutation.updated_node
+        self._split_nodes = [x for x in head_downstream if x.is_split_node()]
 
     def nodes(self) -> List[TreeNode]:
         """
@@ -246,10 +244,7 @@ class TreeStructure:
         >>> 1 in nodes
         False
         """
-        all_nodes = []
-        for n in self.head.downstream_generator():
-            all_nodes.append(n)
-        return all_nodes
+        return self._leaf_nodes + self._split_nodes
 
     def leaf_nodes(self) -> List[LeafNode]:
         """
@@ -272,7 +267,7 @@ class TreeStructure:
         """
         return self._leaf_nodes
 
-    def split_nodes(self) -> Set[TreeNode]:
+    def split_nodes(self) -> List[TreeNode]:
         """
 
         Returns
@@ -291,10 +286,10 @@ class TreeStructure:
         >>> a == list(nodes)[0]
         True
         """
-        return {x for x in self.nodes() if not x.is_leaf_node()}
+        return self._split_nodes
 
     def leaf_parents(self) -> List[SplitNode]:
-        return self._leaf_parents
+        return [x for x in self.split_nodes() if x.is_leaf_parent()]
 
     def random_leaf_node(self) -> LeafNode:
         return np.random.choice(list(self.leaf_nodes()))
@@ -312,37 +307,36 @@ class TreeStructure:
             raise NoPrunableNodeException
         return np.random.choice(leaf_parents)
 
-    def residuals(self) -> np.ndarray:
-        return self.head.downstream_residuals()
-
     def update_node(self, mutation: TreeMutation) -> None:
 
         if self.head == mutation.existing_node:
             self.head = mutation.updated_node
         else:
             self.head.update_node(mutation)
+
         self.cache_up_to_date = False
 
         if mutation.kind == "prune":
+            self._split_nodes.remove(mutation.existing_node)
             self._leaf_nodes.append(mutation.updated_node)
             self._leaf_nodes.remove(mutation.existing_node.left_child)
             self._leaf_nodes.remove(mutation.existing_node.right_child)
-            self._leaf_parents = [x for x in self.head.downstream_generator() if x.is_leaf_parent()]
 
         if mutation.kind == "grow":
             self._leaf_nodes.remove(mutation.existing_node)
             self._leaf_nodes.append(mutation.updated_node.left_child)
             self._leaf_nodes.append(mutation.updated_node.right_child)
-            self._leaf_parents = [x for x in self.head.downstream_generator() if x.is_leaf_parent()]
+            self._split_nodes.append(mutation.updated_node)
 
         if mutation.kind == "change":
             self._leaf_nodes.remove(mutation.existing_node.left_child)
             self._leaf_nodes.remove(mutation.existing_node.right_child)
             self._leaf_nodes.append(mutation.updated_node.left_child)
             self._leaf_nodes.append(mutation.updated_node.right_child)
-            self._leaf_parents = [x for x in self.head.downstream_generator() if x.is_leaf_parent()]
+            self._split_nodes.remove(mutation.existing_node)
+            self._split_nodes.append(mutation.updated_node)
 
-    def predict(self) -> pd.Series:
+    def predict(self) -> np.ndarray:
         if self.cache_up_to_date:
             return self._prediction
         for leaf in self.leaf_nodes():
@@ -352,7 +346,8 @@ class TreeStructure:
 
     def update_data(self, data: Data) -> None:
         self.cache_up_to_date = False
-        return self.head.update_data(data)
+        for node in self.nodes():
+            node.data._y = data.y[node.split.condition(data)]
 
 
 def split_node(node: LeafNode, split_condition: SplitCondition) -> SplitNode:

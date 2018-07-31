@@ -71,9 +71,9 @@ class TestData(unittest.TestCase):
             self.data.random_splittable_variable()
 
     def test_sample_split_condition(self):
-        left_split, right_split = sample_split_condition(self.data)
-        self.assertIn(left_split.splitting_variable, self.data.splittable_variables())
-        self.assertIn(left_split.splitting_value, self.data.unique_values(left_split.splitting_variable))
+        split_condition = sample_split_condition(self.data)
+        self.assertIn(split_condition.splitting_variable, self.data.splittable_variables())
+        self.assertIn(split_condition.splitting_value, self.data.unique_values(split_condition.splitting_variable))
 
 
 if __name__ == '__main__':
