@@ -7,7 +7,7 @@ from bartpy.proposer import Proposer
 
 if __name__ == "__main__":
 
-    data = Data(pd.DataFrame({"b": [1, 2, 3]}), pd.Series([1, 2, 3]), normalize=True)
+    data = Data(pd.DataFrame({"b": [1, 2, 3, 4, 5, 6, 7, 8, 9]}), pd.Series([0, 0, 0, 1, 1, 1, 1, 1, 1]), normalize=True)
     sigma = Sigma(1., 2.)
     model = Model(data, sigma, n_trees=10)
 
@@ -19,5 +19,5 @@ if __name__ == "__main__":
     print(model.predict())
 
     s = sampler.samples(100, 100)
-
+    print(s)
     print(s.mean(axis=0))

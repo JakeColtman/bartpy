@@ -6,7 +6,8 @@ import pandas as pd
 
 from bartpy.data import Data
 from bartpy.sigma import Sigma
-from bartpy.tree import sample_tree_structure, TreeStructure
+from bartpy.tree import sample_tree_structure, TreeStructure, LeafNode
+from bartpy.data import Split, SplitCondition
 
 
 class Model:
@@ -23,7 +24,7 @@ class Model:
     def initialize_trees(self) -> List[TreeStructure]:
         tree_data = deepcopy(self.data)
         tree_data._y = tree_data.y / self.n_trees
-        trees = [sample_tree_structure(tree_data, self.alpha, self.beta) for _ in range(self.n_trees)]
+        trees = [TreeStructure(LeafNode(tree_data, Split([]))) for _ in range(self.n_trees)]
         return trees
 
     def residuals(self) -> pd.Series:

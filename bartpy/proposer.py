@@ -5,7 +5,7 @@ from typing import Callable
 import numpy as np
 
 from bartpy.errors import NoSplittableVariableException, NoPrunableNodeException
-from bartpy.tree import LeafNode, TreeStructure, split_node, TreeMutation
+from bartpy.tree import LeafNode, TreeStructure, sample_split_node, TreeMutation, PruneMutation, GrowMutation
 
 
 class TreeMutationProposer:
@@ -25,8 +25,8 @@ class GrowTreeMutationProposer(TreeMutationProposer):
 
     def proposal(self) -> TreeMutation:
         node = self.tree_structure.random_splittable_leaf_node()
-        updated_node = split_node(node)
-        return TreeMutation("grow", node, updated_node)
+        updated_node = sample_split_node(node)
+        return GrowMutation(node, updated_node)
 
 
 class PruneTreeMutationProposer(TreeMutationProposer):
@@ -36,8 +36,13 @@ class PruneTreeMutationProposer(TreeMutationProposer):
 
     def proposal(self) -> TreeMutation:
         node = self.tree_structure.random_leaf_parent()
-        updated_node = LeafNode(node.data)
-        return TreeMutation("prune", node, updated_node)
+        updated_node = LeafNode(node.data, node.split)
+        try:
+            return PruneMutation(node, updated_node)
+        except:
+            print(self.tree_structure.leaf_parents())
+            print([x.is_leaf_parent() for x in self.tree_structure.leaf_parents()])
+            raise
 
 
 class ChangeTreeMutationProposer(TreeMutationProposer):
@@ -48,8 +53,8 @@ class ChangeTreeMutationProposer(TreeMutationProposer):
     def proposal(self) -> TreeMutation:
         node = self.tree_structure.random_leaf_parent()
         updated_node = deepcopy(node)
-        leaf_node = LeafNode(updated_node.data)
-        updated_split_node = split_node(leaf_node)
+        leaf_node = LeafNode(updated_node.data, node.split)
+        updated_split_node = sample_split_node(leaf_node)
         return TreeMutation("change", node, updated_split_node)
 
 

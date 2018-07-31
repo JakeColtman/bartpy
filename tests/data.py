@@ -2,8 +2,40 @@ import unittest
 
 import pandas as pd
 
-from bartpy.data import Data, SplitData, Split, sample_split
+from bartpy.data import Data, SplitData, Split, sample_split_condition, SplitCondition, LTESplitCondition, GTSplitCondition
 from bartpy.errors import NoSplittableVariableException
+from bartpy.tree import SplitCondition, SplitNode, split_node, LeafNode
+
+
+class TestSplit(unittest.TestCase):
+
+    def test_null_split_returns_all_values(self):
+        split = Split([])
+        data = Data(pd.DataFrame({"a": [1, 2]}), pd.Series([1, 2]))
+        conditioned_data = split.split_data(data)
+        self.assertListEqual(list(data.X["a"]), list(conditioned_data.X["a"]))
+
+    def test_single_condition_data(self):
+        condition = LTESplitCondition("a", 1)
+        split = Split([condition])
+        data = Data(pd.DataFrame({"a": [1, 2]}), pd.Series([1, 2]))
+        conditioned_data = split.split_data(data)
+        self.assertListEqual([1], list(conditioned_data.X["a"]))
+
+    def test_combined_condition_data(self):
+        first_condition = LTESplitCondition("a", 3)
+        second_condition = GTSplitCondition("a", 1)
+
+        split = Split([first_condition, second_condition])
+        data = Data(pd.DataFrame({"a": [1, 2, 3, 4]}), pd.Series([1, 2, 1, 1]))
+        conditioned_data = split.split_data(data)
+        self.assertListEqual([2, 3], list(conditioned_data.X["a"]))
+
+    def test_split(self):
+        data = Data(pd.DataFrame({"a": [1, 2, 3]}), pd.Series([1, 2, 3]))
+        self.a = split_node(LeafNode(data), SplitCondition("a", 1))
+        left_data = self.a.left_child.data
+        self.assertListEqual([1], list(left_data.X["a"]))
 
 
 class TestData(unittest.TestCase):
@@ -27,14 +59,6 @@ class TestData(unittest.TestCase):
         self.assertListEqual([1, 2, 3, 4], list(self.data.unique_values("a")))
         self.assertListEqual([1], list(self.data.unique_values("b")))
 
-    def test_splitting_data(self):
-        split = Split("a", 2)
-        split_data = self.data.split_data(split)
-        self.assertListEqual(list(split_data.left_data.X["a"]), [1, 2])
-        self.assertListEqual(list(split_data.left_data.X["a"]), [1, 2])
-        self.assertListEqual(list(split_data.left_data.y), [-0.5, -0.25])
-        self.assertListEqual(list(split_data.right_data.X["a"]), [3, 3, 4])
-
     def test_random_splittable_value(self):
         for a in range(100):
             self.assertIn(self.data.random_splittable_value("a"), [1, 2, 3])
@@ -46,10 +70,10 @@ class TestData(unittest.TestCase):
         with self.assertRaises(NoSplittableVariableException):
             self.data.random_splittable_variable()
 
-    def test_sample_split(self):
-        split = sample_split(self.data)
-        self.assertIn(split.splitting_variable, self.data.splittable_variables())
-        self.assertIn(split.splitting_value, self.data.unique_values(split.splitting_variable))
+    def test_sample_split_condition(self):
+        left_split, right_split = sample_split_condition(self.data)
+        self.assertIn(left_split.splitting_variable, self.data.splittable_variables())
+        self.assertIn(left_split.splitting_value, self.data.unique_values(left_split.splitting_variable))
 
 
 if __name__ == '__main__':

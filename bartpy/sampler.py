@@ -5,7 +5,7 @@ from scipy.stats import invgamma
 
 from bartpy.model import Model
 from bartpy.proposer import Proposer
-from bartpy.tree import TreeStructure, LeafNode, TreeMutation
+from bartpy.tree import TreeStructure, LeafNode, TreeMutation, GrowMutation, ChangeMutation, PruneMutation
 from bartpy.sigma import Sigma
 
 
@@ -85,10 +85,10 @@ class TreeMutationSampler:
         else:
             raise NotImplementedError("kind {} not supported".format(proposal.kind))
 
-    def transition_ratio_grow(self, proposal: TreeMutation):
+    def transition_ratio_grow(self, proposal: GrowMutation):
         prob_grow_node_selected = 1.0 / len(self.tree_structure.leaf_nodes())
         prob_attribute_selected = 1.0 / len(proposal.existing_node.data.splittable_variables())
-        prob_value_selected_within_attribute = 1.0 / len(proposal.existing_node.data.unique_values(proposal.updated_node.split.splitting_variable))
+        prob_value_selected_within_attribute = 1.0 / len(proposal.existing_node.data.unique_values(proposal.updated_node.left_child.split.most_recent_split_condition().splitting_variable))
 
         prob_grow_selected = prob_grow_node_selected * prob_attribute_selected * prob_value_selected_within_attribute
         prob_prune_selected = 1.0 * len(self.tree_structure.leaf_parents()) + 1
@@ -97,10 +97,10 @@ class TreeMutationSampler:
 
         return prune_grow_ratio * prob_selection_ratio
 
-    def transition_ratio_prune(self, proposal: TreeMutation):
+    def transition_ratio_prune(self, proposal: PruneMutation):
         prob_grow_node_selected = 1.0 / (len(self.tree_structure.leaf_nodes()) - 1)
         prob_attribute_selected = 1.0 / len(proposal.updated_node.data.variables)
-        prob_value_selected_within_attribute = 1.0 / len(proposal.updated_node.data.unique_values(proposal.existing_node.split.splitting_variable))
+        prob_value_selected_within_attribute = 1.0 / len(proposal.updated_node.data.unique_values(proposal.existing_node.left_child.split.most_recent_split_condition().splitting_variable))
 
         prob_grow_selected = prob_grow_node_selected * prob_attribute_selected * prob_value_selected_within_attribute
         prob_prune_selected = 1.0 * len(self.tree_structure.leaf_parents())
@@ -109,7 +109,7 @@ class TreeMutationSampler:
 
         return grow_prune_ratio * prob_selection_ratio
 
-    def transition_ratio_change(self, proposal: TreeMutation) -> float:
+    def transition_ratio_change(self, proposal: ChangeMutation) -> float:
         return 1.0
 
     def tree_structure_ratio(self, proposal: TreeMutation):
@@ -185,10 +185,12 @@ class Sampler:
         self.step_sigma(self.model.sigma)
 
     def samples(self, n_samples: int, n_burn: int) -> np.ndarray:
-        for _ in range(n_burn):
+        for bb in range(n_burn):
+            print(bb)
             self.step()
         trace = []
-        for _ in range(n_samples):
+        for ss in range(n_samples):
+            print(ss)
             self.step()
             trace.append(self.model.predict())
         return np.array(trace)

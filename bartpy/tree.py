@@ -4,7 +4,7 @@ from typing import List, Set, Generator, Optional
 import numpy as np
 import pandas as pd
 
-from bartpy.data import Split, Data, sample_split
+from bartpy.data import Split, Data, sample_split_condition, SplitCondition
 from bartpy.errors import NoSplittableVariableException, NoPrunableNodeException
 
 
@@ -19,6 +19,32 @@ class TreeMutation:
 
     def __str__(self):
         return "{} - {} => {}".format(self.kind, self.existing_node, self.updated_node)
+
+
+class PruneMutation(TreeMutation):
+
+    def __init__(self, existing_node: 'SplitNode', updated_node: 'LeafNode'):
+        if not existing_node.is_leaf_parent():
+            raise TypeError("Pruning only valid on leaf parents")
+        super().__init__("prune", existing_node, updated_node)
+
+
+class GrowMutation(TreeMutation):
+
+    def __init__(self, existing_node: 'LeafNode', updated_node: 'SplitNode'):
+        if not updated_node.is_leaf_parent():
+            raise TypeError("Can only grow into Leaf parents")
+        if not existing_node.is_leaf_node():
+            raise TypeError("Can only grow Leaf nodes")
+        super().__init__("grow", existing_node, updated_node)
+
+
+class ChangeMutation(TreeMutation):
+
+    def __init__(self, existing_node: 'SplitNode', updated_node: 'SplitNode'):
+        if not existing_node.is_leaf_node():
+            raise TypeError("Pruning only valid on leaf parents")
+        super().__init__("change", existing_node, updated_node)
 
 
 class TreeNode(ABC):
@@ -101,6 +127,9 @@ class TreeNode(ABC):
     def is_leaf_node(self) -> bool:
         return self.left_child is None and self.right_child is None
 
+    def is_leaf_parent(self) -> bool:
+        return False
+
     @abstractmethod
     def predict(self) -> pd.Series:
         raise NotImplementedError()
@@ -108,9 +137,13 @@ class TreeNode(ABC):
 
 class LeafNode(TreeNode):
 
-    def __init__(self, data):
+    def __init__(self, data: Data, split: Split=None):
         self._value = 0.0
         self._residuals = 0.0
+        if split is None:
+            self._split = Split([])
+        else:
+            self._split = split
         super().__init__(data, None, None)
 
     def set_value(self, value: float) -> None:
@@ -134,13 +167,17 @@ class LeafNode(TreeNode):
         return self._value
 
     def predict(self) -> pd.Series:
-        y = self.data.y.reset_index()
-        y["prediction"] = self.current_value
-        y = y.set_index("index")
-        return y["prediction"]
+        return self.current_value
 
     def is_splittable(self) -> bool:
         return len(self.data.splittable_variables()) > 0
+
+    @property
+    def split(self) -> Split:
+        return self._split
+
+    def is_leaf_node(self):
+        return True
 
 
 class SplitNode(TreeNode):
@@ -149,9 +186,13 @@ class SplitNode(TreeNode):
         self.split = split
         super().__init__(data, left_child_node, right_child_node)
 
+    def is_leaf_parent(self) -> bool:
+        return self.left_child.is_leaf_node() and self.right_child.is_leaf_node()
+
     def update_data(self, data: Data):
         self._data = data
-        left_data, right_data = data.split_data(self.split)
+        left_data = self.left_child.split.split_data(data)
+        right_data = self.right_child.split.split_data(data)
         self.left_child.update_data(left_data)
         self.right_child.update_data(right_data)
 
@@ -167,7 +208,22 @@ class TreeStructure:
     def __init__(self, head: TreeNode):
         self.head = head
         self.cache_up_to_date = False
-        self._prediction = self.predict()
+        self._prediction = np.zeros_like(self.head.data.y)
+        head_downstream = list(self.head.downstream_generator())
+        starting_leaves = [x for x in head_downstream if x.is_leaf_node()]
+        self._leaf_nodes = starting_leaves
+        starting_leaf_parents = [x for x in head_downstream if x.is_leaf_parent()]
+        self._leaf_parents = starting_leaf_parents
+        self._leaf_node_map = np.array([self.head] * self.head.data.n_obsv)
+
+    def update_leaf_node_map(self, mutation: TreeMutation) -> None:
+        if mutation.kind == "grow":
+            self._leaf_node_map[mutation.updated_node.left_child.split] = mutation.updated_node.left_child
+            self._leaf_node_map[mutation.updated_node.right_child.split] = mutation.updated_node.right_child
+        if mutation.kind == "prune":
+            self._leaf_node_map[mutation.existing_node.split] = mutation.updated_node
+        if mutation.kind == "change":
+            self._leaf_node_map[mutation.existing_node.split] = mutation.updated_node
 
     def nodes(self) -> List[TreeNode]:
         """
@@ -195,7 +251,7 @@ class TreeStructure:
             all_nodes.append(n)
         return all_nodes
 
-    def leaf_nodes(self) -> Set[LeafNode]:
+    def leaf_nodes(self) -> List[LeafNode]:
         """
 
         Returns
@@ -214,7 +270,7 @@ class TreeStructure:
         >>> c == list(nodes)[0]
         True
         """
-        return {x for x in self.nodes() if x.is_leaf_node()}
+        return self._leaf_nodes
 
     def split_nodes(self) -> Set[TreeNode]:
         """
@@ -237,10 +293,8 @@ class TreeStructure:
         """
         return {x for x in self.nodes() if not x.is_leaf_node()}
 
-    def leaf_parents(self) -> Set[SplitNode]:
-        split_nodes = self.split_nodes()
-        leaf_parents = {x for x in split_nodes if x.left_child.is_leaf_node() and x.right_child.is_leaf_node()}
-        return leaf_parents
+    def leaf_parents(self) -> List[SplitNode]:
+        return self._leaf_parents
 
     def random_leaf_node(self) -> LeafNode:
         return np.random.choice(list(self.leaf_nodes()))
@@ -253,7 +307,7 @@ class TreeStructure:
             raise NoSplittableVariableException()
 
     def random_leaf_parent(self) -> SplitNode:
-        leaf_parents = list(self.leaf_parents())
+        leaf_parents = self.leaf_parents()
         if len(leaf_parents) == 0:
             raise NoPrunableNodeException
         return np.random.choice(leaf_parents)
@@ -262,23 +316,54 @@ class TreeStructure:
         return self.head.downstream_residuals()
 
     def update_node(self, mutation: TreeMutation) -> None:
+
         if self.head == mutation.existing_node:
             self.head = mutation.updated_node
         else:
             self.head.update_node(mutation)
         self.cache_up_to_date = False
 
+        if mutation.kind == "prune":
+            self._leaf_nodes.append(mutation.updated_node)
+            self._leaf_nodes.remove(mutation.existing_node.left_child)
+            self._leaf_nodes.remove(mutation.existing_node.right_child)
+            self._leaf_parents = [x for x in self.head.downstream_generator() if x.is_leaf_parent()]
+
+        if mutation.kind == "grow":
+            self._leaf_nodes.remove(mutation.existing_node)
+            self._leaf_nodes.append(mutation.updated_node.left_child)
+            self._leaf_nodes.append(mutation.updated_node.right_child)
+            self._leaf_parents = [x for x in self.head.downstream_generator() if x.is_leaf_parent()]
+
+        if mutation.kind == "change":
+            self._leaf_nodes.remove(mutation.existing_node.left_child)
+            self._leaf_nodes.remove(mutation.existing_node.right_child)
+            self._leaf_nodes.append(mutation.updated_node.left_child)
+            self._leaf_nodes.append(mutation.updated_node.right_child)
+            self._leaf_parents = [x for x in self.head.downstream_generator() if x.is_leaf_parent()]
+
     def predict(self) -> pd.Series:
         if self.cache_up_to_date:
             return self._prediction
-        return self.head.predict().sort_index()
+        for leaf in self.leaf_nodes():
+            condition = leaf.split.condition(self.head.data)
+            self._prediction[condition] = leaf.predict()
+        return self._prediction
 
     def update_data(self, data: Data) -> None:
         self.cache_up_to_date = False
         return self.head.update_data(data)
 
 
-def split_node(node: LeafNode, variable_prior=None) -> SplitNode:
+def split_node(node: LeafNode, split_condition: SplitCondition) -> SplitNode:
+    left_split = node.split + split_condition.left
+    right_split = node.split + split_condition.right
+    left_data = left_split.split_data(node.data)
+    right_data = right_split.split_data(node.data)
+    return SplitNode(node.data, node.split, LeafNode(left_data, left_split), LeafNode(right_data, right_split))
+
+
+def sample_split_node(node: LeafNode, variable_prior=None) -> SplitNode:
     """
     Split a leaf node into an internal node with two lead children
     The variable and value to split on is determined by sampling from their respective distributions
@@ -298,7 +383,7 @@ def split_node(node: LeafNode, variable_prior=None) -> SplitNode:
     --------
     >>> data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 1, 2]}), np.array([1, 1, 1]))
     >>> node = TreeNode(data)
-    >>> new_node = split_node(node)
+    >>> new_node = sample_split_node(node)
     >>> new_node.left_child is not None
     True
     >>> new_node.right_child is not None
@@ -310,18 +395,14 @@ def split_node(node: LeafNode, variable_prior=None) -> SplitNode:
 
     >>> unsplittable_data = Data(pd.DataFrame({"a": [1, 1], "b": [1, 1]}), np.array([1, 1, 1]))
     >>> unsplittable_node = TreeNode(unsplittable_data)
-    >>> split_node(unsplittable_node) == unsplittable_node
+    >>> sample_split_node(unsplittable_node) == unsplittable_node
     True
     """
     if not node.is_splittable():
         raise NoSplittableVariableException()
     else:
-        split = sample_split(node.data, variable_prior)
-        split_data = node.data.split_data(split)
-        left_child_node = LeafNode(split_data.left_data)
-        right_child_node = LeafNode(split_data.right_data)
-
-        return SplitNode(node.data, split, left_child_node, right_child_node)
+        condition = sample_split_condition(node.data, variable_prior)
+        return split_node(node, condition)
 
 
 def is_terminal(depth: int, alpha: float, beta: float) -> bool:
@@ -345,7 +426,7 @@ def is_terminal(depth: int, alpha: float, beta: float) -> bool:
 
 def sample_tree_structure_from_node(node: LeafNode, depth: int, alpha: float, beta: float, variable_prior=None) -> TreeNode:
     if depth == 0:
-        updated_node = split_node(node)
+        updated_node = sample_split_node(node)
         updated_node.update_left_child(sample_tree_structure_from_node(updated_node.left_child, depth + 1, alpha, beta, variable_prior))
         updated_node.update_right_child(sample_tree_structure_from_node(updated_node.right_child, depth + 1, alpha, beta, variable_prior))
         return updated_node
@@ -355,7 +436,7 @@ def sample_tree_structure_from_node(node: LeafNode, depth: int, alpha: float, be
         return node
 
     try:
-        updated_node = split_node(node, variable_prior)
+        updated_node = sample_split_node(node, variable_prior)
         updated_node.update_left_child(sample_tree_structure_from_node(updated_node.left_child, depth + 1, alpha, beta, variable_prior))
         updated_node.update_right_child(sample_tree_structure_from_node(updated_node.right_child, depth + 1, alpha, beta, variable_prior))
         return updated_node
