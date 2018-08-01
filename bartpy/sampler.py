@@ -212,7 +212,7 @@ class Sampler:
         tree_sampler = TreeMutationSampler(self.model, tree, self.proposer)
         tree_mutation = tree_sampler.sample()
         if tree_mutation is not None:
-            tree.update_node(tree_mutation)
+            tree.mutate(tree_mutation)
 
         for node in tree.leaf_nodes():
             self.step_leaf(node)
@@ -266,7 +266,7 @@ if __name__ == "__main__":
     print(sample)
     tree = model.trees[0]
     print(tree.leaf_nodes())
-    tree.update_node(sample)
+    tree.mutate(sample)
     print(tree.leaf_nodes())
     # proposal = prune_proposer.propose(model.trees[0])
     # print(proposal)

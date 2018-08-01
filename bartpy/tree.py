@@ -317,14 +317,13 @@ class TreeStructure:
             raise NoPrunableNodeException
         return np.random.choice(leaf_parents)
 
-    def update_node(self, mutation: TreeMutation) -> None:
+    def mutate(self, mutation: TreeMutation) -> None:
+        self.cache_up_to_date = False
 
         if self.head == mutation.existing_node:
             self.head = mutation.updated_node
         else:
             self.head.update_node(mutation)
-
-        self.cache_up_to_date = False
 
         if mutation.kind == "prune":
             self._split_nodes.remove(mutation.existing_node)

@@ -14,7 +14,7 @@ class TestTreeStructureNodeRetrieval(TestCase):
         self.tree_structure = TreeStructure(self.a)
 
         self.c = split_node(self.a._right_child, SplitCondition("b", 1))
-        self.tree_structure.update_node(TreeMutation("grow", self.a.right_child, self.c))
+        self.tree_structure.mutate(TreeMutation("grow", self.a.right_child, self.c))
 
         self.b = self.a.left_child
         self.d = self.c.left_child
@@ -62,7 +62,7 @@ class TestTreeStructureDataUpdate(TestCase):
         self.tree_structure = TreeStructure(self.a)
 
         self.c = split_node(self.a._right_child, SplitCondition("b", 2))
-        self.tree_structure.update_node(TreeMutation("grow", self.a.right_child, self.c))
+        self.tree_structure.mutate(TreeMutation("grow", self.a.right_child, self.c))
 
         self.b = self.a.left_child
         self.d = self.c.left_child
@@ -104,7 +104,7 @@ class TestTreeStructureMutation(TestCase):
         f, g = LeafNode(None, None), LeafNode(None, None)
         updated_d = SplitNode(None, None, f, g)
         grow_mutation = TreeMutation("grow", self.d, updated_d)
-        self.tree_structure.update_node(grow_mutation)
+        self.tree_structure.mutate(grow_mutation)
         self.assertIn(updated_d, self.tree_structure.split_nodes())
         self.assertIn(updated_d, self.tree_structure.leaf_parents())
         self.assertIn(f, self.tree_structure.leaf_nodes())
@@ -116,14 +116,14 @@ class TestTreeStructureMutation(TestCase):
         updated_a = LeafNode(None)
         print(a.is_leaf_parent())
         prune_mutation = PruneMutation(a, updated_a)
-        tree_structure.update_node(prune_mutation)
+        tree_structure.mutate(prune_mutation)
         self.assertIn(updated_a, tree_structure.leaf_nodes())
         self.assertNotIn(self.a, tree_structure.nodes())
 
     def test_internal_prune(self):
         updated_c = LeafNode(None)
         prune_mutation = TreeMutation("prune", self.c, updated_c)
-        self.tree_structure.update_node(prune_mutation)
+        self.tree_structure.mutate(prune_mutation)
         self.assertIn(updated_c, self.tree_structure.leaf_nodes())
         self.assertNotIn(self.c, self.tree_structure.nodes())
         self.assertNotIn(self.d, self.tree_structure.nodes())
