@@ -206,6 +206,9 @@ class SplitNode(TreeNode):
     def predict(self) -> pd.Series:
         return pd.concat([self.left_child.predict(), self.right_child.predict()])
 
+    def children_split(self) -> SplitCondition:
+        return self.left_child.split.most_recent_split_condition()
+
 
 class TreeStructure:
     """
@@ -291,6 +294,12 @@ class TreeStructure:
 
     def leaf_parents(self) -> List[SplitNode]:
         return [x for x in self.split_nodes() if x.is_leaf_parent()]
+
+    def n_leaf_nodes(self) -> int:
+        return len(self.leaf_nodes())
+
+    def n_leaf_parents(self) -> int:
+        return len(self.leaf_parents())
 
     def random_leaf_node(self) -> LeafNode:
         return np.random.choice(list(self.leaf_nodes()))

@@ -211,6 +211,13 @@ class Data:
     def n_obsv(self) -> int:
         return len(self.X)
 
+    @property
+    def n_splittable_variables(self) -> int:
+        return len(self.splittable_variables())
+
+    def n_unique_values(self, variable: str) -> int:
+        return len(self.unique_values(variable))
+
     @staticmethod
     def normalize_y(y: pd.Series) -> pd.Series:
         """
