@@ -54,10 +54,12 @@ class LTESplitCondition:
 
 class Split:
 
-    def __init__(self, split_conditions: List[Union[LTESplitCondition, GTSplitCondition]]):
+    def __init__(self, data: 'Data', split_conditions: List[Union[LTESplitCondition, GTSplitCondition]]):
         self._conditions = split_conditions
+        self._data = data
+        self._combined_condition = self.combined_condition(self._data)
 
-    def condition(self, data):
+    def combined_condition(self, data):
         if len(self._conditions) == 0:
             return [True] * data.n_obsv
         if len(self._conditions) == 1:
@@ -68,8 +70,14 @@ class Split:
                 final_condition = final_condition & c.condition(data)
             return final_condition
 
-    def __add__(self, other: 'SplitCondition'):
-        return Split(self._conditions + [other])
+    def condition(self, data: 'Data'=None):
+        if data is None:
+            return self._combined_condition
+        else:
+            return self.combined_condition(data)
+
+    def __add__(self, other: Union[LTESplitCondition, GTSplitCondition]):
+        return Split(self._data, self._conditions + [other])
 
     def most_recent_split_condition(self) -> Optional[Union[LTESplitCondition, GTSplitCondition]]:
         if len(self._conditions) > 0:

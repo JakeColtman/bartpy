@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     print(model.predict())
 
-    s = sampler.samples(100, 200)
+    s = sampler.samples(50, 50)
     predictions = s.mean(axis=0)
     for ii in range(len(predictions)):
         print(predictions[ii], " - ", data.y[ii])

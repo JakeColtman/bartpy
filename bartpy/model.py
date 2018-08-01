@@ -24,7 +24,7 @@ class Model:
     def initialize_trees(self) -> List[TreeStructure]:
         tree_data = deepcopy(self.data)
         tree_data._y = tree_data.y / self.n_trees
-        trees = [TreeStructure(LeafNode(tree_data, Split([]))) for _ in range(self.n_trees)]
+        trees = [TreeStructure(LeafNode(tree_data, Split(self.data, []))) for _ in range(self.n_trees)]
         return trees
 
     def residuals(self) -> pd.Series:

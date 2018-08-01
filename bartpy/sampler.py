@@ -229,19 +229,11 @@ class Sampler:
     def samples(self, n_samples: int, n_burn: int) -> np.ndarray:
         for bb in range(n_burn):
             print(bb)
-
             self.step()
-            print(self.model.sigma.current_value())
-
-            print([len(x.nodes()) for x in self.model.trees])
-            print([len(set(x.nodes())) for x in self.model.trees])
-            print(self.model.residuals())
         trace = []
         for ss in range(n_samples):
             print(ss)
             self.step()
-            print([len(x.nodes()) for x in self.model.trees])
-            print(self.model.sigma.current_value())
             trace.append(self.model.predict())
         return np.array(trace)
 

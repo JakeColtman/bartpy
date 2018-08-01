@@ -145,7 +145,7 @@ class LeafNode(TreeNode):
         self._value = 0.0
         self._residuals = 0.0
         if split is None:
-            self._split = Split([])
+            self._split = Split(data, [])
         else:
             self._split = split
         super().__init__(data, depth, None, None)
@@ -356,7 +356,7 @@ class TreeStructure:
     def update_data(self, data: Data) -> None:
         self.cache_up_to_date = False
         for node in self.nodes():
-            node.data._y = data.y[node.split.condition(data)]
+            node.data._y = data.y[node.split.condition()]
 
 
 def split_node(node: LeafNode, split_condition: SplitCondition) -> SplitNode:

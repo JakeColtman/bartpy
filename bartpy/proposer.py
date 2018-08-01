@@ -40,8 +40,6 @@ class PruneTreeMutationProposer(TreeMutationProposer):
         try:
             return PruneMutation(node, updated_node)
         except:
-            print(self.tree_structure.leaf_parents())
-            print([x.is_leaf_parent() for x in self.tree_structure.leaf_parents()])
             raise
 
 
