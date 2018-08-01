@@ -6,8 +6,8 @@ import pandas as pd
 
 from bartpy.data import Data
 from bartpy.sigma import Sigma
-from bartpy.tree import sample_tree_structure, TreeStructure, LeafNode
-from bartpy.data import Split, SplitCondition
+from bartpy.tree import TreeStructure, LeafNode
+from bartpy.data import Split
 
 
 class Model:

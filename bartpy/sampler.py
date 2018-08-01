@@ -5,8 +5,13 @@ from scipy.stats import invgamma
 
 from bartpy.model import Model
 from bartpy.proposer import Proposer
-from bartpy.tree import TreeStructure, LeafNode, TreeMutation, GrowMutation, ChangeMutation, PruneMutation
+from bartpy.tree import SplitNode, TreeStructure, LeafNode, TreeMutation, GrowMutation, ChangeMutation, PruneMutation
 from bartpy.sigma import Sigma
+
+
+def prob_node_split(model: Model, node: SplitNode):
+    print(node.depth)
+    return model.alpha * np.power(1 + node.depth, -model.beta)
 
 
 def likihood_node(node: LeafNode, sigma: Sigma, sigma_mu: float) -> float:
@@ -35,9 +40,12 @@ class SigmaSampler:
         self.sigma = sigma
 
     def sample(self) -> float:
-        posterior_alpha = self.sigma.alpha + self.model.data.n_obsv
-        posterior_beta = self.sigma.beta + (0.5 * (np.sum(self.model.residuals())))
-        return invgamma(posterior_alpha, posterior_beta).rvs(1)[0]
+        posterior_alpha = self.sigma.alpha + (self.model.data.n_obsv / 2.)
+        print(self.model.residuals())
+        print("-------")
+        print(np.sum(np.power(self.model.residuals(), 2)))
+        posterior_beta = self.sigma.beta + (0.5 * (np.sum(np.power(self.model.residuals(), 2))))
+        return np.power(invgamma(posterior_alpha, posterior_beta).rvs(1)[0], 0.5)
 
 
 class LeafNodeSampler:
@@ -50,11 +58,11 @@ class LeafNodeSampler:
         prior_var = self.model.sigma_m ** 2
         n = self.node.data.n_obsv
         likihood_var = (self.model.sigma.current_value() ** 2) / n
-        likihood_mean = np.mean(self.node.residuals())
-
+        likihood_mean = np.mean(self.node.data.y)
         posterior_variance = 1. / (1. / prior_var + 1. / likihood_var)
         posterior_mean = likihood_mean * (prior_var / (likihood_var + prior_var))
-        return np.random.normal(posterior_mean, posterior_variance)
+        print(posterior_mean, posterior_variance, prior_var)
+        return np.random.normal(posterior_mean, np.power(posterior_variance / self.model.data.n_obsv, 0.5))
 
 
 class TreeMutationSampler:
@@ -114,13 +122,33 @@ class TreeMutationSampler:
 
     def tree_structure_ratio(self, proposal: TreeMutation):
         if proposal.kind == "grow":
-            return self.likihood_ratio_grow(proposal)
+            return self.tree_structure_ratio_grow(proposal)
         if proposal.kind == "prune":
-            return self.likihood_ratio_prune(proposal)
+            return self.tree_structure_ratio_prune(proposal)
         if proposal.kind == "change":
             return self.tree_structure_ratio_change(proposal)
 
-    def tree_structure_ratio_change(self, proposal: TreeMutation):
+    def tree_structure_ratio_grow(self, proposal: GrowMutation):
+        denominator = 1. - prob_node_split(self.model, proposal.existing_node)
+        prob_left_not_split = (1. - prob_node_split(self.model, proposal.updated_node.left_child))
+        prob_right_not_split = (1. - prob_node_split(self.model, proposal.updated_node.left_child))
+        prob_updated_node_split = prob_node_split(self.model, proposal.updated_node)
+        prob_split_variable = 1.0 / len(proposal.existing_node.data.variables)
+        prob_split_value = 1.0 / len(proposal.existing_node.data.unique_values(proposal.updated_node.left_child.split.most_recent_split_condition().splitting_variable))
+        numerator = prob_left_not_split * prob_right_not_split * prob_updated_node_split * prob_split_variable * prob_split_value
+        return numerator / denominator
+
+    def tree_structure_ratio_prune(self, proposal: PruneMutation):
+        numerator = 1. - prob_node_split(self.model, proposal.updated_node)
+        prob_left_not_split = (1. - prob_node_split(self.model, proposal.existing_node.left_child))
+        prob_right_not_split = (1. - prob_node_split(self.model, proposal.existing_node.left_child))
+        prob_updated_node_split = prob_node_split(self.model, proposal.existing_node)
+        prob_split_variable = 1.0 / len(proposal.updated_node.data.variables)
+        prob_split_value = 1.0 / len(proposal.updated_node.data.unique_values(proposal.existing_node.left_child.split.most_recent_split_condition().splitting_variable))
+        denominator = prob_left_not_split * prob_right_not_split * prob_updated_node_split * prob_split_variable * prob_split_value
+        return numerator / denominator
+
+    def tree_structure_ratio_change(self, proposal: ChangeMutation):
         return 1.0
 
     def likihood_ratio(self, proposal: TreeMutation):
@@ -193,6 +221,7 @@ class Sampler:
 
             print([len(x.nodes()) for x in self.model.trees])
             print([len(set(x.nodes())) for x in self.model.trees])
+            print(self.model.residuals())
         trace = []
         for ss in range(n_samples):
             print(ss)

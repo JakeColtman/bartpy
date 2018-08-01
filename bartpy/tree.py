@@ -49,8 +49,9 @@ class ChangeMutation(TreeMutation):
 
 class TreeNode(ABC):
 
-    def __init__(self, data: Data, left_child: 'TreeNode'=None, right_child: 'TreeNode'=None):
+    def __init__(self, data: Data, depth: int, left_child: 'TreeNode'=None, right_child: 'TreeNode'=None):
         self._data = data
+        self.depth = depth
         self._left_child = left_child
         self._right_child = right_child
 
@@ -140,14 +141,14 @@ class TreeNode(ABC):
 
 class LeafNode(TreeNode):
 
-    def __init__(self, data: Data, split: Split=None):
+    def __init__(self, data: Data, split: Split=None, depth=0):
         self._value = 0.0
         self._residuals = 0.0
         if split is None:
             self._split = Split([])
         else:
             self._split = split
-        super().__init__(data, None, None)
+        super().__init__(data, depth, None, None)
 
     def set_value(self, value: float) -> None:
         self._value = value
@@ -185,9 +186,9 @@ class LeafNode(TreeNode):
 
 class SplitNode(TreeNode):
 
-    def __init__(self, data: Data, split: Split, left_child_node: LeafNode, right_child_node: LeafNode):
+    def __init__(self, data: Data, split: Split, left_child_node: LeafNode, right_child_node: LeafNode, depth=0):
         self.split = split
-        super().__init__(data, left_child_node, right_child_node)
+        super().__init__(data, depth, left_child_node, right_child_node)
 
     def is_leaf_parent(self) -> bool:
         return self.left_child.is_leaf_node() and self.right_child.is_leaf_node()
@@ -355,7 +356,7 @@ def split_node(node: LeafNode, split_condition: SplitCondition) -> SplitNode:
     right_split = node.split + split_condition.right
     left_data = left_split.split_data(node.data)
     right_data = right_split.split_data(node.data)
-    return SplitNode(node.data, node.split, LeafNode(left_data, left_split), LeafNode(right_data, right_split))
+    return SplitNode(node.data, node.split, LeafNode(left_data, left_split, depth=node.depth + 1), LeafNode(right_data, right_split, depth=node.depth+1), depth=node.depth)
 
 
 def sample_split_node(node: LeafNode, variable_prior=None) -> SplitNode:
@@ -398,52 +399,6 @@ def sample_split_node(node: LeafNode, variable_prior=None) -> SplitNode:
     else:
         condition = sample_split_condition(node.data, variable_prior)
         return split_node(node, condition)
-
-
-def is_terminal(depth: int, alpha: float, beta: float) -> bool:
-    """
-    Determine whether a node is a leaf node or should be split on
-
-    Parameters
-    ----------
-    depth
-    alpha
-    beta
-
-    Returns
-    -------
-    bool
-        True means no more splits should be done
-    """
-    r = np.random.uniform(0, 1)
-    return r < alpha * np.power(1 + depth, -beta)
-
-
-def sample_tree_structure_from_node(node: LeafNode, depth: int, alpha: float, beta: float, variable_prior=None) -> TreeNode:
-    if depth == 0:
-        updated_node = sample_split_node(node)
-        updated_node.update_left_child(sample_tree_structure_from_node(updated_node.left_child, depth + 1, alpha, beta, variable_prior))
-        updated_node.update_right_child(sample_tree_structure_from_node(updated_node.right_child, depth + 1, alpha, beta, variable_prior))
-        return updated_node
-
-    terminal = is_terminal(depth, alpha, beta)
-    if terminal:
-        return node
-
-    try:
-        updated_node = sample_split_node(node, variable_prior)
-        updated_node.update_left_child(sample_tree_structure_from_node(updated_node.left_child, depth + 1, alpha, beta, variable_prior))
-        updated_node.update_right_child(sample_tree_structure_from_node(updated_node.right_child, depth + 1, alpha, beta, variable_prior))
-        return updated_node
-    except NoSplittableVariableException:
-        return node
-
-
-def sample_tree_structure(data: Data, alpha: float, beta: float, variable_prior=None) -> TreeStructure:
-    node = LeafNode(data)
-    head = sample_tree_structure_from_node(node, 0, alpha, beta, variable_prior)
-    return TreeStructure(head)
-
 
 
 #
