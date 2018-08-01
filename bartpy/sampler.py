@@ -78,7 +78,7 @@ class LeafNodeSampler:
         likihood_mean = np.mean(self.node.data.y)
         posterior_variance = 1. / (1. / prior_var + 1. / likihood_var)
         posterior_mean = likihood_mean * (prior_var / (likihood_var + prior_var))
-        return np.random.normal(posterior_mean, np.power(posterior_variance / self.model.data.n_obsv, 0.5))
+        return np.random.normal(posterior_mean, np.power(posterior_variance / self.model.n_trees, 0.5))
 
 
 class TreeMutationSampler:

@@ -8,7 +8,7 @@ from bartpy.data import Split, Data, sample_split_condition, SplitCondition
 from bartpy.errors import NoSplittableVariableException, NoPrunableNodeException
 
 
-class TreeMutation:
+class TreeMutation(ABC):
 
     def __init__(self, kind: str, existing_node: 'TreeNode', updated_node: Optional['TreeNode']):
         if kind not in ["grow", "change", "prune"]:
