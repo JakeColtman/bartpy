@@ -9,29 +9,32 @@ from bartpy.tree import SplitNode, TreeStructure, LeafNode, TreeMutation, GrowMu
 from bartpy.sigma import Sigma
 
 
-def prob_node_split(model: Model, node: SplitNode):
-    print(node.depth)
-    return model.alpha * np.power(1 + node.depth, -model.beta)
+def log_probability_node_split(model: Model, node: SplitNode):
+    return np.log(model.alpha * np.power(1 + node.depth, -model.beta))
 
 
-def probability_split_within_node(mutation: GrowMutation) -> float:
+def log_probability_node_not_split(model: Model, node: SplitNode):
+    return np.log(1. - model.alpha * np.power(1 + node.depth, -model.beta))
+
+
+def log_probability_split_within_node(mutation: GrowMutation) -> float:
     """
     The probability of a node being split in the given way
     """
 
-    prob_splitting_variable_selected = 1.0 / mutation.existing_node.data.n_splittable_variables
+    prob_splitting_variable_selected = - np.log(mutation.existing_node.data.n_splittable_variables)
     splitting_variable = mutation.updated_node.children_split().splitting_variable
-    prob_value_selected_within_variable = 1.0 / mutation.existing_node.data.n_unique_values(splitting_variable)
-    return prob_splitting_variable_selected * prob_value_selected_within_variable
+    prob_value_selected_within_variable = - np.log(mutation.existing_node.data.n_unique_values(splitting_variable))
+    return prob_splitting_variable_selected + prob_value_selected_within_variable
 
 
-def probability_split_within_tree(tree_structure: TreeStructure, mutation: GrowMutation) -> float:
-    prob_node_chosen_to_split_on = 1.0 / tree_structure.n_leaf_nodes()
-    prob_split_chosen = probability_split_within_node(mutation)
-    return prob_node_chosen_to_split_on * prob_split_chosen
+def log_probability_split_within_tree(tree_structure: TreeStructure, mutation: GrowMutation) -> float:
+    prob_node_chosen_to_split_on = - np.log(tree_structure.n_leaf_nodes())
+    prob_split_chosen = log_probability_split_within_node(mutation)
+    return prob_node_chosen_to_split_on + prob_split_chosen
 
 
-def likihood_node(node: LeafNode, sigma: Sigma, sigma_mu: float) -> float:
+def log_likihood_node(node: LeafNode, sigma: Sigma, sigma_mu: float) -> float:
     var = np.power(sigma.current_value(), 2)
     var_mu = np.power(sigma_mu, 2)
 
@@ -47,7 +50,7 @@ def likihood_node(node: LeafNode, sigma: Sigma, sigma_mu: float) -> float:
     fourth_term = (np.power(mean_residual, 2) * np.power(n, 2)) / (n + (var / var_mu))
     fifth_term = n * np.power(mean_residual, 2)
 
-    return first_term * second_term * np.exp(third_term * (sum_sq_error - fourth_term + fifth_term))
+    return np.log(first_term * second_term * np.exp(third_term * (sum_sq_error - fourth_term + fifth_term)))
 
 
 class SigmaSampler:
@@ -94,7 +97,7 @@ class TreeMutationSampler:
             return None
 
     def proposal_ratio(self, proposal: TreeMutation):
-        return self.transition_ratio(proposal) * self.likihood_ratio(proposal) * self.tree_structure_ratio(proposal)
+        return np.exp(self.transition_ratio(proposal) + self.likihood_ratio(proposal) + self.tree_structure_ratio(proposal))
 
     def transition_ratio(self, proposal: TreeMutation):
         if proposal.kind == "grow":
@@ -107,25 +110,25 @@ class TreeMutationSampler:
             raise NotImplementedError("kind {} not supported".format(proposal.kind))
 
     def transition_ratio_grow(self, proposal: GrowMutation):
-        prob_grow_selected = probability_split_within_tree(self.tree_structure, proposal)
-        prob_prune_selected = 1.0 / (self.tree_structure.n_leaf_parents() + 1)
+        prob_grow_selected = log_probability_split_within_tree(self.tree_structure, proposal)
+        prob_prune_selected = - np.log(self.tree_structure.n_leaf_parents() + 1)
 
-        prob_selection_ratio = prob_prune_selected / prob_grow_selected
-        prune_grow_ratio = self.proposer.p_prune / self.proposer.p_grow
+        prob_selection_ratio = prob_prune_selected - prob_grow_selected
+        prune_grow_ratio = np.log(self.proposer.p_prune / self.proposer.p_grow)
 
-        return prune_grow_ratio * prob_selection_ratio
+        return prune_grow_ratio + prob_selection_ratio
 
     def transition_ratio_prune(self, proposal: PruneMutation):
-        prob_grow_node_selected = 1.0 / (self.tree_structure.n_leaf_nodes() - 1)
-        prob_split = probability_split_within_node(GrowMutation(proposal.updated_node, proposal.existing_node))
-        prob_grow_selected = prob_grow_node_selected * prob_split
+        prob_grow_node_selected = - np.log(self.tree_structure.n_leaf_nodes() - 1)
+        prob_split = log_probability_split_within_node(GrowMutation(proposal.updated_node, proposal.existing_node))
+        prob_grow_selected = prob_grow_node_selected + prob_split
 
-        prob_prune_selected = 1.0 / self.tree_structure.n_leaf_parents()
+        prob_prune_selected = - np.log(self.tree_structure.n_leaf_parents())
 
-        prob_selection_ratio = prob_grow_selected / prob_prune_selected
-        grow_prune_ratio = self.proposer.p_grow / self.proposer.p_prune
+        prob_selection_ratio = prob_grow_selected - prob_prune_selected
+        grow_prune_ratio = np.log(self.proposer.p_grow / self.proposer.p_prune)
 
-        return grow_prune_ratio * prob_selection_ratio
+        return grow_prune_ratio + prob_selection_ratio
 
     def transition_ratio_change(self, proposal: ChangeMutation) -> float:
         return 0.0
@@ -139,25 +142,25 @@ class TreeMutationSampler:
             return self.tree_structure_ratio_change(proposal)
 
     def tree_structure_ratio_grow(self, proposal: GrowMutation):
-        denominator = 1. - prob_node_split(self.model, proposal.existing_node)
+        denominator = log_probability_node_not_split(self.model, proposal.existing_node)
 
-        prob_left_not_split = (1. - prob_node_split(self.model, proposal.updated_node.left_child))
-        prob_right_not_split = (1. - prob_node_split(self.model, proposal.updated_node.left_child))
-        prob_chosen_split = probability_split_within_tree(self.tree_structure, proposal)
-        numerator = prob_left_not_split * prob_right_not_split * prob_chosen_split
+        prob_left_not_split = log_probability_node_not_split(self.model, proposal.updated_node.left_child)
+        prob_right_not_split = log_probability_node_not_split(self.model, proposal.updated_node.left_child)
+        prob_chosen_split = log_probability_split_within_tree(self.tree_structure, proposal)
+        numerator = prob_left_not_split + prob_right_not_split + prob_chosen_split
 
-        return numerator / denominator
+        return numerator - denominator
 
     def tree_structure_ratio_prune(self, proposal: PruneMutation):
-        numerator = 1. - prob_node_split(self.model, proposal.updated_node)
+        numerator = log_probability_node_not_split(self.model, proposal.updated_node)
 
-        prob_left_not_split = (1. - prob_node_split(self.model, proposal.existing_node.left_child))
-        prob_right_not_split = (1. - prob_node_split(self.model, proposal.existing_node.left_child))
-        prob_updated_node_split = prob_node_split(self.model, proposal.existing_node)
-        prob_chosen_split = probability_split_within_node(GrowMutation(proposal.updated_node, proposal.existing_node))
-        denominator = prob_left_not_split * prob_right_not_split * prob_updated_node_split * prob_chosen_split
+        prob_left_not_split = log_probability_node_not_split(self.model, proposal.existing_node.left_child)
+        prob_right_not_split = log_probability_node_not_split(self.model, proposal.existing_node.left_child)
+        prob_updated_node_split = log_probability_node_split(self.model, proposal.existing_node)
+        prob_chosen_split = log_probability_split_within_node(GrowMutation(proposal.updated_node, proposal.existing_node))
+        denominator = prob_left_not_split + prob_right_not_split + prob_updated_node_split + prob_chosen_split
 
-        return numerator / denominator
+        return numerator - denominator
 
     def tree_structure_ratio_change(self, proposal: ChangeMutation):
         return 0.0
@@ -171,28 +174,28 @@ class TreeMutationSampler:
             return self.likihood_ratio_change(proposal)
 
     def likihood_ratio_grow(self, proposal: TreeMutation):
-        left_child_likihood = likihood_node(proposal.updated_node.left_child, self.model.sigma, self.model.sigma_m)
-        right_child_likihood = likihood_node(proposal.updated_node.right_child, self.model.sigma, self.model.sigma_m)
-        numerator = left_child_likihood * right_child_likihood
-        denom = likihood_node(proposal.existing_node, self.model.sigma, self.model.sigma_m)
-        return numerator / denom
+        left_child_likihood = log_likihood_node(proposal.updated_node.left_child, self.model.sigma, self.model.sigma_m)
+        right_child_likihood = log_likihood_node(proposal.updated_node.right_child, self.model.sigma, self.model.sigma_m)
+        numerator = left_child_likihood + right_child_likihood
+        denom = log_likihood_node(proposal.existing_node, self.model.sigma, self.model.sigma_m)
+        return numerator - denom
 
     def likihood_ratio_prune(self, proposal: TreeMutation):
-        numerator = likihood_node(proposal.updated_node, self.model.sigma, self.model.sigma_m)
-        left_child_likihood = likihood_node(proposal.existing_node.left_child, self.model.sigma, self.model.sigma_m)
-        right_child_likihood = likihood_node(proposal.existing_node.right_child, self.model.sigma, self.model.sigma_m)
-        denom = left_child_likihood * right_child_likihood
-        return numerator / denom
+        numerator = log_likihood_node(proposal.updated_node, self.model.sigma, self.model.sigma_m)
+        left_child_likihood = log_likihood_node(proposal.existing_node.left_child, self.model.sigma, self.model.sigma_m)
+        right_child_likihood = log_likihood_node(proposal.existing_node.right_child, self.model.sigma, self.model.sigma_m)
+        denom = left_child_likihood + right_child_likihood
+        return numerator - denom
 
     def likihood_ratio_change(self, proposal: TreeMutation):
-        left_child_likihood = likihood_node(proposal.existing_node.left_child, self.model.sigma, self.model.sigma_m)
-        right_child_likihood = likihood_node(proposal.existing_node.right_child, self.model.sigma, self.model.sigma_m)
-        denom = left_child_likihood * right_child_likihood
+        left_child_likihood = log_likihood_node(proposal.existing_node.left_child, self.model.sigma, self.model.sigma_m)
+        right_child_likihood = log_likihood_node(proposal.existing_node.right_child, self.model.sigma, self.model.sigma_m)
+        denom = left_child_likihood + right_child_likihood
 
-        left_child_likihood = likihood_node(proposal.updated_node.left_child, self.model.sigma, self.model.sigma_m)
-        right_child_likihood = likihood_node(proposal.updated_node.right_child, self.model.sigma, self.model.sigma_m)
-        numerator = left_child_likihood * right_child_likihood
-        return numerator / denom
+        left_child_likihood = log_likihood_node(proposal.updated_node.left_child, self.model.sigma, self.model.sigma_m)
+        right_child_likihood = log_likihood_node(proposal.updated_node.right_child, self.model.sigma, self.model.sigma_m)
+        numerator = left_child_likihood + right_child_likihood
+        return numerator - denom
 
 
 class Sampler:
