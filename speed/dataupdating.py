@@ -22,12 +22,11 @@ def update_data():
     c = split_node(a._right_child, SplitCondition("b", 2))
     tree_structure.mutate(TreeMutation("grow", a.right_child, c))
 
-    new_data = deepcopy(data)
-    new_data._y = pd.Series(np.random.uniform(0, 3, size=3))
+    new_y = pd.Series(np.random.uniform(0, 3, size=3))
     print(datetime.now())
 
     for _ in range(50 * 20):
-        tree_structure.update_y(new_data)
+        tree_structure.update_y(new_y)
 
 
 def predict():
@@ -41,12 +40,11 @@ def predict():
     c = split_node(a._right_child, SplitCondition("b", 2))
     tree_structure.mutate(TreeMutation("grow", a.right_child, c))
 
-    new_data = deepcopy(data)
-    new_data._y = pd.Series(np.random.normal(0, 1, 10000))
+    new_y = pd.Series(np.random.normal(0, 1, 10000))
     print(datetime.now())
 
     for _ in range(50 * 20):
-        tree_structure.update_y(new_data)
+        tree_structure.update_y(new_y)
         tree_structure.predict()
 
 

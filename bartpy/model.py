@@ -45,7 +45,7 @@ class Model:
 
     def refreshed_trees(self) -> Generator[TreeStructure, None, None]:
         for index, tree in enumerate(self.trees):
-            tree.update_y(Data(self.data.X, self.residuals_without_tree(index)))
+            tree.update_y(self.residuals_without_tree(index))
             yield tree
 
     @property
