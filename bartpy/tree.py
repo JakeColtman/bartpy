@@ -1,12 +1,12 @@
 from abc import abstractmethod, ABC
-from typing import List, Set, Generator, Optional
+from typing import List, Set, Generator, Optional, Union
 
 import numpy as np
 import pandas as pd
 
 from bartpy.data import Data
 from bartpy.errors import NoSplittableVariableException, NoPrunableNodeException
-from bartpy.split import Split, sample_split_condition, SplitCondition
+from bartpy.split import Split, sample_split_condition, SplitCondition, LTESplitCondition, GTSplitCondition
 
 
 class TreeMutation(ABC):
@@ -50,14 +50,13 @@ class ChangeMutation(TreeMutation):
 
 class TreeNode(ABC):
 
-    def __init__(self, data: Data, split: Split, depth: int, left_child: 'TreeNode'=None, right_child: 'TreeNode'=None):
-        self._data = data
+    def __init__(self, split: Split, depth: int, left_child: 'TreeNode'=None, right_child: 'TreeNode'=None):
         self.depth = depth
         self._split = split
         self._left_child = left_child
         self._right_child = right_child
 
-    def update_node(self, mutation: TreeMutation) -> bool:
+    def mutate(self, mutation: TreeMutation) -> bool:
         if self.left_child == mutation.existing_node:
             self._left_child = mutation.updated_node
             return True
@@ -65,11 +64,11 @@ class TreeNode(ABC):
             self._right_child = mutation.updated_node
             return True
         else:
-            found_left = self.left_child.update_node(mutation)
+            found_left = self.left_child.mutate(mutation)
             if found_left:
                 return True
             else:
-                found_right = self.right_child.update_node(mutation)
+                found_right = self.right_child.mutate(mutation)
                 return found_right
 
     def downstream_generator(self) -> Generator['TreeNode', None, None]:
@@ -100,18 +99,12 @@ class TreeNode(ABC):
                 yield x
         yield self
 
-    def residuals(self) -> np.ndarray:
-        return np.zeros_like(self.data.y)
-
     def update_data(self, data: Data) -> None:
-        raise NotImplementedError()
-
-    def downstream_residuals(self):
-        return self.residuals() + self.left_child.residuals() + self.right_child.residuals()
+        self._split._data = data
 
     @property
     def data(self) -> Data:
-        return self._data
+        return self.split.data
 
     @property
     def left_child(self) -> 'TreeNode':
@@ -121,21 +114,11 @@ class TreeNode(ABC):
     def right_child(self) -> 'TreeNode':
         return self._right_child
 
-    def update_left_child(self, node: Optional['TreeNode']):
-        self._left_child = node
-
-    def update_right_child(self, node: Optional['TreeNode']):
-        self._right_child = node
-
     def is_leaf_node(self) -> bool:
         return self.left_child is None and self.right_child is None
 
     def is_leaf_parent(self) -> bool:
         return False
-
-    @abstractmethod
-    def predict(self) -> pd.Series:
-        raise NotImplementedError()
 
     def is_split_node(self) -> bool:
         return False
@@ -147,34 +130,25 @@ class TreeNode(ABC):
 
 class LeafNode(TreeNode):
 
-    def __init__(self, data: Data, split: Split=None, depth=0):
+    def __init__(self, split: Split, depth=0):
         self._value = 0.0
         self._residuals = 0.0
-        if split is None:
-            split = Split(data, [])
-        super().__init__(data, split, depth, None, None)
+        super().__init__(split, depth, None, None)
 
     def set_value(self, value: float) -> None:
         self._value = value
-        # if isinstance(value, float):
-        #     self._value = value
-        # else:
-        #     raise TypeError("LeafNode values can only be floats, found {}".format(type(value)))
 
     def residuals(self) -> np.ndarray:
         return self.data.y - self.current_value
 
-    def update_node(self, mutation: TreeMutation) -> bool:
+    def mutate(self, mutation: TreeMutation) -> bool:
         return False
-
-    def update_data(self, data: Data):
-        self._data = data
 
     @property
     def current_value(self):
         return self._value
 
-    def predict(self) -> pd.Series:
+    def predict(self) -> float:
         return self.current_value
 
     def is_splittable(self) -> bool:
@@ -186,8 +160,8 @@ class LeafNode(TreeNode):
 
 class SplitNode(TreeNode):
 
-    def __init__(self, data: Data, split: Split, left_child_node: LeafNode, right_child_node: LeafNode, depth=0):
-        super().__init__(data, split, depth, left_child_node, right_child_node)
+    def __init__(self, split: Split, left_child_node: LeafNode, right_child_node: LeafNode, depth=0):
+        super().__init__(split, depth, left_child_node, right_child_node)
 
     def is_leaf_parent(self) -> bool:
         return self.left_child.is_leaf_node() and self.right_child.is_leaf_node()
@@ -195,17 +169,7 @@ class SplitNode(TreeNode):
     def is_split_node(self) -> bool:
         return True
 
-    def update_data(self, data: Data):
-        self._data = data
-        left_data = self.left_child.split.split_data(data)
-        right_data = self.right_child.split.split_data(data)
-        self.left_child.update_data(left_data)
-        self.right_child.update_data(right_data)
-
-    def predict(self) -> pd.Series:
-        return pd.concat([self.left_child.predict(), self.right_child.predict()])
-
-    def children_split(self) -> SplitCondition:
+    def split_on(self) -> Union[LTESplitCondition, GTSplitCondition]:
         return self.left_child.split.most_recent_split_condition()
 
 
@@ -219,11 +183,7 @@ class TreeStructure:
         self.cache_up_to_date = False
         self._prediction = np.zeros_like(self.head.data.y)
         head_downstream = list(self.head.downstream_generator())
-        starting_leaves = [x for x in head_downstream if x.is_leaf_node()]
-        self._leaf_nodes = starting_leaves
-        starting_leaf_parents = [x for x in head_downstream if x.is_leaf_parent()]
-        self._leaf_parents = starting_leaf_parents
-        self._leaf_node_map = np.array([self.head] * self.head.data.n_obsv)
+        self._leaf_nodes = [x for x in head_downstream if x.is_leaf_node()]
         self._split_nodes = [x for x in head_downstream if x.is_split_node()]
 
     def nodes(self) -> List[TreeNode]:
@@ -322,7 +282,7 @@ class TreeStructure:
         if self.head == mutation.existing_node:
             self.head = mutation.updated_node
         else:
-            self.head.update_node(mutation)
+            self.head.mutate(mutation)
 
         if mutation.kind == "prune":
             self._split_nodes.remove(mutation.existing_node)
@@ -347,23 +307,21 @@ class TreeStructure:
     def predict(self) -> np.ndarray:
         if self.cache_up_to_date:
             return self._prediction
+
         for leaf in self.leaf_nodes():
-            condition = leaf.split.condition(self.head.data)
-            self._prediction[condition] = leaf.predict()
+            self._prediction[leaf.split.condition()] = leaf.predict()
         return self._prediction
 
-    def update_data(self, data: Data) -> None:
+    def update_y(self, data: Data) -> None:
         self.cache_up_to_date = False
         for node in self.nodes():
-            node.data._y = data.y[node.split.condition()]
+            node._split._data._y = data.y
 
 
 def split_node(node: LeafNode, split_condition: SplitCondition) -> SplitNode:
     left_split = node.split + split_condition.left
     right_split = node.split + split_condition.right
-    left_data = left_split.split_data(node.data)
-    right_data = right_split.split_data(node.data)
-    return SplitNode(node.data, node.split, LeafNode(left_data, left_split, depth=node.depth + 1), LeafNode(right_data, right_split, depth=node.depth+1), depth=node.depth)
+    return SplitNode(node.split, LeafNode(left_split, depth=node.depth + 1), LeafNode(right_split, depth=node.depth+1), depth=node.depth)
 
 
 def sample_split_node(node: LeafNode, variable_prior=None) -> SplitNode:

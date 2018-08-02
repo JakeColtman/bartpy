@@ -1,7 +1,10 @@
 from abc import ABC
 from typing import List, Optional, Union
+from copy import deepcopy
 
 from bartpy.data import Data
+
+import numpy as np
 
 
 class SplitCondition(ABC):
@@ -57,16 +60,16 @@ class Split:
 
     def __init__(self, data: Data, split_conditions: List[Union[LTESplitCondition, GTSplitCondition]]):
         self._conditions = split_conditions
-        self._data = data
+        self._data = deepcopy(data)
         self._combined_condition = self.combined_condition(self._data)
 
     @property
     def data(self):
-        return self._data
+        return Data(self._data.X[self.condition()], self._data.y[self.condition()])
 
     def combined_condition(self, data):
         if len(self._conditions) == 0:
-            return [True] * data.n_obsv
+            return np.array([True] * data.n_obsv)
         if len(self._conditions) == 1:
             return self._conditions[0].condition(data)
         else:

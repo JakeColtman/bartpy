@@ -70,7 +70,7 @@ class TestTreeStructureDataUpdate(TestCase):
 
     def test_update_pushed_through_split(self):
         updated_data = Data(self.data.X, pd.Series([5, 6, 7]), normalize=False)
-        self.tree_structure.update_data(updated_data)
+        self.tree_structure.update_y(updated_data)
         # Left child keeps LTE condition
         self.assertListEqual([5, 6, 7], list(self.a.data.y))
         self.assertListEqual([5], list(self.b.data.y))

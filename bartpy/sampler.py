@@ -23,7 +23,7 @@ def log_probability_split_within_node(mutation: GrowMutation) -> float:
     """
 
     prob_splitting_variable_selected = - np.log(mutation.existing_node.data.n_splittable_variables)
-    splitting_variable = mutation.updated_node.children_split().splitting_variable
+    splitting_variable = mutation.updated_node.split_on().splitting_variable
     prob_value_selected_within_variable = - np.log(mutation.existing_node.data.n_unique_values(splitting_variable))
     return prob_splitting_variable_selected + prob_value_selected_within_variable
 

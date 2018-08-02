@@ -36,7 +36,7 @@ class PruneTreeMutationProposer(TreeMutationProposer):
 
     def proposal(self) -> TreeMutation:
         node = self.tree_structure.random_leaf_parent()
-        updated_node = LeafNode(node.data, node.split, depth=node.depth)
+        updated_node = LeafNode(deepcopy(node.split), depth=node.depth)
         try:
             return PruneMutation(node, updated_node)
         except:
@@ -50,8 +50,7 @@ class ChangeTreeMutationProposer(TreeMutationProposer):
 
     def proposal(self) -> TreeMutation:
         node = self.tree_structure.random_leaf_parent()
-        updated_node = deepcopy(node)
-        leaf_node = LeafNode(updated_node.data, node.split, depth=node.depth)
+        leaf_node = LeafNode(deepcopy(node.split), depth=node.depth)
         updated_split_node = sample_split_node(leaf_node)
         return TreeMutation("change", node, updated_split_node)
 
