@@ -295,6 +295,7 @@ class TreeStructure:
 
         for leaf in self.leaf_nodes():
             self._prediction[leaf.split.condition()] = leaf.predict()
+        self.cache_up_to_date = True
         return self._prediction
 
 

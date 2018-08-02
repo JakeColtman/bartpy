@@ -12,14 +12,21 @@ from bartpy.split import Split
 
 class Model:
 
-    def __init__(self, data: Data, sigma: Sigma, n_trees: int = 50, alpha: float=0.95, beta: int=2., k: int=2.):
+    def __init__(self, data: Data, sigma: Sigma, trees=None, n_trees: int = 50, alpha: float=0.95, beta: int=2., k: int=2.):
         self.data = data
-        self.n_trees = n_trees
         self.alpha = float(alpha)
         self.beta = float(beta)
         self.k = k
         self._sigma = sigma
-        self._trees = self.initialize_trees()
+
+        if trees is None:
+            self.n_trees = n_trees
+            self._trees = self.initialize_trees()
+        else:
+            self.n_trees = len(trees)
+            self._trees = trees
+
+        self._prediction = self.predict()
 
     def initialize_trees(self) -> List[TreeStructure]:
         tree_data = deepcopy(self.data)
@@ -33,20 +40,23 @@ class Model:
     def residuals_without_tree(self, index: int) -> np.ndarray:
         return self.data.y - self.prediction_without_tree(index)
 
-    def predict(self) -> pd.Series:
-        return pd.Series(np.sum([tree.predict() for tree in self.trees], axis=0))
+    def predict(self) -> np.ndarray:
+        return np.sum([tree.predict() for tree in self.trees], axis=0)
 
-    def prediction_without_tree(self, index: int) -> pd.Series:
-        return pd.Series(np.sum([tree.predict() for ii, tree in enumerate(self.trees) if ii != index], axis=0))
+    def prediction_without_tree(self, index: int) -> np.ndarray:
+        return np.sum(np.array([tree.predict() for ii, tree in enumerate(self.trees) if ii != index]), axis=0)
 
     @property
     def trees(self) -> List[TreeStructure]:
         return self._trees
 
     def refreshed_trees(self) -> Generator[TreeStructure, None, None]:
-        for index, tree in enumerate(self.trees):
-            tree.update_y(self.residuals_without_tree(index))
+
+        for tree in self.trees:
+            self._prediction -= tree.predict()
+            tree.update_y(self.data.y - self._prediction)
             yield tree
+            self._prediction += tree.predict()
 
     @property
     def sigma_m(self):
