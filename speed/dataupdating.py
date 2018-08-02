@@ -1,24 +1,20 @@
-from datetime import datetime as dt
-import timeit
-import cProfile
 from copy import deepcopy
+from datetime import datetime
+import timeit
 
 from bartpy.data import Data
-from bartpy.sigma import Sigma
 from bartpy.model import Model
-from unittest import TestCase
-
-from bartpy.tree import TreeMutation, TreeStructure, TreeNode, LeafNode, SplitNode, TreeMutation, PruneMutation, split_node
-from bartpy.data import Data, Split, SplitCondition, LTESplitCondition
-
-import pandas as pd
+from bartpy.sigma import Sigma
+from bartpy.split import SplitCondition
+from bartpy.tree import TreeStructure, LeafNode, TreeMutation, split_node
 
 import pandas as pd
 import numpy as np
 
 
 def update_data():
-    
+
+    print(datetime.now())
     data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 2, 3]}), pd.Series([1, 2, 3]))
     a = split_node(LeafNode(data), SplitCondition("a", 1))
     tree_structure = TreeStructure(a)
@@ -28,9 +24,11 @@ def update_data():
 
     new_data = deepcopy(data)
     new_data._y = pd.Series(np.random.uniform(0, 3, size=3))
+    print(datetime.now())
 
-    for _ in range(50 * 200):
+    for _ in range(50 * 20):
         tree_structure.update_data(new_data)
+        break
 
 
 def predict():

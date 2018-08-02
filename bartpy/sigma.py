@@ -8,8 +8,6 @@ class Sigma:
         self._current_value = 1.0
 
     def set_value(self, value: float) -> None:
-        #if not isinstance(value, float):
-        #    raise TypeError("Sigma can only have float values, found {}".format(type(value)))
         self._current_value = value
 
     def current_value(self) -> float:

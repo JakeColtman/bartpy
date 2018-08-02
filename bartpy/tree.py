@@ -50,9 +50,10 @@ class ChangeMutation(TreeMutation):
 
 class TreeNode(ABC):
 
-    def __init__(self, data: Data, depth: int, left_child: 'TreeNode'=None, right_child: 'TreeNode'=None):
+    def __init__(self, data: Data, split: Split, depth: int, left_child: 'TreeNode'=None, right_child: 'TreeNode'=None):
         self._data = data
         self.depth = depth
+        self._split = split
         self._left_child = left_child
         self._right_child = right_child
 
@@ -139,6 +140,10 @@ class TreeNode(ABC):
     def is_split_node(self) -> bool:
         return False
 
+    @property
+    def split(self):
+        return self._split
+
 
 class LeafNode(TreeNode):
 
@@ -146,10 +151,8 @@ class LeafNode(TreeNode):
         self._value = 0.0
         self._residuals = 0.0
         if split is None:
-            self._split = Split(data, [])
-        else:
-            self._split = split
-        super().__init__(data, depth, None, None)
+            split = Split(data, [])
+        super().__init__(data, split, depth, None, None)
 
     def set_value(self, value: float) -> None:
         self._value = value
@@ -177,10 +180,6 @@ class LeafNode(TreeNode):
     def is_splittable(self) -> bool:
         return len(self.data.splittable_variables()) > 0
 
-    @property
-    def split(self) -> Split:
-        return self._split
-
     def is_leaf_node(self):
         return True
 
@@ -188,8 +187,7 @@ class LeafNode(TreeNode):
 class SplitNode(TreeNode):
 
     def __init__(self, data: Data, split: Split, left_child_node: LeafNode, right_child_node: LeafNode, depth=0):
-        self.split = split
-        super().__init__(data, depth, left_child_node, right_child_node)
+        super().__init__(data, split, depth, left_child_node, right_child_node)
 
     def is_leaf_parent(self) -> bool:
         return self.left_child.is_leaf_node() and self.right_child.is_leaf_node()
