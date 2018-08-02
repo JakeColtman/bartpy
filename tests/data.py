@@ -2,32 +2,34 @@ import unittest
 
 import pandas as pd
 
-from bartpy.data import Data, SplitData, Split, sample_split_condition, SplitCondition, LTESplitCondition, GTSplitCondition
+from bartpy.data import Data
 from bartpy.errors import NoSplittableVariableException
-from bartpy.tree import SplitCondition, SplitNode, split_node, LeafNode
+from bartpy.split import SplitCondition, Split, sample_split_condition, LTESplitCondition, GTSplitCondition
+from bartpy.tree import split_node, LeafNode
 
 
 class TestSplit(unittest.TestCase):
 
     def test_null_split_returns_all_values(self):
-        split = Split([])
         data = Data(pd.DataFrame({"a": [1, 2]}), pd.Series([1, 2]))
+        split = Split(data, [])
         conditioned_data = split.split_data(data)
         self.assertListEqual(list(data.X["a"]), list(conditioned_data.X["a"]))
 
     def test_single_condition_data(self):
-        condition = LTESplitCondition("a", 1)
-        split = Split([condition])
         data = Data(pd.DataFrame({"a": [1, 2]}), pd.Series([1, 2]))
+        condition = LTESplitCondition("a", 1)
+        split = Split(data, [condition])
         conditioned_data = split.split_data(data)
         self.assertListEqual([1], list(conditioned_data.X["a"]))
 
     def test_combined_condition_data(self):
+        data = Data(pd.DataFrame({"a": [1, 2, 3, 4]}), pd.Series([1, 2, 1, 1]))
+
         first_condition = LTESplitCondition("a", 3)
         second_condition = GTSplitCondition("a", 1)
+        split = Split(data, [first_condition, second_condition])
 
-        split = Split([first_condition, second_condition])
-        data = Data(pd.DataFrame({"a": [1, 2, 3, 4]}), pd.Series([1, 2, 1, 1]))
         conditioned_data = split.split_data(data)
         self.assertListEqual([2, 3], list(conditioned_data.X["a"]))
 

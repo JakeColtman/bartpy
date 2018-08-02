@@ -4,8 +4,9 @@ from typing import List, Set, Generator, Optional
 import numpy as np
 import pandas as pd
 
-from bartpy.data import Split, Data, sample_split_condition, SplitCondition
+from bartpy.data import Data
 from bartpy.errors import NoSplittableVariableException, NoPrunableNodeException
+from bartpy.split import Split, sample_split_condition, SplitCondition
 
 
 class TreeMutation(ABC):

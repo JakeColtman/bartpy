@@ -7,7 +7,7 @@ import pandas as pd
 from bartpy.data import Data
 from bartpy.sigma import Sigma
 from bartpy.tree import TreeStructure, LeafNode
-from bartpy.data import Split
+from bartpy.split import Split
 
 
 class Model:

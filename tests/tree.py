@@ -1,8 +1,8 @@
 from unittest import TestCase
 
-from bartpy.tree import TreeMutation, TreeStructure, TreeNode, LeafNode, SplitNode, TreeMutation, PruneMutation, split_node
-from bartpy.data import Data, Split, SplitCondition, LTESplitCondition
-
+from bartpy.data import Data
+from bartpy.tree import TreeStructure, LeafNode, SplitNode, TreeMutation, PruneMutation, split_node
+from bartpy.split import Split, SplitCondition, LTESplitCondition
 import pandas as pd
 
 
@@ -83,10 +83,10 @@ class TestTreeStructureMutation(TestCase):
 
     def setUp(self):
         self.data = Data(pd.DataFrame({"a": [1]}), pd.Series([1]))
-        self.d = LeafNode(None, None)
-        self.e = LeafNode(None, None)
-        self.c = SplitNode(None, None, self.d, self.e)
-        self.b = LeafNode(None, None)
+        self.d = LeafNode(self.data, None)
+        self.e = LeafNode(self.data, None)
+        self.c = SplitNode(self.data, None, self.d, self.e)
+        self.b = LeafNode(self.data, None)
         self.a = SplitNode(self.data, None, self.b, self.c)
         self.tree_structure = TreeStructure(self.a)
 
@@ -97,11 +97,11 @@ class TestTreeStructureMutation(TestCase):
 
     def test_invalid_prune(self):
         with self.assertRaises(TypeError):
-            updated_a = LeafNode(None)
+            updated_a = LeafNode(self.data, None)
             PruneMutation(self.a, updated_a)
 
     def test_grow(self):
-        f, g = LeafNode(None, None), LeafNode(None, None)
+        f, g = LeafNode(self.data, None), LeafNode(self.data, None)
         updated_d = SplitNode(None, None, f, g)
         grow_mutation = TreeMutation("grow", self.d, updated_d)
         self.tree_structure.mutate(grow_mutation)
@@ -111,9 +111,9 @@ class TestTreeStructureMutation(TestCase):
         self.assertNotIn(self.d, self.tree_structure.nodes())
 
     def test_head_prune(self):
-        a = SplitNode(self.data, None, LeafNode(None), LeafNode(None))
+        a = SplitNode(self.data, None, LeafNode(self.data, None), LeafNode(self.data, None))
         tree_structure = TreeStructure(a)
-        updated_a = LeafNode(None)
+        updated_a = LeafNode(self.data, None)
         print(a.is_leaf_parent())
         prune_mutation = PruneMutation(a, updated_a)
         tree_structure.mutate(prune_mutation)
@@ -121,7 +121,7 @@ class TestTreeStructureMutation(TestCase):
         self.assertNotIn(self.a, tree_structure.nodes())
 
     def test_internal_prune(self):
-        updated_c = LeafNode(None)
+        updated_c = LeafNode(self.data, None)
         prune_mutation = TreeMutation("prune", self.c, updated_c)
         self.tree_structure.mutate(prune_mutation)
         self.assertIn(updated_c, self.tree_structure.leaf_nodes())
