@@ -14,7 +14,7 @@ if __name__ == "__main__":
     y = np.random.normal(0, 0.1, size=50) + 2 * x
     data = Data(pd.DataFrame({"b": x}), pd.Series(y), normalize=True)
     sigma = Sigma(100., 0.001)
-    model = Model(data, sigma, n_trees=20, k=2)
+    model = Model(data, sigma, n_trees=50, k=2)
 
     proposer = Proposer(0.2, 0.2, 0.6)
     sampler = Sampler(model, proposer)
