@@ -40,8 +40,8 @@ def log_likihood_node(node: LeafNode, sigma: Sigma, sigma_mu: float) -> float:
 
     n = node.data.n_obsv
 
-    first_term = np.power(2 * np.pi * var, - n / 2.)
-    second_term = np.power(var / (var + n * var_mu), 0.5)
+    first_term = (- n / 2.) * np.log(2 * np.pi * var)
+    second_term = 0.5 * np.log(var / (var + n * var_mu))
     third_term = - (1 / (2 * var))
     residuals = node.residuals()
     mean_residual = np.mean(residuals)
@@ -50,7 +50,7 @@ def log_likihood_node(node: LeafNode, sigma: Sigma, sigma_mu: float) -> float:
     fourth_term = (np.power(mean_residual, 2) * np.power(n, 2)) / (n + (var / var_mu))
     fifth_term = n * np.power(mean_residual, 2)
 
-    return np.log(first_term * second_term * np.exp(third_term * (sum_sq_error - fourth_term + fifth_term)))
+    return first_term + second_term + (third_term * (sum_sq_error - fourth_term + fifth_term))
 
 
 class SigmaSampler:

@@ -9,9 +9,9 @@ if __name__ == "__main__":
 
     import numpy as np
 
-    x = np.random.normal(0, 5, size=50)
+    x = np.random.normal(0, 5, size=100)
     x.sort()
-    y = np.random.normal(0, 0.1, size=50) + 2 * x
+    y = np.random.normal(0, 0.1, size=100) + 2 * x
     data = Data(pd.DataFrame({"b": x}), pd.Series(y), normalize=True)
     sigma = Sigma(100., 0.001)
     model = Model(data, sigma, n_trees=50, k=2)
