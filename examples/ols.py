@@ -9,12 +9,12 @@ if __name__ == "__main__":
 
     import numpy as np
 
-    x = np.random.normal(0, 5, size=100)
+    x = np.random.normal(0, 5, size=3000)
     x.sort()
-    y = np.random.normal(0, 0.1, size=100) + 2 * x
+    y = np.random.normal(0, 0.1, size=3000) + 2 * x
     data = Data(pd.DataFrame({"b": x}), pd.Series(y), normalize=True)
     sigma = Sigma(100., 0.001)
-    model = Model(data, sigma, n_trees=50, k=2)
+    model = Model(data, sigma, n_trees=200, k=2)
 
     proposer = Proposer(0.2, 0.2, 0.6)
     sampler = Sampler(model, proposer)

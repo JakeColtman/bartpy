@@ -50,7 +50,7 @@ class ChangeTreeMutationProposer(TreeMutationProposer):
 
     def proposal(self) -> TreeMutation:
         node = self.tree_structure.random_leaf_parent()
-        leaf_node = LeafNode(deepcopy(node.split), depth=node.depth)
+        leaf_node = LeafNode(node.split, depth=node.depth)
         updated_split_node = sample_split_node(leaf_node)
         return TreeMutation("change", node, updated_split_node)
 

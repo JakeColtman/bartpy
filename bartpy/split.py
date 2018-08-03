@@ -93,12 +93,8 @@ class Split:
         else:
             return None
 
-    def split_data(self, data: Data) -> Data:
-        data = Data(data.X[self.condition(data)], data.y[self.condition(data)])
-        return data
 
-
-def sample_split_condition(data: Data, variable_prior=None) -> Optional[SplitCondition]:
+def sample_split_condition(node, variable_prior=None) -> Optional[SplitCondition]:
     """
     Randomly sample a splitting rule for a particular leaf node
     Works based on two random draws
@@ -125,8 +121,8 @@ def sample_split_condition(data: Data, variable_prior=None) -> Optional[SplitCon
     >>> split.splitting_value in data.X[split.splitting_variable]
     True
     """
-    split_variable = data.random_splittable_variable()
-    split_value = data.random_splittable_value(split_variable)
+    split_variable = np.random.choice(list(node.splittable_variables))
+    split_value = node.data.random_splittable_value(split_variable)
     if split_value is None:
         return None
     return SplitCondition(split_variable, split_value)

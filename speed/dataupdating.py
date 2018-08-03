@@ -63,7 +63,7 @@ def updated_trees():
     tree_structure.mutate(TreeMutation("grow", a.right_child, c))
     sigma = Sigma(100., 0.001)
 
-    model = Model(data=data, trees=[deepcopy(tree_structure) for x in range(50)], sigma=sigma)
+    model = Model(data=data, trees=[deepcopy(tree_structure) for x in range(100)], sigma=sigma)
     print(datetime.now())
 
     for _ in range(500):

@@ -133,6 +133,7 @@ class LeafNode(TreeNode):
     def __init__(self, split: Split, depth=0):
         self._value = 0.0
         self._residuals = 0.0
+        self.splittable_variables = split.data.splittable_variables()
         super().__init__(split, depth, None, None)
 
     def set_value(self, value: float) -> None:
@@ -152,7 +153,7 @@ class LeafNode(TreeNode):
         return self.current_value
 
     def is_splittable(self) -> bool:
-        return len(self.data.splittable_variables()) > 0
+        return len(self.splittable_variables) > 0
 
     def is_leaf_node(self):
         return True
@@ -183,6 +184,10 @@ class TreeStructure:
         self.cache_up_to_date = False
         self._prediction = np.zeros_like(self.head.data.y)
 
+        head_downstream = list(self.head.downstream_generator())
+        self._leaf_nodes = [x for x in head_downstream if x.is_leaf_node()]
+        self._split_nodes = [x for x in head_downstream if x.is_split_node()]
+
     def nodes(self) -> List[TreeNode]:
         """
 
@@ -204,7 +209,7 @@ class TreeStructure:
         >>> 1 in nodes
         False
         """
-        return [x for x in self.head.downstream_generator()]
+        return self._split_nodes + self._leaf_nodes
 
     def leaf_nodes(self) -> List[LeafNode]:
         """
@@ -225,10 +230,10 @@ class TreeStructure:
         >>> c == list(nodes)[0]
         True
         """
-        return [x for x in self.head.downstream_generator() if x.is_leaf_node()]
+        return self._leaf_nodes
 
     def splittable_leaf_nodes(self):
-        return [x for x in self.head.downstream_generator() if x.is_leaf_node() and x.is_splittable()]
+        return [x for x in self.leaf_nodes() if x.is_splittable()]
 
     def split_nodes(self) -> List[TreeNode]:
         """
@@ -249,10 +254,10 @@ class TreeStructure:
         >>> a == list(nodes)[0]
         True
         """
-        return [x for x in self.head.downstream_generator() if x.is_split_node()]
+        return self._split_nodes
 
     def leaf_parents(self) -> List[SplitNode]:
-        return [x for x in self.head.downstream_generator() if x.is_split_node() and x.is_leaf_parent()]
+        return [x for x in self._split_nodes if x.is_leaf_parent()]
 
     def n_leaf_nodes(self) -> int:
         return len(self.leaf_nodes())
@@ -265,6 +270,7 @@ class TreeStructure:
 
     def random_splittable_leaf_node(self) -> LeafNode:
         splittable_nodes = self.splittable_leaf_nodes()
+        return splittable_nodes[0]
         if len(splittable_nodes) > 0:
             return np.random.choice(splittable_nodes)
         else:
@@ -283,6 +289,26 @@ class TreeStructure:
             self.head = mutation.updated_node
         else:
             self.head.mutate(mutation)
+
+        if mutation.kind == "prune":
+            self._split_nodes.remove(mutation.existing_node)
+            self._leaf_nodes.append(mutation.updated_node)
+            self._leaf_nodes.remove(mutation.existing_node.left_child)
+            self._leaf_nodes.remove(mutation.existing_node.right_child)
+
+        if mutation.kind == "grow":
+            self._leaf_nodes.remove(mutation.existing_node)
+            self._leaf_nodes.append(mutation.updated_node.left_child)
+            self._leaf_nodes.append(mutation.updated_node.right_child)
+            self._split_nodes.append(mutation.updated_node)
+
+        if mutation.kind == "change":
+            self._leaf_nodes.remove(mutation.existing_node.left_child)
+            self._leaf_nodes.remove(mutation.existing_node.right_child)
+            self._leaf_nodes.append(mutation.updated_node.left_child)
+            self._leaf_nodes.append(mutation.updated_node.right_child)
+            self._split_nodes.remove(mutation.existing_node)
+            self._split_nodes.append(mutation.updated_node)
 
     def update_y(self, y: np.ndarray) -> None:
         self.cache_up_to_date = False
@@ -341,11 +367,8 @@ def sample_split_node(node: LeafNode, variable_prior=None) -> SplitNode:
     >>> sample_split_node(unsplittable_node) == unsplittable_node
     True
     """
-    if not node.is_splittable():
-        raise NoSplittableVariableException()
-    else:
-        condition = sample_split_condition(node.data, variable_prior)
-        return split_node(node, condition)
+    condition = sample_split_condition(node, variable_prior)
+    return split_node(node, condition)
 
 
 if __name__ == "__main__":

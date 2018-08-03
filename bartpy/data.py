@@ -44,7 +44,7 @@ class Data:
         return self._X
 
     def splittable_variables(self) -> Set[str]:
-        return {x for x in self.X.columns if len(set(self.X[x])) > 1}
+        return {x for x in self.X.columns if self.n_unique_values(x) > 1}
 
     @property
     def variables(self) -> Set[str]:
@@ -101,10 +101,10 @@ class Data:
         >>> unsplittable_data.random_splittable_value("a")
         """
         possible_values = self.unique_values(variable)
-        possible_values = possible_values - {np.max(list(possible_values))}
+        possible_values = possible_values[possible_values != np.max(possible_values)]
         if len(possible_values) == 0:
             return None
-        return np.random.choice(np.array(list(possible_values)))
+        return np.random.choice(possible_values)
 
     def unique_values(self, variable: str) -> Set[Any]:
         """
@@ -119,9 +119,7 @@ class Data:
         -------
         Set[Any] - all possible values
         """
-        if variable not in self._unique_values_cache:
-            self._unique_values_cache[variable] = set(self.X[variable])
-        return self._unique_values_cache[variable]
+        return self.X[variable]
 
     def split_data(self, split):
         lhs_condition = self.X[split.splitting_variable] <= split.splitting_value
