@@ -169,6 +169,10 @@ class Data:
         total_distance = (self.original_y_max - self.original_y_min)
         return self.original_y_min + (distance_from_min * total_distance)
 
+    @property
+    def unnormalized_y(self) -> np.ndarray:
+        return self.unnormalize_y(self.y)
+
 
 if __name__ == "__main__":
     import doctest
