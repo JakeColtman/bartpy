@@ -31,6 +31,7 @@ class Data:
         self._unique_values_cache: MutableMapping[str, Set[Any]] = {}
         self._X = X
         if normalize:
+            self.original_y_min, self.original_y_max = y.min(), y.max()
             self._y = self.normalize_y(y)
         else:
             self._y = y
@@ -162,6 +163,11 @@ class Data:
         """
         y_min, y_max = np.min(y), np.max(y)
         return pd.Series(-0.5 + (y - y_min) / (y_max - y_min))
+
+    def unnormalize_y(self, y: np.ndarray) -> np.ndarray:
+        distance_from_min = y - (-0.5)
+        total_distance = (self.original_y_max - self.original_y_min)
+        return self.original_y_min + (distance_from_min * total_distance)
 
 
 if __name__ == "__main__":

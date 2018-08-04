@@ -1,29 +1,17 @@
-from bartpy.data import Data
 import pandas as pd
-from bartpy.sigma import Sigma
-from bartpy.model import Model
-from bartpy.sampler import Sampler
-from bartpy.proposer import Proposer
+import numpy as np
+
+from bartpy.sklearnmodel import SklearnModel
 
 if __name__ == "__main__":
 
-    import numpy as np
-
     x = np.random.normal(0, 5, size=3000)
     x.sort()
+    X = pd.DataFrame({"b": x})
     y = np.random.normal(0, 0.1, size=3000) + 2 * x
-    data = Data(pd.DataFrame({"b": x}), pd.Series(y), normalize=True)
-    sigma = Sigma(100., 0.001)
-    model = Model(data, sigma, n_trees=200, k=2)
 
-    proposer = Proposer(0.2, 0.2, 0.6)
-    sampler = Sampler(model, proposer)
-
-    print(data.y)
-
-    print(model.predict())
-
-    s = sampler.samples(10, 1)
-    predictions = s.mean(axis=0)
+    model = SklearnModel(n_samples=10, n_burn=1)
+    model.fit(X, y)
+    predictions = model.predict()
     for ii in range(len(predictions)):
-        print(predictions[ii], " - ", data.y[ii])
+        print(predictions[ii], " - ", 2 * x[ii])
