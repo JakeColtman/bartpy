@@ -48,8 +48,14 @@ class LeafNode(TreeNode):
     def __init__(self, split: Split, depth=0):
         self._value = 0.0
         self._residuals = 0.0
-        self.splittable_variables = split.data.splittable_variables()
+        self._splittable_variables = None
         super().__init__(split, depth, None, None)
+
+    @property
+    def splittable_variables(self):
+        if self._splittable_variables is None:
+            self._splittable_variables = self.split.data.splittable_variables()
+        return self._splittable_variables
 
     def set_value(self, value: float) -> None:
         self._value = value

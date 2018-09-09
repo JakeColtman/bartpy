@@ -36,22 +36,62 @@ def log_probability_split_within_tree(tree_structure: Tree, mutation: GrowMutati
     return prob_node_chosen_to_split_on + prob_split_chosen
 
 
+def log_grow_ratio(combined_node: LeafNode, left_node: LeafNode, right_node: LeafNode, sigma: Sigma, sigma_mu: float):
+    var = np.power(sigma.current_value(), 2)
+    var_mu = np.power(sigma_mu, 2)
+    n = combined_node.data.n_obsv
+    n_l = left_node.data.n_obsv
+    n_r = right_node.data.n_obsv
+
+    first_term = (var * (var + n * sigma_mu)) / ((var + n_l * var_mu) * (var + n_r * var_mu))
+    first_term = np.log(np.sqrt(first_term))
+
+    left_resp_contribution = np.square(np.sum(left_node.data.y)) / (var + n_l * sigma_mu)
+    right_resp_contribution = np.square(np.sum(right_node.data.y)) / (var + n_r * sigma_mu)
+    combined_resp_contribution = np.square(np.sum(combined_node.data.y)) / (var + n * sigma_mu)
+
+    resp_contribution = left_resp_contribution + right_resp_contribution - combined_resp_contribution
+
+    return first_term + ((var_mu / (2 * var)) * resp_contribution)
+
+
+def log_change_ratio(original_left_node: LeafNode, original_right_node: LeafNode, new_left_node: LeafNode, new_right_node: LeafNode, sigma: Sigma, sigma_mu: float):
+    var = np.power(sigma.current_value(), 2)
+    var_mu = np.power(sigma_mu, 2)
+    vr = var / var_mu
+
+    n_l_o = original_left_node.data.n_obsv
+    n_r_o = original_right_node.data.n_obsv
+    n_l_n = new_left_node.data.n_obsv
+    n_r_n = new_right_node.data.n_obsv
+
+    first_term = (((vr + n_l_o) * (vr + n_r_o)) / ((vr + n_l_n) * (vr + n_r_n)))
+    first_term = np.log(np.sqrt(first_term))
+
+    original_left_contribution = np.square(np.sum(original_left_node.data.y)) / (vr * n_l_o)
+    original_right_contribution = np.square(np.sum(original_right_node.data.y)) / (vr * n_r_o)
+    new_left_contribution = np.square(np.sum(new_left_node.data.y)) / (vr * n_r_n)
+    new_right_contribution = np.square(np.sum(new_right_node.data.y)) / (vr * n_r_n)
+
+    return first_term + ((1 / (2 * var)) * (new_left_contribution + new_right_contribution - original_left_contribution - original_right_contribution))
+
+
 def log_likihood_node(node: LeafNode, sigma: Sigma, sigma_mu: float) -> float:
     var = np.power(sigma.current_value(), 2)
     var_mu = np.power(sigma_mu, 2)
 
     n = node.data.n_obsv
-
     first_term = (- n / 2.) * np.log(2 * np.pi * var)
     second_term = 0.5 * np.log(var / (var + n * var_mu))
 
-    third_term = - (1 / (2 * var))
+    third_term = -0.5 / var
 
     mean_residual = np.mean(node.data.y)
+    mean_residual_squared = np.power(mean_residual, 2)
     sum_sq_error = np.sum(np.power(node.data.y - mean_residual, 2))
 
-    fourth_term = (np.power(mean_residual, 2) * np.power(n, 2)) / (n + (var / var_mu))
-    fifth_term = n * np.power(mean_residual, 2)
+    fourth_term = (mean_residual_squared * np.power(n, 2)) / (n + (var / var_mu))
+    fifth_term = n * mean_residual_squared
 
     return first_term + second_term + (third_term * (sum_sq_error - fourth_term + fifth_term))
 
@@ -63,6 +103,7 @@ class SigmaSampler:
         self.sigma = sigma
 
     def sample(self) -> float:
+        return 0.1
         posterior_alpha = self.sigma.alpha + (self.model.data.n_obsv / 2.)
         posterior_beta = self.sigma.beta + (0.5 * (np.sum(np.power(self.model.residuals(), 2))))
         return np.power(invgamma(posterior_alpha, posterior_beta).rvs(1)[0], 0.5)
@@ -178,28 +219,36 @@ class TreeMutationSampler:
             return self.likihood_ratio_change(proposal)
 
     def likihood_ratio_grow(self, proposal: TreeMutation):
-        left_child_likihood = log_likihood_node(proposal.updated_node.left_child, self.model.sigma, self.model.sigma_m)
-        right_child_likihood = log_likihood_node(proposal.updated_node.right_child, self.model.sigma, self.model.sigma_m)
-        numerator = left_child_likihood + right_child_likihood
-        denom = log_likihood_node(proposal.existing_node, self.model.sigma, self.model.sigma_m)
-        return numerator - denom
+        return log_grow_ratio(proposal.existing_node, proposal.updated_node.left_child, proposal.updated_node.right_child, self.model.sigma, self.model.sigma_m)
+        # left_child_likihood = log_likihood_node(proposal.updated_node.left_child, self.model.sigma, self.model.sigma_m)
+        # right_child_likihood = log_likihood_node(proposal.updated_node.right_child, self.model.sigma, self.model.sigma_m)
+        # numerator = left_child_likihood + right_child_likihood
+        # denom = log_likihood_node(proposal.existing_node, self.model.sigma, self.model.sigma_m)
+        # return numerator - denom
 
     def likihood_ratio_prune(self, proposal: TreeMutation):
-        numerator = log_likihood_node(proposal.updated_node, self.model.sigma, self.model.sigma_m)
-        left_child_likihood = log_likihood_node(proposal.existing_node.left_child, self.model.sigma, self.model.sigma_m)
-        right_child_likihood = log_likihood_node(proposal.existing_node.right_child, self.model.sigma, self.model.sigma_m)
-        denom = left_child_likihood + right_child_likihood
-        return numerator - denom
+        return 1.0 / log_grow_ratio(proposal.updated_node, proposal.existing_node.left_child, proposal.existing_node.right_child, self.model.sigma, self.model.sigma_m)
+        # numerator = log_likihood_node(proposal.updated_node, self.model.sigma, self.model.sigma_m)
+        # left_child_likihood = log_likihood_node(proposal.existing_node.left_child, self.model.sigma, self.model.sigma_m)
+        # right_child_likihood = log_likihood_node(proposal.existing_node.right_child, self.model.sigma, self.model.sigma_m)
+        # denom = left_child_likihood + right_child_likihood
+        # return numerator - denom
 
     def likihood_ratio_change(self, proposal: TreeMutation):
-        left_child_likihood = log_likihood_node(proposal.existing_node.left_child, self.model.sigma, self.model.sigma_m)
-        right_child_likihood = log_likihood_node(proposal.existing_node.right_child, self.model.sigma, self.model.sigma_m)
-        denom = left_child_likihood + right_child_likihood
-
-        left_child_likihood = log_likihood_node(proposal.updated_node.left_child, self.model.sigma, self.model.sigma_m)
-        right_child_likihood = log_likihood_node(proposal.updated_node.right_child, self.model.sigma, self.model.sigma_m)
-        numerator = left_child_likihood + right_child_likihood
-        return numerator - denom
+        return log_change_ratio(proposal.existing_node.left_child,
+                                proposal.existing_node.right_child,
+                                proposal.updated_node.left_child,
+                                proposal.updated_node.right_child,
+                                self.model.sigma,
+                                self.model.sigma_m)
+        # left_child_likihood = log_likihood_node(proposal.existing_node.left_child, self.model.sigma, self.model.sigma_m)
+        # right_child_likihood = log_likihood_node(proposal.existing_node.right_child, self.model.sigma, self.model.sigma_m)
+        # denom = left_child_likihood + right_child_likihood
+        #
+        # left_child_likihood = log_likihood_node(proposal.updated_node.left_child, self.model.sigma, self.model.sigma_m)
+        # right_child_likihood = log_likihood_node(proposal.updated_node.right_child, self.model.sigma, self.model.sigma_m)
+        # numerator = left_child_likihood + right_child_likihood
+        # return numerator - denom
 
 
 class Sampler:
@@ -218,17 +267,15 @@ class Sampler:
         if tree_mutation is not None:
             mutate(tree, tree_mutation)
 
-        for node in tree.leaf_nodes:
-            self.step_leaf(node)
-
     def step_sigma(self, sigma: Sigma) -> None:
         sampler = SigmaSampler(self.model, sigma)
         sigma.set_value(sampler.sample())
-        print(sigma.current_value())
 
     def step(self):
         for tree in self.model.refreshed_trees():
             self.step_tree(tree)
+            for node in tree.leaf_nodes:
+                self.step_leaf(node)
         self.step_sigma(self.model.sigma)
 
     def samples(self, n_samples: int, n_burn: int) -> np.ndarray:

@@ -58,14 +58,24 @@ class LTESplitCondition:
 
 class Split:
 
-    def __init__(self, data: Data, split_conditions: List[Union[LTESplitCondition, GTSplitCondition]]):
+    def __init__(self, data: Data, split_conditions: List[Union[LTESplitCondition, GTSplitCondition]], combined_condition=None):
         self._conditions = split_conditions
         self._data = deepcopy(data)
-        self._combined_condition = self.combined_condition(self._data)
+        self._combined_condition = combined_condition
+        self._conditioned_X = None
+        self._cache_up_to_date = False
+        self._conditioned_data = None
 
     @property
     def data(self):
-        return Data(self._data.X[self.condition()], self._data.y[self.condition()])
+        if self._conditioned_X is None:
+            self._conditioned_X = self._data.X[self.condition()]
+        if self._cache_up_to_date:
+            return self._conditioned_data
+        else:
+            self._conditioned_data = Data(self._conditioned_X, self._data.y[self.condition()])
+            self._cache_up_to_date = True
+        return self._conditioned_data
 
     def combined_condition(self, data):
         if len(self._conditions) == 0:
@@ -80,6 +90,8 @@ class Split:
 
     def condition(self, data: Data=None):
         if data is None:
+            if self._combined_condition is None:
+                self._combined_condition = self.combined_condition(self._data)
             return self._combined_condition
         else:
             return self.combined_condition(data)
@@ -92,6 +104,10 @@ class Split:
             return self._conditions[-1]
         else:
             return None
+
+    def update_y(self, y):
+        self._cache_up_to_date = False
+        self._data._y = y
 
 
 def sample_split_condition(node, variable_prior=None) -> Optional[SplitCondition]:

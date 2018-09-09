@@ -38,11 +38,8 @@ class PruneTreeMutationProposer(TreeMutationProposer):
 
     def proposal(self) -> TreeMutation:
         node = random_prunable_decision_node(self.tree_structure)
-        updated_node = LeafNode(deepcopy(node.split), depth=node.depth)
-        try:
-            return PruneMutation(node, updated_node)
-        except:
-            raise
+        updated_node = LeafNode(node.split, depth=node.depth)
+        return PruneMutation(node, updated_node)
 
 
 class ChangeTreeMutationProposer(TreeMutationProposer):

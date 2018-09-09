@@ -96,7 +96,7 @@ class Tree:
     def update_y(self, y: np.ndarray) -> None:
         self.cache_up_to_date = False
         for node in self.nodes:
-            node._split._data._y = y
+            node.split.update_y(y)
 
     def predict(self) -> np.ndarray:
         if self.cache_up_to_date:
