@@ -4,18 +4,24 @@ import numpy as np
 from bartpy.sklearnmodel import SklearnModel
 from bartpy.plotting import plot_residuals, plot_modelled_against_actual
 
-if __name__ == "__main__":
 
-    x = np.random.normal(0, 5, size=300)
-    x.sort()
+def run(alpha, beta, n_trees):
+    x = np.sin(np.linspace(0, 5, 300))
     X = pd.DataFrame({"b": x})
-    y = np.random.normal(0, 0.1, size=300) + 2 * np.sin(x)
+    y = np.random.normal(0, 0.1, size=300) + x
 
-    model = SklearnModel(n_samples=10, n_burn=10)
+    model = SklearnModel(n_samples=20, n_burn=20, n_trees=n_trees, alpha = alpha, beta=beta)
     model.fit(X, y)
     predictions = model.predict()
     for ii in range(len(predictions)):
         print(predictions[ii], " - ", 2 * np.sin(x[ii]))
 
-    plot_residuals(model)
-    plot_modelled_against_actual(model)
+    #plot_residuals(model)
+    #plot_modelled_against_actual(model)
+
+    return model
+
+
+if __name__ == "__main__":
+    print("here")
+    #run(0.95, 2., 20)

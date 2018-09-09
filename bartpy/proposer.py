@@ -5,7 +5,7 @@ from typing import Callable
 import numpy as np
 
 from bartpy.errors import NoSplittableVariableException, NoPrunableNodeException
-from bartpy.tree import LeafNode, TreeStructure, sample_split_node, TreeMutation, PruneMutation, GrowMutation
+from bartpy.tree import LeafNode, TreeStructure, sample_split_node, TreeMutation, PruneMutation, GrowMutation, ChangeMutation
 
 
 class TreeMutationProposer:
@@ -52,7 +52,7 @@ class ChangeTreeMutationProposer(TreeMutationProposer):
         node = self.tree_structure.random_leaf_parent()
         leaf_node = LeafNode(node.split, depth=node.depth)
         updated_split_node = sample_split_node(leaf_node)
-        return TreeMutation("change", node, updated_split_node)
+        return ChangeMutation(node, updated_split_node)
 
 
 class Proposer:

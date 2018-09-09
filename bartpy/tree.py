@@ -43,7 +43,7 @@ class GrowMutation(TreeMutation):
 class ChangeMutation(TreeMutation):
 
     def __init__(self, existing_node: 'SplitNode', updated_node: 'SplitNode'):
-        if not existing_node.is_leaf_node():
+        if not existing_node.is_leaf_parent():
             raise TypeError("Pruning only valid on leaf parents")
         super().__init__("change", existing_node, updated_node)
 

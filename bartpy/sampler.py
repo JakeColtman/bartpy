@@ -5,15 +5,15 @@ from scipy.stats import invgamma
 
 from bartpy.model import Model
 from bartpy.proposer import Proposer
-from bartpy.tree import SplitNode, TreeStructure, LeafNode, TreeMutation, GrowMutation, ChangeMutation, PruneMutation
+from bartpy.tree import SplitNode, TreeStructure, LeafNode, TreeMutation, GrowMutation, ChangeMutation, PruneMutation, TreeNode
 from bartpy.sigma import Sigma
 
 
-def log_probability_node_split(model: Model, node: SplitNode):
+def log_probability_node_split(model: Model, node: TreeNode):
     return np.log(model.alpha * np.power(1 + node.depth, -model.beta))
 
 
-def log_probability_node_not_split(model: Model, node: SplitNode):
+def log_probability_node_not_split(model: Model, node: TreeNode):
     return np.log(1. - model.alpha * np.power(1 + node.depth, -model.beta))
 
 
@@ -42,10 +42,11 @@ def log_likihood_node(node: LeafNode, sigma: Sigma, sigma_mu: float) -> float:
 
     first_term = (- n / 2.) * np.log(2 * np.pi * var)
     second_term = 0.5 * np.log(var / (var + n * var_mu))
+
     third_term = - (1 / (2 * var))
-    residuals = node.residuals()
-    mean_residual = np.mean(residuals)
-    sum_sq_error = np.sum(np.power(residuals - mean_residual, 2))
+
+    mean_residual = np.mean(node.data.y)
+    sum_sq_error = np.sum(np.power(node.data.y - mean_residual, 2))
 
     fourth_term = (np.power(mean_residual, 2) * np.power(n, 2)) / (n + (var / var_mu))
     fifth_term = n * np.power(mean_residual, 2)
@@ -110,8 +111,8 @@ class TreeMutationSampler:
             raise NotImplementedError("kind {} not supported".format(proposal.kind))
 
     def transition_ratio_grow(self, proposal: GrowMutation):
-        prob_grow_selected = log_probability_split_within_tree(self.tree_structure, proposal)
         prob_prune_selected = - np.log(self.tree_structure.n_leaf_parents() + 1)
+        prob_grow_selected = log_probability_split_within_tree(self.tree_structure, proposal)
 
         prob_selection_ratio = prob_prune_selected - prob_grow_selected
         prune_grow_ratio = np.log(self.proposer.p_prune / self.proposer.p_grow)
@@ -145,9 +146,10 @@ class TreeMutationSampler:
         denominator = log_probability_node_not_split(self.model, proposal.existing_node)
 
         prob_left_not_split = log_probability_node_not_split(self.model, proposal.updated_node.left_child)
-        prob_right_not_split = log_probability_node_not_split(self.model, proposal.updated_node.left_child)
+        prob_right_not_split = log_probability_node_not_split(self.model, proposal.updated_node.right_child)
+        prob_updated_node_split = log_probability_node_split(self.model, proposal.updated_node)
         prob_chosen_split = log_probability_split_within_tree(self.tree_structure, proposal)
-        numerator = prob_left_not_split + prob_right_not_split + prob_chosen_split
+        numerator = prob_left_not_split + prob_right_not_split + + prob_updated_node_split + prob_chosen_split
 
         return numerator - denominator
 
@@ -220,6 +222,7 @@ class Sampler:
     def step_sigma(self, sigma: Sigma) -> None:
         sampler = SigmaSampler(self.model, sigma)
         sigma.set_value(sampler.sample())
+        print(sigma.current_value())
 
     def step(self):
         for tree in self.model.refreshed_trees():
