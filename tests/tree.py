@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from bartpy.data import Data
-from bartpy.tree import TreeStructure, LeafNode, SplitNode, TreeMutation, PruneMutation, split_node
+from bartpy.tree import Tree, LeafNode, DecisionNode, TreeMutation, PruneMutation, split_node
 from bartpy.split import Split, SplitCondition, LTESplitCondition
 import pandas as pd
 
@@ -11,7 +11,7 @@ class TestTreeStructureNodeRetrieval(TestCase):
     def setUp(self):
         data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 2, 3]}), pd.Series([1, 2, 3]))
         self.a = split_node(LeafNode(data), SplitCondition("a", 1))
-        self.tree_structure = TreeStructure(self.a)
+        self.tree_structure = Tree(self.a)
 
         self.c = split_node(self.a._right_child, SplitCondition("b", 1))
         self.tree_structure.mutate(TreeMutation("grow", self.a.right_child, self.c))
@@ -59,7 +59,7 @@ class TestTreeStructureDataUpdate(TestCase):
     def setUp(self):
         self.data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 2, 3]}), pd.Series([1, 2, 3]))
         self.a = split_node(LeafNode(self.data), SplitCondition("a", 1))
-        self.tree_structure = TreeStructure(self.a)
+        self.tree_structure = Tree(self.a)
 
         self.c = split_node(self.a._right_child, SplitCondition("b", 2))
         self.tree_structure.mutate(TreeMutation("grow", self.a.right_child, self.c))
@@ -85,10 +85,10 @@ class TestTreeStructureMutation(TestCase):
         self.data = Data(pd.DataFrame({"a": [1]}), pd.Series([1]))
         self.d = LeafNode(self.data, None)
         self.e = LeafNode(self.data, None)
-        self.c = SplitNode(self.data, None, self.d, self.e)
+        self.c = DecisionNode(self.data, None, self.d, self.e)
         self.b = LeafNode(self.data, None)
-        self.a = SplitNode(self.data, None, self.b, self.c)
-        self.tree_structure = TreeStructure(self.a)
+        self.a = DecisionNode(self.data, None, self.b, self.c)
+        self.tree_structure = Tree(self.a)
 
     def test_starts_right(self):
         self.assertListEqual([self.c], self.tree_structure.leaf_parents())
@@ -102,7 +102,7 @@ class TestTreeStructureMutation(TestCase):
 
     def test_grow(self):
         f, g = LeafNode(self.data, None), LeafNode(self.data, None)
-        updated_d = SplitNode(None, None, f, g)
+        updated_d = DecisionNode(None, None, f, g)
         grow_mutation = TreeMutation("grow", self.d, updated_d)
         self.tree_structure.mutate(grow_mutation)
         self.assertIn(updated_d, self.tree_structure.split_nodes())
@@ -111,8 +111,8 @@ class TestTreeStructureMutation(TestCase):
         self.assertNotIn(self.d, self.tree_structure.nodes())
 
     def test_head_prune(self):
-        a = SplitNode(self.data, None, LeafNode(self.data, None), LeafNode(self.data, None))
-        tree_structure = TreeStructure(a)
+        a = DecisionNode(self.data, None, LeafNode(self.data, None), LeafNode(self.data, None))
+        tree_structure = Tree(a)
         updated_a = LeafNode(self.data, None)
         print(a.is_leaf_parent())
         prune_mutation = PruneMutation(a, updated_a)

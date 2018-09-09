@@ -4,9 +4,11 @@ import numpy as np
 from scipy.stats import invgamma
 
 from bartpy.model import Model
+from bartpy.mutation import TreeMutation, GrowMutation, ChangeMutation, PruneMutation
+from bartpy.node import DecisionNode, LeafNode, TreeNode
 from bartpy.proposer import Proposer
-from bartpy.tree import SplitNode, TreeStructure, LeafNode, TreeMutation, GrowMutation, ChangeMutation, PruneMutation, TreeNode
 from bartpy.sigma import Sigma
+from bartpy.tree import Tree, n_splittable_leaf_nodes, n_prunable_decision_nodes, mutate
 
 
 def log_probability_node_split(model: Model, node: TreeNode):
@@ -23,13 +25,13 @@ def log_probability_split_within_node(mutation: GrowMutation) -> float:
     """
 
     prob_splitting_variable_selected = - np.log(mutation.existing_node.data.n_splittable_variables)
-    splitting_variable = mutation.updated_node.split_on().splitting_variable
+    splitting_variable = mutation.updated_node.variable_split_on().splitting_variable
     prob_value_selected_within_variable = - np.log(mutation.existing_node.data.n_unique_values(splitting_variable))
     return prob_splitting_variable_selected + prob_value_selected_within_variable
 
 
-def log_probability_split_within_tree(tree_structure: TreeStructure, mutation: GrowMutation) -> float:
-    prob_node_chosen_to_split_on = - np.log(tree_structure.n_leaf_nodes())
+def log_probability_split_within_tree(tree_structure: Tree, mutation: GrowMutation) -> float:
+    prob_node_chosen_to_split_on = - np.log(n_splittable_leaf_nodes(tree_structure))
     prob_split_chosen = log_probability_split_within_node(mutation)
     return prob_node_chosen_to_split_on + prob_split_chosen
 
@@ -84,7 +86,7 @@ class LeafNodeSampler:
 
 class TreeMutationSampler:
 
-    def __init__(self, model: Model, tree_structure: TreeStructure, proposer: Proposer):
+    def __init__(self, model: Model, tree_structure: Tree, proposer: Proposer):
         self.proposer = proposer
         self.tree_structure = tree_structure
         self.model = model
@@ -111,7 +113,7 @@ class TreeMutationSampler:
             raise NotImplementedError("kind {} not supported".format(proposal.kind))
 
     def transition_ratio_grow(self, proposal: GrowMutation):
-        prob_prune_selected = - np.log(self.tree_structure.n_leaf_parents() + 1)
+        prob_prune_selected = - np.log(n_prunable_decision_nodes(self.tree_structure) + 1)
         prob_grow_selected = log_probability_split_within_tree(self.tree_structure, proposal)
 
         prob_selection_ratio = prob_prune_selected - prob_grow_selected
@@ -120,11 +122,11 @@ class TreeMutationSampler:
         return prune_grow_ratio + prob_selection_ratio
 
     def transition_ratio_prune(self, proposal: PruneMutation):
-        prob_grow_node_selected = - np.log(self.tree_structure.n_leaf_nodes() - 1)
+        prob_grow_node_selected = - np.log(n_splittable_leaf_nodes(self.tree_structure) - 1)
         prob_split = log_probability_split_within_node(GrowMutation(proposal.updated_node, proposal.existing_node))
         prob_grow_selected = prob_grow_node_selected + prob_split
 
-        prob_prune_selected = - np.log(self.tree_structure.n_leaf_parents())
+        prob_prune_selected = - np.log(n_prunable_decision_nodes(self.tree_structure))
 
         prob_selection_ratio = prob_grow_selected - prob_prune_selected
         grow_prune_ratio = np.log(self.proposer.p_grow / self.proposer.p_prune)
@@ -210,13 +212,13 @@ class Sampler:
         leaf_sampler = LeafNodeSampler(self.model, node)
         node.set_value(leaf_sampler.sample())
 
-    def step_tree(self, tree: TreeStructure) -> None:
+    def step_tree(self, tree: Tree) -> None:
         tree_sampler = TreeMutationSampler(self.model, tree, self.proposer)
         tree_mutation = tree_sampler.sample()
         if tree_mutation is not None:
-            tree.mutate(tree_mutation)
+            mutate(tree, tree_mutation)
 
-        for node in tree.leaf_nodes():
+        for node in tree.leaf_nodes:
             self.step_leaf(node)
 
     def step_sigma(self, sigma: Sigma) -> None:
@@ -232,14 +234,14 @@ class Sampler:
     def samples(self, n_samples: int, n_burn: int) -> np.ndarray:
         for bb in range(n_burn):
             print(bb)
-            print([len(x.nodes()) for x in self.model.trees])
+            print([len(x.nodes) for x in self.model.trees])
 
             self.step()
         trace = []
         for ss in range(n_samples):
             print(ss)
             self.step()
-            print([len(x.nodes()) for x in self.model.trees])
+            print([len(x.nodes) for x in self.model.trees])
             trace.append(self.model.predict())
         return np.array(trace)
 

@@ -24,4 +24,4 @@ def run(alpha, beta, n_trees):
 
 if __name__ == "__main__":
     print("here")
-    #run(0.95, 2., 20)
+    run(0.95, 2., 20)
