@@ -17,7 +17,9 @@ class SklearnModel:
                  n_burn: int=200,
                  p_grow: float=0.2,
                  p_prune: float=0.2,
-                 p_change: float=0.6):
+                 p_change: float=0.6,
+                 alpha: float=0.95,
+                 beta: float=2.):
         self.n_trees = n_trees
         self.sigma = sigma
         self.n_burn = n_burn
@@ -25,11 +27,13 @@ class SklearnModel:
         self.p_grow = p_grow
         self.p_change = p_change
         self.p_prune = p_prune
+        self.alpha = alpha
+        self.beta = beta
         self.data, self.model, self.proposer, self.sampler, self.samples = [None] * 5
 
     def fit(self, X: pd.DataFrame, y: np.ndarray) -> 'SklearnModel':
         self.data = Data(X, y, normalize=True)
-        self.model = Model(self.data, self.sigma, n_trees=self.n_trees)
+        self.model = Model(self.data, self.sigma, n_trees=self.n_trees, alpha=self.alpha, beta=self.beta)
         self.proposer = Proposer(self.p_grow, self.p_prune, self.p_change)
         self.sampler = Sampler(self.model, self.proposer)
         self.samples = self.sampler.samples(self.n_samples, self.n_burn)

@@ -1,7 +1,14 @@
+from bartpy.sklearnmodel import SklearnModel
+
+from matplotlib import pyplot as plt
 
 
+def plot_residuals(model: SklearnModel):
+    plt.plot(model.data.unnormalized_y - model.predict())
+    plt.show()
 
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-    plt.scatter([0, 1], [0, 1])
+
+def plot_modelled_against_actual(model: SklearnModel):
+    plt.plot(model.data.unnormalized_y)
+    plt.plot(model.predict())
     plt.show()

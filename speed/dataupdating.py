@@ -6,7 +6,7 @@ from bartpy.data import Data
 from bartpy.model import Model
 from bartpy.sigma import Sigma
 from bartpy.split import SplitCondition, Split
-from bartpy.tree import TreeStructure, LeafNode, TreeMutation, split_node
+from bartpy.tree import Tree, LeafNode, TreeMutation, split_node
 
 import pandas as pd
 import numpy as np
@@ -17,7 +17,7 @@ def update_data():
     data = Data(pd.DataFrame({"a": np.random.normal(0, 1, 10000), "b": np.random.normal(0, 1, 10000)}), pd.Series(np.random.normal(0, 1, 10000)))
     split = Split(data, [])
     a = split_node(LeafNode(split), SplitCondition("a", 1))
-    tree_structure = TreeStructure(a)
+    tree_structure = Tree(a)
 
     c = split_node(a._right_child, SplitCondition("b", 2))
     tree_structure.mutate(TreeMutation("grow", a.right_child, c))
@@ -36,7 +36,7 @@ def predict():
     data = Data(pd.DataFrame({"a": np.random.normal(0, 1, 10000), "b": np.random.normal(0, 1, 10000)}), pd.Series(np.random.normal(0, 1, 10000)))
     split = Split(data, [])
     a = split_node(LeafNode(split), SplitCondition("a", 1))
-    tree_structure = TreeStructure(a)
+    tree_structure = Tree(a)
 
     c = split_node(a._right_child, SplitCondition("b", 2))
     tree_structure.mutate(TreeMutation("grow", a.right_child, c))
@@ -57,7 +57,7 @@ def updated_trees():
     data = Data(pd.DataFrame({"a": np.random.normal(0, 1, 10000), "b": np.random.normal(0, 1, 10000)}), pd.Series(np.random.normal(0, 1, 10000)))
     split = Split(data, [])
     a = split_node(LeafNode(split), SplitCondition("a", 1))
-    tree_structure = TreeStructure(a)
+    tree_structure = Tree(a)
 
     c = split_node(a._right_child, SplitCondition("b", 2))
     tree_structure.mutate(TreeMutation("grow", a.right_child, c))

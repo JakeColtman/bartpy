@@ -2,7 +2,7 @@ import unittest
 
 from bartpy.data import Data
 from bartpy.proposer import GrowTreeMutationProposer, PruneTreeMutationProposer, ChangeTreeMutationProposer
-from bartpy.tree import LeafNode, TreeStructure, SplitNode
+from bartpy.tree import LeafNode, Tree, DecisionNode
 
 import pandas as pd
 
@@ -13,10 +13,10 @@ class TestPruneTreeMutationProposer(unittest.TestCase):
         self.data = Data(pd.DataFrame({"a": [1, 2]}), pd.Series([1, 1]))
         self.d = LeafNode(self.data)
         self.e = LeafNode(self.data)
-        self.c = SplitNode(self.data, None, self.d, self.e)
+        self.c = DecisionNode(self.data, None, self.d, self.e)
         self.b = LeafNode(self.data)
-        self.a = SplitNode(self.data, None, self.b, self.c)
-        self.tree_structure = TreeStructure(self.a)
+        self.a = DecisionNode(self.data, None, self.b, self.c)
+        self.tree_structure = Tree(self.a)
         self.proposer = PruneTreeMutationProposer(self.tree_structure)
 
     def test_proposal_isnt_mutating(self):
@@ -26,7 +26,7 @@ class TestPruneTreeMutationProposer(unittest.TestCase):
 
     def test_types(self):
         proposal = self.proposer.proposal()
-        self.assertIsInstance(proposal.existing_node, SplitNode)
+        self.assertIsInstance(proposal.existing_node, DecisionNode)
         self.assertIsInstance(proposal.updated_node, LeafNode)
 
 
@@ -36,10 +36,10 @@ class TestGrowTreeMutationProposer(unittest.TestCase):
         self.data = Data(pd.DataFrame({"a": [1, 2]}), pd.Series([1, 1]))
         self.d = LeafNode(self.data)
         self.e = LeafNode(self.data)
-        self.c = SplitNode(self.data, None, self.d, self.e)
+        self.c = DecisionNode(self.data, None, self.d, self.e)
         self.b = LeafNode(self.data)
-        self.a = SplitNode(self.data, None, self.b, self.c)
-        self.tree_structure = TreeStructure(self.a)
+        self.a = DecisionNode(self.data, None, self.b, self.c)
+        self.tree_structure = Tree(self.a)
         self.proposer = GrowTreeMutationProposer(self.tree_structure)
 
     def test_proposal_isnt_mutating(self):
@@ -49,7 +49,7 @@ class TestGrowTreeMutationProposer(unittest.TestCase):
 
     def test_types(self):
         proposal = self.proposer.proposal()
-        self.assertIsInstance(proposal.updated_node, SplitNode)
+        self.assertIsInstance(proposal.updated_node, DecisionNode)
         self.assertIsInstance(proposal.updated_node.left_child, LeafNode)
         self.assertIsInstance(proposal.updated_node.right_child, LeafNode)
         self.assertIsInstance(proposal.existing_node, LeafNode)

@@ -6,7 +6,7 @@ import pandas as pd
 
 from bartpy.data import Data
 from bartpy.sigma import Sigma
-from bartpy.tree import TreeStructure, LeafNode
+from bartpy.tree import Tree, LeafNode
 from bartpy.split import Split
 
 
@@ -28,10 +28,10 @@ class Model:
 
         self._prediction = self.predict()
 
-    def initialize_trees(self) -> List[TreeStructure]:
+    def initialize_trees(self) -> List[Tree]:
         tree_data = deepcopy(self.data)
         tree_data._y = tree_data.y / self.n_trees
-        trees = [TreeStructure(LeafNode(Split(self.data, []))) for _ in range(self.n_trees)]
+        trees = [Tree([LeafNode(Split(self.data, []))]) for _ in range(self.n_trees)]
         return trees
 
     def residuals(self) -> pd.Series:
@@ -47,10 +47,10 @@ class Model:
         return np.sum(np.array([tree.predict() for ii, tree in enumerate(self.trees) if ii != index]), axis=0)
 
     @property
-    def trees(self) -> List[TreeStructure]:
+    def trees(self) -> List[Tree]:
         return self._trees
 
-    def refreshed_trees(self) -> Generator[TreeStructure, None, None]:
+    def refreshed_trees(self) -> Generator[Tree, None, None]:
 
         for tree in self.trees:
             self._prediction -= tree.predict()

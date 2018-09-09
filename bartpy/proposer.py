@@ -5,12 +5,14 @@ from typing import Callable
 import numpy as np
 
 from bartpy.errors import NoSplittableVariableException, NoPrunableNodeException
-from bartpy.tree import LeafNode, TreeStructure, sample_split_node, TreeMutation, PruneMutation, GrowMutation
+from bartpy.mutation import TreeMutation, PruneMutation, GrowMutation, ChangeMutation
+from bartpy.node import sample_split_node
+from bartpy.tree import LeafNode, Tree, random_prunable_decision_node, random_splittable_leaf_node
 
 
 class TreeMutationProposer:
 
-    def __init__(self, tree_structure: TreeStructure):
+    def __init__(self, tree_structure: Tree):
         self.tree_structure = tree_structure
 
     @abstractclassmethod
@@ -20,39 +22,36 @@ class TreeMutationProposer:
 
 class GrowTreeMutationProposer(TreeMutationProposer):
 
-    def __init__(self, tree_structure: TreeStructure):
+    def __init__(self, tree_structure: Tree):
         super().__init__(tree_structure)
 
     def proposal(self) -> TreeMutation:
-        node = self.tree_structure.random_splittable_leaf_node()
+        node = random_splittable_leaf_node(self.tree_structure)
         updated_node = sample_split_node(node)
         return GrowMutation(node, updated_node)
 
 
 class PruneTreeMutationProposer(TreeMutationProposer):
 
-    def __init__(self, tree_structure: TreeStructure):
+    def __init__(self, tree_structure: Tree):
         super().__init__(tree_structure)
 
     def proposal(self) -> TreeMutation:
-        node = self.tree_structure.random_leaf_parent()
-        updated_node = LeafNode(deepcopy(node.split), depth=node.depth)
-        try:
-            return PruneMutation(node, updated_node)
-        except:
-            raise
+        node = random_prunable_decision_node(self.tree_structure)
+        updated_node = LeafNode(node.split, depth=node.depth)
+        return PruneMutation(node, updated_node)
 
 
 class ChangeTreeMutationProposer(TreeMutationProposer):
 
-    def __init__(self, tree_structure: TreeStructure):
+    def __init__(self, tree_structure: Tree):
         super().__init__(tree_structure)
 
     def proposal(self) -> TreeMutation:
-        node = self.tree_structure.random_leaf_parent()
+        node = random_prunable_decision_node(self.tree_structure)
         leaf_node = LeafNode(node.split, depth=node.depth)
         updated_split_node = sample_split_node(leaf_node)
-        return TreeMutation("change", node, updated_split_node)
+        return ChangeMutation(node, updated_split_node)
 
 
 class Proposer:
@@ -62,11 +61,11 @@ class Proposer:
         self.p_prune = p_prune
         self.p_change = p_change
 
-    def sample_mutation_method(self) -> Callable[[TreeStructure], TreeMutationProposer]:
+    def sample_mutation_method(self) -> Callable[[Tree], TreeMutationProposer]:
         method = np.random.choice([ChangeTreeMutationProposer, GrowTreeMutationProposer, PruneTreeMutationProposer], p=[self.p_change, self.p_grow, self.p_prune])
         return method
 
-    def propose(self, tree_structure: TreeStructure) -> TreeMutation:
+    def propose(self, tree_structure: Tree) -> TreeMutation:
         method = self.sample_mutation_method()
         try:
             return method(tree_structure).proposal()
