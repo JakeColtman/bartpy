@@ -37,7 +37,7 @@ class Data:
             self._y = y
 
     @property
-    def y(self) -> pd.Series:
+    def y(self) -> np.ndarray:
         return self._y
 
     @property
@@ -121,15 +121,6 @@ class Data:
         Set[Any] - all possible values
         """
         return self.X[variable]
-
-    def split_data(self, split):
-        lhs_condition = self.X[split.splitting_variable] <= split.splitting_value
-        rhs_condition = self.X[split.splitting_variable] > split.splitting_value
-
-        lhs = Data(self.X[lhs_condition], self.y[lhs_condition])
-        rhs = Data(self.X[rhs_condition], self.y[rhs_condition])
-
-        return SplitData(lhs, rhs)
 
     @property
     def n_obsv(self) -> int:

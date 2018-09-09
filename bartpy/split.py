@@ -40,7 +40,7 @@ class GTSplitCondition:
         return self.splitting_variable + ": " + str(self.splitting_value)
 
     def condition(self, data: Data):
-        return data.X[self.splitting_variable] > self.splitting_value
+        return np.array(data.X[self.splitting_variable] > self.splitting_value)
 
 
 class LTESplitCondition:
@@ -53,7 +53,7 @@ class LTESplitCondition:
         return self.splitting_variable + ": " + str(self.splitting_value)
 
     def condition(self, data: Data):
-        return data.X[self.splitting_variable] <= self.splitting_value
+        return np.array(data.X[self.splitting_variable] <= self.splitting_value)
 
 
 class Split:
@@ -62,14 +62,12 @@ class Split:
         self._conditions = split_conditions
         self._data = deepcopy(data)
         self._combined_condition = combined_condition
-        self._conditioned_X = None
+        self._conditioned_X = self._data.X[self.condition()]
         self._cache_up_to_date = False
         self._conditioned_data = None
 
     @property
     def data(self):
-        if self._conditioned_X is None:
-            self._conditioned_X = self._data.X[self.condition()]
         if self._cache_up_to_date:
             return self._conditioned_data
         else:
@@ -86,6 +84,7 @@ class Split:
             final_condition = self._conditions[0].condition(data)
             for c in self._conditions[1:]:
                 final_condition = final_condition & c.condition(data)
+                print(final_condition)
             return final_condition
 
     def condition(self, data: Data=None):
@@ -97,7 +96,7 @@ class Split:
             return self.combined_condition(data)
 
     def __add__(self, other: Union[LTESplitCondition, GTSplitCondition]):
-        return Split(self._data, self._conditions + [other])
+        return Split(self._data, self._conditions + [other], combined_condition=self.condition() & other.condition(self._data))
 
     def most_recent_split_condition(self) -> Optional[Union[LTESplitCondition, GTSplitCondition]]:
         if len(self._conditions) > 0:

@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 
 from bartpy.data import Data
-from bartpy.errors import NoSplittableVariableException, NoPrunableNodeException
 from bartpy.split import Split, sample_split_condition, SplitCondition, LTESplitCondition, GTSplitCondition
 
 

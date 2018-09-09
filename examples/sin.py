@@ -6,11 +6,11 @@ from bartpy.plotting import plot_residuals, plot_modelled_against_actual
 
 
 def run(alpha, beta, n_trees):
-    x = np.sin(np.linspace(0, 5, 300))
+    x = np.sin(np.linspace(0, 5, 100000))
     X = pd.DataFrame({"b": x})
-    y = np.random.normal(0, 0.1, size=300) + x
+    y = np.random.normal(0, 0.1, size=100000) + x
 
-    model = SklearnModel(n_samples=50, n_burn=50, n_trees=n_trees, alpha = alpha, beta=beta)
+    model = SklearnModel(n_samples=50, n_burn=50, n_trees=n_trees, alpha=alpha, beta=beta)
     model.fit(X, y)
     predictions = model.predict()
     for ii in range(len(predictions)):
