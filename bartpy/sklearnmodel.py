@@ -15,9 +15,9 @@ class SklearnModel:
                  sigma: Sigma=Sigma(100., 0.001),
                  n_samples: int=200,
                  n_burn: int=200,
-                 p_grow: float=0.2,
-                 p_prune: float=0.2,
-                 p_change: float=0.6,
+                 p_grow: float=0.5,
+                 p_prune: float=0.5,
+                 p_change: float=0,
                  alpha: float=0.95,
                  beta: float=2.):
         self.n_trees = n_trees

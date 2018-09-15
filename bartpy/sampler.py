@@ -5,7 +5,7 @@ from scipy.stats import invgamma
 
 from bartpy.model import Model
 from bartpy.mutation import TreeMutation, GrowMutation, ChangeMutation, PruneMutation
-from bartpy.node import DecisionNode, LeafNode, TreeNode
+from bartpy.node import LeafNode, TreeNode
 from bartpy.proposer import Proposer
 from bartpy.sigma import Sigma
 from bartpy.tree import Tree, n_splittable_leaf_nodes, n_prunable_decision_nodes, mutate
@@ -135,13 +135,13 @@ class TreeMutationSampler:
     def sample(self) -> Optional[TreeMutation]:
         proposal = self.proposer.propose(self.tree_structure)
         ratio = self.proposal_ratio(proposal)
-        if np.random.uniform(0, 1) < ratio:
+        if np.log(np.random.uniform(0, 1)) < ratio:
             return proposal
         else:
             return None
 
     def proposal_ratio(self, proposal: TreeMutation):
-        return np.exp(self.transition_ratio(proposal) + self.likihood_ratio(proposal) + self.tree_structure_ratio(proposal))
+        return self.transition_ratio(proposal) + self.likihood_ratio(proposal) + self.tree_structure_ratio(proposal)
 
     def transition_ratio(self, proposal: TreeMutation):
         if proposal.kind == "grow":
@@ -280,15 +280,10 @@ class Sampler:
 
     def samples(self, n_samples: int, n_burn: int) -> np.ndarray:
         for bb in range(n_burn):
-            print(bb)
-            print([len(x.nodes) for x in self.model.trees])
-
             self.step()
         trace = []
         for ss in range(n_samples):
-            print(ss)
             self.step()
-            print([len(x.nodes) for x in self.model.trees])
             trace.append(self.model.predict())
         return np.array(trace)
 
