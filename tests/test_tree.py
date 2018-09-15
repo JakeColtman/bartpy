@@ -44,8 +44,6 @@ class TestTreeStructureNodeRetrieval(TestCase):
     def test_retrieve_all_leaf_parents(self):
         all_nodes = self.tree_structure.prunable_decision_nodes
         true_all_nodes = [self.c]
-        print(self.c.is_prunable())
-        print(all_nodes)
         for node in true_all_nodes:
             self.assertIn(node, all_nodes)
         for node in all_nodes:

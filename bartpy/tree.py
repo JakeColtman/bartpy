@@ -153,14 +153,6 @@ def mutate(tree: Tree, mutation: TreeMutation) -> None:
         tree._nodes.append(mutation.updated_node.right_child)
         tree._nodes.append(mutation.updated_node)
 
-    if mutation.kind == "change":
-        tree._nodes.remove(mutation.existing_node.left_child)
-        tree._nodes.remove(mutation.existing_node.right_child)
-        tree._nodes.append(mutation.updated_node.left_child)
-        tree._nodes.append(mutation.updated_node.right_child)
-        tree._nodes.remove(mutation.existing_node)
-        tree._nodes.append(mutation.updated_node)
-
     for node in tree.nodes:
         if node.right_child == mutation.existing_node:
             node._right_child = mutation.updated_node

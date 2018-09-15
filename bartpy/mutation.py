@@ -6,7 +6,7 @@ class TreeMutation(ABC):
 
     def __init__(self, kind: str, existing_node: TreeNode, updated_node: TreeNode):
 
-        if kind not in ["grow", "change", "prune"]:
+        if kind not in ["grow", "prune"]:
             raise NotImplementedError("{} is not a supported proposal".format(kind))
         self.kind = kind
         self.existing_node = existing_node
@@ -32,11 +32,3 @@ class GrowMutation(TreeMutation):
         if not existing_node.is_leaf_node():
             raise TypeError("Can only grow Leaf nodes")
         super().__init__("grow", existing_node, updated_node)
-
-
-class ChangeMutation(TreeMutation):
-
-    def __init__(self, existing_node: DecisionNode, updated_node: DecisionNode):
-        if not existing_node.is_decision_node() and existing_node.is_prunable():
-            raise TypeError("Changing only valid on prunable decision nodes")
-        super().__init__("change", existing_node, updated_node)

@@ -1,9 +1,9 @@
 import unittest
 
+import pandas as pd
+
 from bartpy.data import Data
 from bartpy.split import SplitCondition, Split
-
-import pandas as pd
 
 
 class TestSplit(unittest.TestCase):
