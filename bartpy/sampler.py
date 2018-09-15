@@ -78,10 +78,7 @@ class LeafNodeSampler:
         self.node = node
 
     def step(self):
-        print(self.node.current_value)
         self.node.set_value(self.sample())
-        print(self.node.current_value)
-        print("----")
 
     def sample(self) -> float:
         prior_var = self.model.sigma_m ** 2
@@ -195,7 +192,7 @@ class SampleSchedule:
         self.proposer = proposer
 
     def steps(self):
-        for tree in self.model.trees:
+        for tree in self.model.refreshed_trees():
             yield TreeMutationSampler(self.model, tree, self.proposer)
             for node in tree.leaf_nodes:
                 yield LeafNodeSampler(self.model, node)
@@ -210,14 +207,12 @@ class Sampler:
 
     def step(self):
         for ss in self.schedule.steps():
-            print(ss)
             ss.step()
 
     def samples(self, n_samples: int, n_burn: int) -> np.ndarray:
         for bb in range(n_burn):
             print("Burn - ", bb)
             self.step()
-            print([len(x.nodes) for x in self.model.trees])
         trace = []
         for ss in range(n_samples):
             print("Sample - ", ss)
