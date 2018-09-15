@@ -5,7 +5,7 @@ from scipy.stats import invgamma
 
 from bartpy.model import Model
 from bartpy.mutation import TreeMutation, GrowMutation, ChangeMutation, PruneMutation
-from bartpy.node import DecisionNode, LeafNode, TreeNode
+from bartpy.node import LeafNode, TreeNode
 from bartpy.proposer import Proposer
 from bartpy.sigma import Sigma
 from bartpy.tree import Tree, n_splittable_leaf_nodes, n_prunable_decision_nodes, mutate

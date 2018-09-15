@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import List, Optional, Union
+from typing import List, Optional
 from copy import deepcopy
 
 from bartpy.data import Data

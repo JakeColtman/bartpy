@@ -1,5 +1,4 @@
 from abc import abstractclassmethod
-from copy import deepcopy
 from typing import Callable
 
 import numpy as np
