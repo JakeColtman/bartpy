@@ -87,18 +87,6 @@ class Data:
         Notes
         -----
           - Won't create degenerate splits, all splits will have at least one row on both sides of the split
-
-        Examples
-        --------
-        >>> data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 1, 2]}), np.array([1, 1, 1]))
-        >>> random_a = [data.random_splittable_value("a") for _ in range(100)]
-        >>> np.all([x in [1, 2] for x in random_a])
-        True
-        >>> random_b = [data.random_splittable_value("b") for _ in range(100)]
-        >>> np.all([x in [1] for x in random_b])
-        True
-        >>> unsplittable_data = Data(pd.DataFrame({"a": [1, 1], "b": [1, 1]}), np.array([1, 1, 1]))
-        >>> unsplittable_data.random_splittable_value("a")
         """
         possible_values = np.array(list(self.unique_values(variable)))
         possible_values = possible_values[possible_values != np.max(possible_values)]
@@ -162,8 +150,3 @@ class Data:
     @property
     def unnormalized_y(self) -> np.ndarray:
         return self.unnormalize_y(self.y)
-
-
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
