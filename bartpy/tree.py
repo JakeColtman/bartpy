@@ -8,7 +8,12 @@ from bartpy.node import TreeNode, LeafNode, DecisionNode
 
 class Tree:
     """
-    An encapsulation of the structure of the tree as a whole
+    An encapsulation of the structure of a single decision tree
+    Contains no logic, but keeps track of 4 different kinds of nodes within the tree:
+      - leaf nodes
+      - decision nodes
+      - splittable leaf nodes
+      - prunable decision nodes
     """
 
     def __init__(self, nodes: List[TreeNode]):
