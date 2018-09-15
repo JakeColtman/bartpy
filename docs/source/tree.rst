@@ -7,5 +7,3 @@ Tree
 
 .. automodule:: bartpy.mutation
    :members:
-
-

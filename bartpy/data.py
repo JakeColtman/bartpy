@@ -14,17 +14,6 @@ class Data:
     """
     Encapsulates feature data
     Useful for providing cached access to commonly used functions of the data
-
-    Examples
-    --------
-    >>> data_pd = pd.DataFrame({"a": [1, 2, 3], "b": [1, 1, 2]})
-    >>> data = Data(data_pd, np.array([1, 1, 1]))
-    >>> data.variables == {"a", "b"}
-    True
-    >>> data.unique_values("a")
-    {1, 2, 3}
-    >>> data.unique_values("b")
-    {1, 2}
     """
 
     def __init__(self, X: pd.DataFrame, y: pd.Series, normalize=False):

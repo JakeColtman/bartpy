@@ -1,15 +1,18 @@
-from abc import abstractmethod, ABC
 from typing import Union
 
 import numpy as np
-import pandas as pd
 
 from bartpy.data import Data
 from bartpy.split import Split, sample_split_condition, SplitCondition
 
 
-class TreeNode(ABC):
-
+class TreeNode:
+    """
+    A representation of a node in the Tree
+    Contains two main types of information:
+        - Data relevant for the node
+        - Links to children nodes
+    """
     def __init__(self, split: Split, depth: int, left_child: 'TreeNode'=None, right_child: 'TreeNode'=None):
         self.depth = depth
         self._split = split
@@ -41,12 +44,20 @@ class TreeNode(ABC):
     def split(self):
         return self._split
 
-    @abstractmethod
     def update_y(self, y):
-        raise NotImplementedError()
+        self.split.update_y(y)
+        if self.left_child is not None:
+            self.left_child.update_y(y)
+            self.right_child.update_y(y)
 
 
 class LeafNode(TreeNode):
+    """
+    A representation of a leaf node in the tree
+    In addition to the normal work of a `Node`, a `LeafNode` is responsible for:
+        - Interacting with `Data`
+        - Making predictions
+    """
 
     def __init__(self, split: Split, depth=0):
         self._value = 0.0
@@ -79,11 +90,12 @@ class LeafNode(TreeNode):
     def is_leaf_node(self):
         return True
 
-    def update_y(self, y):
-        self.split.update_y(y)
-
 
 class DecisionNode(TreeNode):
+    """
+    A `DecisionNode` encapsulates internal node in the tree
+    Unlike a `LeafNode`, it contains very little actual logic beyond tying the tree together
+    """
 
     def __init__(self, split: Split, left_child_node: Union[LeafNode, 'DecisionNode'], right_child_node: Union[LeafNode, 'DecisionNode'], depth=0):
         super().__init__(split, depth, left_child_node, right_child_node)
@@ -97,13 +109,12 @@ class DecisionNode(TreeNode):
     def variable_split_on(self) -> SplitCondition:
         return self.left_child.split.most_recent_split_condition()
 
-    def update_y(self, y):
-        self.split.update_y(y)
-        self.left_child.update_y(y)
-        self.right_child.update_y(y)
-
 
 def split_node(node: LeafNode, split_condition: SplitCondition) -> DecisionNode:
+    """
+    Converts a `LeafNode` into an internal `DecisionNode` by applying the split condition
+    The left node contains all values for the splitting variable less than the splitting value
+    """
     left_split, right_split = node.split + split_condition
     return DecisionNode(node.split,
                         LeafNode(left_split, depth=node.depth + 1),
@@ -111,40 +122,10 @@ def split_node(node: LeafNode, split_condition: SplitCondition) -> DecisionNode:
                         depth=node.depth)
 
 
-def sample_split_node(node: LeafNode, variable_prior=None) -> DecisionNode:
+def sample_split_node(node: LeafNode) -> DecisionNode:
     """
-    Split a leaf node into an internal node with two lead children
+    Split a leaf node into a decision node with two leaf children
     The variable and value to split on is determined by sampling from their respective distributions
-
-    Parameters
-    ----------
-    node - TreeNode
-        The node to split
-    variable_prior - np.ndarray
-        Multinomial potentials to use as weights for selecting variable to split on
-    Returns
-    -------
-        TreeNode
-            New node with two leaf children
-
-    Examples
-    --------
-    >>> data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 1, 2]}), np.array([1, 1, 1]))
-    >>> node = TreeNode(data)
-    >>> new_node = sample_split_node(node)
-    >>> new_node.left_child is not None
-    True
-    >>> new_node.right_child is not None
-    True
-    >>> isinstance(new_node, DecisionNode)
-    True
-    >>> len(new_node.left_child.data.X) + len(new_node.right_child.data.X)
-    3
-
-    >>> unsplittable_data = Data(pd.DataFrame({"a": [1, 1], "b": [1, 1]}), np.array([1, 1, 1]))
-    >>> unsplittable_node = TreeNode(unsplittable_data)
-    >>> sample_split_node(unsplittable_node) == unsplittable_node
-    True
     """
-    condition = sample_split_condition(node, variable_prior)
+    condition = sample_split_condition(node)
     return split_node(node, condition)

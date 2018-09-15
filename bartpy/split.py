@@ -1,4 +1,3 @@
-from abc import ABC
 from typing import List, Optional
 from copy import deepcopy
 
@@ -12,7 +11,14 @@ def fancy_bool(x, bool_mask):
     return x[bool_mask]
 
 
-class SplitCondition(ABC):
+class SplitCondition:
+    """
+    A representation of a split in feature space.
+    The two main components are:
+        - splitting_variable: which variable is being split on
+        - splitting_value: the value being split on
+                           all values less than or equal to this go left, all values greater go right
+    """
 
     def __init__(self, splitting_variable: str, splitting_value: float):
         self.splitting_variable = splitting_variable
@@ -22,15 +28,28 @@ class SplitCondition(ABC):
     def __str__(self):
         return self.splitting_variable + ": " + str(self.splitting_value)
 
-    def condition(self, data):
+    def condition(self, data: Data) -> np.ndarray:
+        """
+        Returns a Bool array indicating which side of the split each row of `Data` should go
+        False => Left
+        True => Right
+        """
         if self._condition is None:
             self._condition = data.X[self.splitting_variable] > self.splitting_value
         return self._condition
 
-    def left(self, data):
+    def left(self, data: Data) -> np.ndarray:
+        """
+        Returns a Bool array indicating whether each row should go into the left split.
+        Inverse of self.right
+        """
         return ~self.condition(data)
 
-    def right(self, data):
+    def right(self, data: Data) -> np.ndarray:
+        """
+        Returns a Bool array indicating whether each row should go into the left split.
+        Inverse of self.right
+        """
         return self.condition(data)
 
 
@@ -85,32 +104,13 @@ class Split:
         self._data._y = y
 
 
-def sample_split_condition(node, variable_prior=None) -> Optional[SplitCondition]:
+def sample_split_condition(node) -> Optional[SplitCondition]:
     """
     Randomly sample a splitting rule for a particular leaf node
     Works based on two random draws
         - draw a node to split on based on multinomial distribution
         - draw an observation within that variable to split on
-
-    Parameters
-    ----------
-    node - TreeNode
-    variable_prior - np.ndarray
-        Array of potentials to split on different variables
-        Doesn't need to sum to one
-
-    Returns
-    -------
-    Split
-
-    Examples
-    --------
-    >>> data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 1, 2]}), np.array([1, 1, 1]))
-    >>> split = sample_split(data)
-    >>> split.splitting_variable in data.variables
-    True
-    >>> split.splitting_value in data.X[split.splitting_variable]
-    True
+    Returns None if there isn't a possible non-degenerate split
     """
     split_variable = np.random.choice(list(node.splittable_variables))
     split_value = node.data.random_splittable_value(split_variable)
