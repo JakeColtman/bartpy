@@ -61,6 +61,9 @@ class SigmaSampler:
         self.model = model
         self.sigma = sigma
 
+    def step(self) -> None:
+        self.sigma.set_value(self.sample())
+
     def sample(self) -> float:
         return 0.1
         posterior_alpha = self.sigma.alpha + (self.model.data.n_obsv / 2.)
@@ -73,6 +76,9 @@ class LeafNodeSampler:
     def __init__(self, model: Model, node: LeafNode):
         self.model = model
         self.node = node
+
+    def step(self):
+        self.node.set_value(self.sample())
 
     def sample(self) -> float:
         prior_var = self.model.sigma_m ** 2
@@ -98,6 +104,11 @@ class TreeMutationSampler:
             return proposal
         else:
             return None
+
+    def step(self) -> None:
+        mutation = self.sample()
+        if mutation is not None:
+            mutate(self.tree_structure, mutation)
 
     def proposal_ratio(self, proposal: TreeMutation):
         return self.transition_ratio(proposal) + self.likihood_ratio(proposal) + self.tree_structure_ratio(proposal)
@@ -174,32 +185,29 @@ class TreeMutationSampler:
         return 1.0 / log_grow_ratio(proposal.updated_node, proposal.existing_node.left_child, proposal.existing_node.right_child, self.model.sigma, self.model.sigma_m)
 
 
-class Sampler:
+class SampleSchedule:
 
-    def __init__(self, model: Model, proposer: Proposer):
+    def __init__(self, model, proposer):
         self.model = model
         self.proposer = proposer
 
-    def step_leaf(self, node: LeafNode) -> None:
-        leaf_sampler = LeafNodeSampler(self.model, node)
-        node.set_value(leaf_sampler.sample())
+    def steps(self):
+        for tree in self.model.refreshed_trees():
+            yield TreeMutationSampler(self.model, tree, self.proposer)
+            for node in tree.leaf_nodes:
+                yield LeafNodeSampler(self.model, node)
+        yield SigmaSampler(self.model, self.model.sigma)
 
-    def step_tree(self, tree: Tree) -> None:
-        tree_sampler = TreeMutationSampler(self.model, tree, self.proposer)
-        tree_mutation = tree_sampler.sample()
-        if tree_mutation is not None:
-            mutate(tree, tree_mutation)
 
-    def step_sigma(self, sigma: Sigma) -> None:
-        sampler = SigmaSampler(self.model, sigma)
-        sigma.set_value(sampler.sample())
+class Sampler:
+
+    def __init__(self, model: Model, schedule: SampleSchedule):
+        self.schedule = schedule
+        self.model = model
 
     def step(self):
-        for tree in self.model.refreshed_trees():
-            self.step_tree(tree)
-            for node in tree.leaf_nodes:
-                self.step_leaf(node)
-        self.step_sigma(self.model.sigma)
+        for ss in self.schedule.steps():
+            ss.step()
 
     def samples(self, n_samples: int, n_burn: int) -> np.ndarray:
         for bb in range(n_burn):

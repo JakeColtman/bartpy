@@ -3,8 +3,8 @@ import pandas as pd
 
 from bartpy.model import Model
 from bartpy.data import Data
+from bartpy.sampler import Sampler, SampleSchedule
 from bartpy.sigma import Sigma
-from bartpy.sampler import Sampler
 from bartpy.proposer import Proposer
 
 
@@ -33,7 +33,8 @@ class SklearnModel:
         self.data = Data(X, y, normalize=True)
         self.model = Model(self.data, self.sigma, n_trees=self.n_trees, alpha=self.alpha, beta=self.beta)
         self.proposer = Proposer(self.p_grow, self.p_prune)
-        self.sampler = Sampler(self.model, self.proposer)
+        self.schedule = SampleSchedule(self.model, self.proposer)
+        self.sampler = Sampler(self.model, self.schedule)
         self.samples = self.sampler.samples(self.n_samples, self.n_burn)
         return self
 
