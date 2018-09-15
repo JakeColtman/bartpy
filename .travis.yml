@@ -2,6 +2,6 @@ language: python
 python:
   - "3.6"
 script:
-  - pytest
+  - python -m unittest
 install:
   - pip install -r requirements.txt
