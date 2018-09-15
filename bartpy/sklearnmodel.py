@@ -3,9 +3,10 @@ import pandas as pd
 
 from bartpy.model import Model
 from bartpy.data import Data
-from bartpy.sampler import Sampler, SampleSchedule
+from bartpy.samplers.schedule import SampleSchedule
+from bartpy.samplers.sampler import Sampler
 from bartpy.sigma import Sigma
-from bartpy.proposer import Proposer
+from bartpy.samplers.proposer import UniformMutationProposer, UniformGrowTreeMutationProposer, UniformPruneTreeMutationProposer
 
 
 class SklearnModel:
@@ -27,12 +28,12 @@ class SklearnModel:
         self.p_prune = p_prune
         self.alpha = alpha
         self.beta = beta
-        self.data, self.model, self.proposer, self.sampler, self.samples = [None] * 5
+        self.data, self.model, self.proposer, self.sampler, self.samples, self.schedule = [None] * 6
 
     def fit(self, X: pd.DataFrame, y: np.ndarray) -> 'SklearnModel':
         self.data = Data(X, y, normalize=True)
         self.model = Model(self.data, self.sigma, n_trees=self.n_trees, alpha=self.alpha, beta=self.beta)
-        self.proposer = Proposer(self.p_grow, self.p_prune)
+        self.proposer = UniformMutationProposer({UniformGrowTreeMutationProposer: self.p_grow, UniformPruneTreeMutationProposer: self.p_prune})
         self.schedule = SampleSchedule(self.model, self.proposer)
         self.sampler = Sampler(self.model, self.schedule)
         self.samples = self.sampler.samples(self.n_samples, self.n_burn)

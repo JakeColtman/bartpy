@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from bartpy.node import TreeNode, DecisionNode, LeafNode
 
 
@@ -15,6 +15,9 @@ class TreeMutation(ABC):
     def __str__(self):
         return "{} - {} => {}".format(self.kind, self.existing_node, self.updated_node)
 
+    def reverse(self):
+        return TreeMutation("Reversed {}".format(self.kind), self.updated_node, self.existing_node)
+
 
 class PruneMutation(TreeMutation):
 
@@ -22,6 +25,9 @@ class PruneMutation(TreeMutation):
         if not existing_node.is_prunable():
             raise TypeError("Pruning only valid on prunable decision nodes")
         super().__init__("prune", existing_node, updated_node)
+
+    def reverse(self) -> 'GrowMutation':
+        return GrowMutation(self.updated_node, self.existing_node)
 
 
 class GrowMutation(TreeMutation):
@@ -32,3 +38,6 @@ class GrowMutation(TreeMutation):
         if not existing_node.is_leaf_node():
             raise TypeError("Can only grow Leaf nodes")
         super().__init__("grow", existing_node, updated_node)
+
+    def reverse(self) -> 'PruneMutation':
+        return PruneMutation(self.updated_node, self.existing_node)
