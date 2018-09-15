@@ -280,11 +280,9 @@ class Sampler:
 
     def samples(self, n_samples: int, n_burn: int) -> np.ndarray:
         for bb in range(n_burn):
-            print(bb)
             self.step()
         trace = []
         for ss in range(n_samples):
-            print(ss)
             self.step()
             trace.append(self.model.predict())
         return np.array(trace)

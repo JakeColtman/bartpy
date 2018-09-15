@@ -28,7 +28,6 @@ class Data:
     """
 
     def __init__(self, X: pd.DataFrame, y: pd.Series, normalize=False):
-        self._unique_values_cache: MutableMapping[str, Set[Any]] = {}
         self._X = X
         if normalize:
             self.original_y_min, self.original_y_max = y.min(), y.max()

@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from bartpy.data import Data
-from bartpy.split import Split, sample_split_condition, SplitCondition, LTESplitCondition, GTSplitCondition
+from bartpy.split import Split, sample_split_condition, SplitCondition
 
 
 class TreeNode(ABC):
@@ -41,6 +41,10 @@ class TreeNode(ABC):
     def split(self):
         return self._split
 
+    @abstractmethod
+    def update_y(self, y):
+        raise NotImplementedError()
+
 
 class LeafNode(TreeNode):
 
@@ -75,6 +79,9 @@ class LeafNode(TreeNode):
     def is_leaf_node(self):
         return True
 
+    def update_y(self, y):
+        self.split.update_y(y)
+
 
 class DecisionNode(TreeNode):
 
@@ -87,14 +94,20 @@ class DecisionNode(TreeNode):
     def is_decision_node(self) -> bool:
         return True
 
-    def variable_split_on(self) -> Union[LTESplitCondition, GTSplitCondition]:
+    def variable_split_on(self) -> SplitCondition:
         return self.left_child.split.most_recent_split_condition()
+
+    def update_y(self, y):
+        self.split.update_y(y)
+        self.left_child.update_y(y)
+        self.right_child.update_y(y)
 
 
 def split_node(node: LeafNode, split_condition: SplitCondition) -> DecisionNode:
+    left_split, right_split = node.split + split_condition
     return DecisionNode(node.split,
-                        LeafNode(node.split + split_condition.left, depth=node.depth + 1),
-                        LeafNode(node.split + split_condition.right, depth=node.depth + 1),
+                        LeafNode(left_split, depth=node.depth + 1),
+                        LeafNode(right_split, depth=node.depth + 1),
                         depth=node.depth)
 
 

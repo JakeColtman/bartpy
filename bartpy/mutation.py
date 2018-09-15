@@ -6,7 +6,7 @@ import pandas as pd
 
 from bartpy.data import Data
 from bartpy.errors import NoSplittableVariableException, NoPrunableNodeException
-from bartpy.split import Split, sample_split_condition, SplitCondition, LTESplitCondition, GTSplitCondition
+from bartpy.split import Split, sample_split_condition, SplitCondition
 from bartpy.node import TreeNode, DecisionNode, LeafNode
 
 
