@@ -122,13 +122,6 @@ def random_prunable_decision_node(tree: Tree) -> DecisionNode:
     return np.random.choice(leaf_parents)
 
 
-def random_decision_node(tree: Tree) -> DecisionNode:
-    leaf_parents = tree.decision_nodes
-    if len(leaf_parents) == 0:
-        raise NoPrunableNodeException
-    return np.random.choice(leaf_parents)
-
-
 def n_prunable_decision_nodes(tree: Tree) -> int:
     return len(tree.prunable_decision_nodes)
 

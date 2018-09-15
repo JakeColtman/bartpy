@@ -209,32 +209,3 @@ class Sampler:
             self.step()
             trace.append(self.model.predict())
         return np.array(trace)
-
-
-if __name__ == "__main__":
-    from bartpy.data import Data
-    import pandas as pd
-    from bartpy.sigma import Sigma
-    from bartpy.model import Model
-
-    data = Data(pd.DataFrame({"b": [1, 2, 3]}), pd.Series([1, 2, 3]), normalize=True)
-    sigma = Sigma(1., 2.)
-    model = Model(data, sigma)
-
-    prune_proposer = Proposer(0.5, 0.5, 0)
-
-    sampler = TreeMutationSampler(model, model.trees[0], prune_proposer)
-    sample = None
-    while sample is None:
-        sample = sampler.sample()
-
-    print(sample)
-    tree = model.trees[0]
-    print(tree.leaf_nodes())
-    tree.mutate(sample)
-    print(tree.leaf_nodes())
-    # proposal = prune_proposer.propose(model.trees[0])
-    # print(proposal)
-    # ratio = sampler.proposal_ratio(proposal)
-    # print(proposal)
-    # print(ratio)

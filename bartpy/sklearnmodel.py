@@ -38,4 +38,6 @@ class SklearnModel:
         return self
 
     def predict(self, X: np.ndarray=None):
+        if X is not None:
+            raise NotImplementedError("Out of sample prediction not supported")
         return self.data.unnormalize_y(self.samples.mean(axis=0))
