@@ -65,14 +65,3 @@ class Model:
     @property
     def sigma(self):
         return self._sigma
-
-
-if __name__ == "__main__":
-    data = Data(pd.DataFrame({"b": [1, 2, 3]}), pd.Series([1, 2, 3]), normalize=True)
-    sigma = Sigma(1., 2.)
-    model = Model(data, sigma)
-    full_prediction = model.predict()
-    tree_prediction = model.trees[1].predict(data)
-
-    for tree in model.refreshed_trees():
-        print(tree)

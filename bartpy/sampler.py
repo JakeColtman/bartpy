@@ -4,7 +4,7 @@ import numpy as np
 from scipy.stats import invgamma
 
 from bartpy.model import Model
-from bartpy.mutation import TreeMutation, GrowMutation, ChangeMutation, PruneMutation
+from bartpy.mutation import TreeMutation, GrowMutation, PruneMutation
 from bartpy.node import LeafNode, TreeNode
 from bartpy.proposer import Proposer
 from bartpy.sigma import Sigma
@@ -53,47 +53,6 @@ def log_grow_ratio(combined_node: LeafNode, left_node: LeafNode, right_node: Lea
     resp_contribution = left_resp_contribution + right_resp_contribution - combined_resp_contribution
 
     return first_term + ((var_mu / (2 * var)) * resp_contribution)
-
-
-def log_change_ratio(original_left_node: LeafNode, original_right_node: LeafNode, new_left_node: LeafNode, new_right_node: LeafNode, sigma: Sigma, sigma_mu: float):
-    var = np.power(sigma.current_value(), 2)
-    var_mu = np.power(sigma_mu, 2)
-    vr = var / var_mu
-
-    n_l_o = original_left_node.data.n_obsv
-    n_r_o = original_right_node.data.n_obsv
-    n_l_n = new_left_node.data.n_obsv
-    n_r_n = new_right_node.data.n_obsv
-
-    first_term = (((vr + n_l_o) * (vr + n_r_o)) / ((vr + n_l_n) * (vr + n_r_n)))
-    first_term = np.log(np.sqrt(first_term))
-
-    original_left_contribution = np.square(np.sum(original_left_node.data.y)) / (vr * n_l_o)
-    original_right_contribution = np.square(np.sum(original_right_node.data.y)) / (vr * n_r_o)
-    new_left_contribution = np.square(np.sum(new_left_node.data.y)) / (vr * n_r_n)
-    new_right_contribution = np.square(np.sum(new_right_node.data.y)) / (vr * n_r_n)
-
-    return first_term + ((1 / (2 * var)) * (new_left_contribution + new_right_contribution - original_left_contribution - original_right_contribution))
-
-
-def log_likihood_node(node: LeafNode, sigma: Sigma, sigma_mu: float) -> float:
-    var = np.power(sigma.current_value(), 2)
-    var_mu = np.power(sigma_mu, 2)
-
-    n = node.data.n_obsv
-    first_term = (- n / 2.) * np.log(2 * np.pi * var)
-    second_term = 0.5 * np.log(var / (var + n * var_mu))
-
-    third_term = -0.5 / var
-
-    mean_residual = np.mean(node.data.y)
-    mean_residual_squared = np.power(mean_residual, 2)
-    sum_sq_error = np.sum(np.power(node.data.y - mean_residual, 2))
-
-    fourth_term = (mean_residual_squared * np.power(n, 2)) / (n + (var / var_mu))
-    fifth_term = n * mean_residual_squared
-
-    return first_term + second_term + (third_term * (sum_sq_error - fourth_term + fifth_term))
 
 
 class SigmaSampler:
@@ -148,8 +107,6 @@ class TreeMutationSampler:
             return self.transition_ratio_grow(proposal)
         elif proposal.kind == "prune":
             return self.transition_ratio_prune(proposal)
-        elif proposal.kind == "change":
-            return self.transition_ratio_change(proposal)
         else:
             raise NotImplementedError("kind {} not supported".format(proposal.kind))
 
@@ -174,16 +131,11 @@ class TreeMutationSampler:
 
         return grow_prune_ratio + prob_selection_ratio
 
-    def transition_ratio_change(self, proposal: ChangeMutation) -> float:
-        return 0.0
-
     def tree_structure_ratio(self, proposal: TreeMutation):
         if proposal.kind == "grow":
             return self.tree_structure_ratio_grow(proposal)
         if proposal.kind == "prune":
             return self.tree_structure_ratio_prune(proposal)
-        if proposal.kind == "change":
-            return self.tree_structure_ratio_change(proposal)
 
     def tree_structure_ratio_grow(self, proposal: GrowMutation):
         denominator = log_probability_node_not_split(self.model, proposal.existing_node)
@@ -207,48 +159,19 @@ class TreeMutationSampler:
 
         return numerator - denominator
 
-    def tree_structure_ratio_change(self, proposal: ChangeMutation):
-        return 0.0
-
     def likihood_ratio(self, proposal: TreeMutation):
         if proposal.kind == "grow":
             return self.likihood_ratio_grow(proposal)
         if proposal.kind == "prune":
             return self.likihood_ratio_prune(proposal)
-        if proposal.kind == "change":
-            return self.likihood_ratio_change(proposal)
+        else:
+            raise NotImplementedError("Only prune and grow mutations supported")
 
     def likihood_ratio_grow(self, proposal: TreeMutation):
         return log_grow_ratio(proposal.existing_node, proposal.updated_node.left_child, proposal.updated_node.right_child, self.model.sigma, self.model.sigma_m)
-        # left_child_likihood = log_likihood_node(proposal.updated_node.left_child, self.model.sigma, self.model.sigma_m)
-        # right_child_likihood = log_likihood_node(proposal.updated_node.right_child, self.model.sigma, self.model.sigma_m)
-        # numerator = left_child_likihood + right_child_likihood
-        # denom = log_likihood_node(proposal.existing_node, self.model.sigma, self.model.sigma_m)
-        # return numerator - denom
 
     def likihood_ratio_prune(self, proposal: TreeMutation):
         return 1.0 / log_grow_ratio(proposal.updated_node, proposal.existing_node.left_child, proposal.existing_node.right_child, self.model.sigma, self.model.sigma_m)
-        # numerator = log_likihood_node(proposal.updated_node, self.model.sigma, self.model.sigma_m)
-        # left_child_likihood = log_likihood_node(proposal.existing_node.left_child, self.model.sigma, self.model.sigma_m)
-        # right_child_likihood = log_likihood_node(proposal.existing_node.right_child, self.model.sigma, self.model.sigma_m)
-        # denom = left_child_likihood + right_child_likihood
-        # return numerator - denom
-
-    def likihood_ratio_change(self, proposal: TreeMutation):
-        return log_change_ratio(proposal.existing_node.left_child,
-                                proposal.existing_node.right_child,
-                                proposal.updated_node.left_child,
-                                proposal.updated_node.right_child,
-                                self.model.sigma,
-                                self.model.sigma_m)
-        # left_child_likihood = log_likihood_node(proposal.existing_node.left_child, self.model.sigma, self.model.sigma_m)
-        # right_child_likihood = log_likihood_node(proposal.existing_node.right_child, self.model.sigma, self.model.sigma_m)
-        # denom = left_child_likihood + right_child_likihood
-        #
-        # left_child_likihood = log_likihood_node(proposal.updated_node.left_child, self.model.sigma, self.model.sigma_m)
-        # right_child_likihood = log_likihood_node(proposal.updated_node.right_child, self.model.sigma, self.model.sigma_m)
-        # numerator = left_child_likihood + right_child_likihood
-        # return numerator - denom
 
 
 class Sampler:
@@ -280,38 +203,11 @@ class Sampler:
 
     def samples(self, n_samples: int, n_burn: int) -> np.ndarray:
         for bb in range(n_burn):
+            print("Burn - ", bb)
             self.step()
         trace = []
         for ss in range(n_samples):
+            print("Sample - ", ss)
             self.step()
             trace.append(self.model.predict())
         return np.array(trace)
-
-
-if __name__ == "__main__":
-    from bartpy.data import Data
-    import pandas as pd
-    from bartpy.sigma import Sigma
-    from bartpy.model import Model
-
-    data = Data(pd.DataFrame({"b": [1, 2, 3]}), pd.Series([1, 2, 3]), normalize=True)
-    sigma = Sigma(1., 2.)
-    model = Model(data, sigma)
-
-    prune_proposer = Proposer(0.5, 0.5, 0)
-
-    sampler = TreeMutationSampler(model, model.trees[0], prune_proposer)
-    sample = None
-    while sample is None:
-        sample = sampler.sample()
-
-    print(sample)
-    tree = model.trees[0]
-    print(tree.leaf_nodes())
-    tree.mutate(sample)
-    print(tree.leaf_nodes())
-    # proposal = prune_proposer.propose(model.trees[0])
-    # print(proposal)
-    # ratio = sampler.proposal_ratio(proposal)
-    # print(proposal)
-    # print(ratio)

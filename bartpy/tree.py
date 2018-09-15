@@ -106,6 +106,12 @@ class Tree:
         self.cache_up_to_date = True
         return self._prediction
 
+    def remove_node(self, node: TreeNode) -> None:
+        self._nodes.remove(node)
+
+    def add_node(self, node: TreeNode) -> None:
+        self._nodes.append(node)
+
 
 def random_splittable_leaf_node(tree: Tree) -> LeafNode:
     splittable_nodes = tree.splittable_leaf_nodes
@@ -117,13 +123,6 @@ def random_splittable_leaf_node(tree: Tree) -> LeafNode:
 
 def random_prunable_decision_node(tree: Tree) -> DecisionNode:
     leaf_parents = tree.prunable_decision_nodes
-    if len(leaf_parents) == 0:
-        raise NoPrunableNodeException
-    return np.random.choice(leaf_parents)
-
-
-def random_decision_node(tree: Tree) -> DecisionNode:
-    leaf_parents = tree.decision_nodes
     if len(leaf_parents) == 0:
         raise NoPrunableNodeException
     return np.random.choice(leaf_parents)
@@ -142,32 +141,19 @@ def mutate(tree: Tree, mutation: TreeMutation) -> None:
     tree.cache_up_to_date = False
 
     if mutation.kind == "prune":
-        tree._nodes.remove(mutation.existing_node)
-        tree._nodes.append(mutation.updated_node)
-        tree._nodes.remove(mutation.existing_node.left_child)
-        tree._nodes.remove(mutation.existing_node.right_child)
+        tree.remove_node(mutation.existing_node)
+        tree.remove_node(mutation.existing_node.left_child)
+        tree.remove_node(mutation.existing_node.right_child)
+        tree.add_node(mutation.updated_node)
 
     if mutation.kind == "grow":
-        tree._nodes.remove(mutation.existing_node)
-        tree._nodes.append(mutation.updated_node.left_child)
-        tree._nodes.append(mutation.updated_node.right_child)
-        tree._nodes.append(mutation.updated_node)
-
-    if mutation.kind == "change":
-        tree._nodes.remove(mutation.existing_node.left_child)
-        tree._nodes.remove(mutation.existing_node.right_child)
-        tree._nodes.append(mutation.updated_node.left_child)
-        tree._nodes.append(mutation.updated_node.right_child)
-        tree._nodes.remove(mutation.existing_node)
-        tree._nodes.append(mutation.updated_node)
+        tree.remove_node(mutation.existing_node)
+        tree.add_node(mutation.updated_node.left_child)
+        tree.add_node(mutation.updated_node.right_child)
+        tree.add_node(mutation.updated_node)
 
     for node in tree.nodes:
         if node.right_child == mutation.existing_node:
             node._right_child = mutation.updated_node
         if node.left_child == mutation.existing_node:
             node._left_child = mutation.updated_node
-
-
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()

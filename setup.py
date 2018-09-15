@@ -11,7 +11,7 @@ setup(
     author='Jake Coltman',
     author_email='jakecoltman@sky.com',
     install_requires=[
-    ]
+        'pandas',]
 )
 
 
