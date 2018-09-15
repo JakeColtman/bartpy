@@ -2,14 +2,18 @@ from typing import List
 
 import numpy as np
 
-from bartpy.errors import NoSplittableVariableException, NoPrunableNodeException
 from bartpy.mutation import TreeMutation
 from bartpy.node import TreeNode, LeafNode, DecisionNode
 
 
 class Tree:
     """
-    An encapsulation of the structure of the tree as a whole
+    An encapsulation of the structure of a single decision tree
+    Contains no logic, but keeps track of 4 different kinds of nodes within the tree:
+      - leaf nodes
+      - decision nodes
+      - splittable leaf nodes
+      - prunable decision nodes
     """
 
     def __init__(self, nodes: List[TreeNode]):
@@ -20,85 +24,55 @@ class Tree:
     @property
     def nodes(self) -> List[TreeNode]:
         """
-
-        Returns
-        -------
-            List[TreeNode]
-
-        Examples
-        --------
-        >>> a, b, c, = TreeNode(None), TreeNode(None), TreeNode(None)
-        >>> a.update_left_child(b)
-        >>> b.update_left_child(c)
-        >>> structure = Tree(a)
-        >>> nodes = structure.nodes()
-        >>> len(nodes)
-        3
-        >>> a in nodes
-        True
-        >>> 1 in nodes
-        False
+        List of all nodes contained in the tree
         """
         return self._nodes
 
     @property
     def leaf_nodes(self) -> List[LeafNode]:
         """
-
-        Returns
-        -------
-            List[TreeNode]
-
-        Examples
-        --------
-        >>> a, b, c, = TreeNode(None), TreeNode(None), TreeNode(None)
-        >>> a.update_left_child(b)
-        >>> b.update_left_child(c)
-        >>> structure = Tree(a)
-        >>> nodes = structure.leaf_nodes()
-        >>> len(nodes)
-        1
-        >>> c == list(nodes)[0]
-        True
+        List of all of the leaf nodes in the tree
         """
         return [x for x in self._nodes if x.is_leaf_node()]
 
     @property
-    def splittable_leaf_nodes(self):
+    def splittable_leaf_nodes(self) -> List[LeafNode]:
+        """
+        List of all leaf nodes in the tree which can be split in a non-degenerate way
+        i.e. not all rows of the covariate matrix are duplicates
+        """
         return [x for x in self.leaf_nodes if x.is_splittable()]
 
     @property
     def decision_nodes(self) -> List[DecisionNode]:
         """
-
-        Returns
-        -------
-            List[TreeNode]
-
-        Examples
-        --------
-        >>> a, b, c, = TreeNode(None), TreeNode(None), TreeNode(None)
-        >>> a.update_left_child(b)
-        >>> a.update_right_child(c)
-        >>> structure = Tree(a)
-        >>> nodes = structure.split_nodes()
-        >>> len(nodes)
-        1
-        >>> a == list(nodes)[0]
-        True
+        List of decision nodes in the tree.
+        Decision nodes are internal split nodes, i.e. not leaf nodes
         """
         return [x for x in self._nodes if x.is_decision_node()]
 
     @property
     def prunable_decision_nodes(self) -> List[DecisionNode]:
+        """
+        List of decision nodes in the tree that are suitable for pruning
+        In particular, decision nodes that have two leaf node children
+        """
         return [x for x in self.decision_nodes if x.is_prunable()]
 
     def update_y(self, y: np.ndarray) -> None:
+        """
+        Update the cached value of the target array in all nodes
+        Used to pass in the residuals from the sum of all of the other trees
+        """
         self.cache_up_to_date = False
         for node in self.nodes:
             node.split.update_y(y)
 
     def predict(self) -> np.ndarray:
+        """
+        Generate a set of predictions with the same dimensionality as the target array
+        Note that the prediction is from one tree, so represents only (1 / number_of_trees) of the target
+        """
         if self.cache_up_to_date:
             return self._prediction
         for leaf in self.leaf_nodes:
@@ -107,37 +81,25 @@ class Tree:
         return self._prediction
 
     def remove_node(self, node: TreeNode) -> None:
+        """
+        Remove a single node from the tree
+        Note that this is non-recursive, only drops the node and not any children
+        """
         self._nodes.remove(node)
 
     def add_node(self, node: TreeNode) -> None:
+        """
+        Add a node to the tree
+        Note that this is non-recursive, only adds the node and not any children
+        """
         self._nodes.append(node)
 
 
-def random_splittable_leaf_node(tree: Tree) -> LeafNode:
-    splittable_nodes = tree.splittable_leaf_nodes
-    if len(splittable_nodes) > 0:
-        return np.random.choice(splittable_nodes)
-    else:
-        raise NoSplittableVariableException()
-
-
-def random_prunable_decision_node(tree: Tree) -> DecisionNode:
-    leaf_parents = tree.prunable_decision_nodes
-    if len(leaf_parents) == 0:
-        raise NoPrunableNodeException
-    return np.random.choice(leaf_parents)
-
-
-def n_prunable_decision_nodes(tree: Tree) -> int:
-    return len(tree.prunable_decision_nodes)
-
-
-def n_splittable_leaf_nodes(tree: Tree) -> int:
-    return len(tree.splittable_leaf_nodes)
-
-
 def mutate(tree: Tree, mutation: TreeMutation) -> None:
-
+    """
+    Apply a change to the structure of the tree
+    Modifies not only the tree, but also the links between the TreeNodes
+    """
     tree.cache_up_to_date = False
 
     if mutation.kind == "prune":

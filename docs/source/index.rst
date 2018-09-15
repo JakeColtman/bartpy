@@ -10,6 +10,9 @@ Welcome to BartPy's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   node
+   split
+   tree
 
 
 Indices and tables

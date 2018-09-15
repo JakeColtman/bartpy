@@ -6,8 +6,8 @@ import numpy as np
 from bartpy.errors import NoSplittableVariableException, NoPrunableNodeException
 from bartpy.model import Model
 from bartpy.mutation import TreeMutation, PruneMutation, GrowMutation
-from bartpy.node import sample_split_node, TreeNode
-from bartpy.tree import LeafNode, Tree, random_prunable_decision_node, random_splittable_leaf_node, n_splittable_leaf_nodes, n_prunable_decision_nodes
+from bartpy.node import sample_split_node, TreeNode, LeafNode, DecisionNode
+from bartpy.tree import LeafNode, Tree
 
 
 def log_probability_node_split(model: Model, node: TreeNode):
@@ -141,3 +141,42 @@ class UniformMutationProposer(TreeMutationProposer):
         denominator = prob_left_not_split + prob_right_not_split + prob_updated_node_split + prob_chosen_split
 
         return numerator - denominator
+
+
+def random_splittable_leaf_node(tree: Tree) -> LeafNode:
+    """
+    Returns a random leaf node that can be split in a non-degenerate way
+    i.e. a random draw from the set of leaf nodes that have at least two distinct values in their covariate matrix
+    """
+    splittable_nodes = tree.splittable_leaf_nodes
+    if len(splittable_nodes) > 0:
+        return np.random.choice(splittable_nodes)
+    else:
+        raise NoSplittableVariableException()
+
+
+def random_prunable_decision_node(tree: Tree) -> DecisionNode:
+    """
+    Returns a random decision node that can be pruned
+    i.e. a random draw from the set of decision nodes that have two leaf node children
+    """
+    leaf_parents = tree.prunable_decision_nodes
+    if len(leaf_parents) == 0:
+        raise NoPrunableNodeException
+    return np.random.choice(leaf_parents)
+
+
+def n_prunable_decision_nodes(tree: Tree) -> int:
+    """
+    The number of prunable decision nodes
+    i.e. how many decision nodes have two leaf children
+    """
+    return len(tree.prunable_decision_nodes)
+
+
+def n_splittable_leaf_nodes(tree: Tree) -> int:
+    """
+    The number of splittable leaf nodes
+    i.e. how many leaf nodes have more than one distinct values in their covariate matrix
+    """
+    return len(tree.splittable_leaf_nodes)
