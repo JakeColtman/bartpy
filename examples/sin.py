@@ -6,9 +6,9 @@ from bartpy.plotting import plot_residuals, plot_modelled_against_actual
 
 
 def run(alpha, beta, n_trees):
-    x = np.sin(np.linspace(0, 5, 120000)).reshape((30000, 4))
+    x = np.sin(np.linspace(0, 5, 12000)).reshape((3000, 4))
     X = pd.DataFrame(x)
-    y = np.random.normal(0, 0.1, size=30000) + x.mean(axis=1)
+    y = np.random.normal(0, 0.1, size=3000) + x.mean(axis=1)
 
     model = SklearnModel(n_samples=200, n_burn=50, n_trees=n_trees, alpha=alpha, beta=beta)
     model.fit(X, y)

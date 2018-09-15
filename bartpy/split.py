@@ -36,7 +36,9 @@ class SplitCondition(ABC):
 
 class Split:
 
-    def __init__(self, data: Data, split_conditions: List[SplitCondition], combined_condition=None):
+    def __init__(self, data: Data, split_conditions: List[SplitCondition]=None, combined_condition=None):
+        if split_conditions is None:
+            split_conditions = []
         self._conditions = split_conditions
         self._data = deepcopy(data)
         self._combined_condition = combined_condition

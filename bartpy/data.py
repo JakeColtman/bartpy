@@ -100,7 +100,7 @@ class Data:
         >>> unsplittable_data = Data(pd.DataFrame({"a": [1, 1], "b": [1, 1]}), np.array([1, 1, 1]))
         >>> unsplittable_data.random_splittable_value("a")
         """
-        possible_values = self.unique_values(variable)
+        possible_values = np.array(list(self.unique_values(variable)))
         possible_values = possible_values[possible_values != np.max(possible_values)]
         if len(possible_values) == 0:
             return None
@@ -119,7 +119,7 @@ class Data:
         -------
         Set[Any] - all possible values
         """
-        return self.X[variable]
+        return set(self.X[variable])
 
     @property
     def n_obsv(self) -> int:

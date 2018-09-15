@@ -18,7 +18,7 @@ class TreeMutation(ABC):
 
 class PruneMutation(TreeMutation):
 
-    def __init__(self, existing_node: DecisionNode, updated_node: DecisionNode):
+    def __init__(self, existing_node: DecisionNode, updated_node: LeafNode):
         if not existing_node.is_prunable():
             raise TypeError("Pruning only valid on prunable decision nodes")
         super().__init__("prune", existing_node, updated_node)

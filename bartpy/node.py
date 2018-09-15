@@ -1,4 +1,5 @@
 from abc import abstractmethod, ABC
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -84,7 +85,7 @@ class LeafNode(TreeNode):
 
 class DecisionNode(TreeNode):
 
-    def __init__(self, split: Split, left_child_node: LeafNode, right_child_node: LeafNode, depth=0):
+    def __init__(self, split: Split, left_child_node: Union[LeafNode, 'DecisionNode'], right_child_node: Union[LeafNode, 'DecisionNode'], depth=0):
         super().__init__(split, depth, left_child_node, right_child_node)
 
     def is_prunable(self) -> bool:

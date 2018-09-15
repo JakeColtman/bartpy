@@ -1,36 +1,45 @@
 import unittest
 
 from bartpy.data import Data
-from bartpy.split import SplitCondition, Split, GTSplitCondition, LTESplitCondition
+from bartpy.split import SplitCondition, Split
 
 import pandas as pd
 
 
 class TestSplit(unittest.TestCase):
 
-    def setUp(self):
-        self.data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [3, 2, 1]}), pd.Series([1, 2, 3]))
-        self.a = SplitCondition("a", 1)
-        self.b = SplitCondition("b", 2)
-        self.split_one = Split(self.data, [self.a.left])
-        self.split_two = Split(self.data, [self.b.left])
-        self.split_three = self.split_one + self.b.right
+    def test_null_split_returns_all_values(self):
+        data = Data(pd.DataFrame({"a": [1, 2]}), pd.Series([1, 2]))
+        split = Split(data)
+        conditioned_data = split.data
+        self.assertListEqual(list(data.X["a"]), list(conditioned_data.X["a"]))
 
-    def test_condition_adding_preserves_data(self):
-        self.assertEqual(self.data, self.split_three.data)
+    def test_single_condition_data(self):
+        data = Data(pd.DataFrame({"a": [1, 2]}), pd.Series([1, 2]))
+        condition = SplitCondition("a", 1)
+        left_split, right_split = Split(data) + condition
+        self.assertListEqual([1], list(left_split.data.X["a"]))
+        self.assertListEqual([2], list(right_split.data.X["a"]))
 
-    def test_nested_splitting_on_stored_data(self):
-        conditions = self.split_three.condition()
-        self.assertListEqual([True, False, False], list(conditions))
+    def test_combined_condition_data(self):
+        data = Data(pd.DataFrame({"a": [1, 2, 3, 4]}), pd.Series([1, 2, 1, 1]))
 
-    def test_nested_splitting_on_new_data(self):
-        new_data = Data(pd.DataFrame({"a": [1, 2, 3, -1], "b": [3, 2, 1, 5]}), pd.Series([1, 2, 3, 4]))
-        conditions = self.split_three.condition(new_data)
-        self.assertListEqual([True, False, False, True], list(conditions))
+        first_condition = SplitCondition("a", 3)
+        second_condition = SplitCondition("a", 1)
+        split = Split(data)
+        updated_split = ((split + first_condition)[0] + second_condition)[1]
+        conditioned_data = updated_split.data
+        self.assertListEqual([2, 3], list(conditioned_data.X["a"]))
 
     def test_most_recent_split(self):
-        self.assertEqual(self.split_one.most_recent_split_condition(), self.a.left)
-        self.assertEqual(self.split_three.most_recent_split_condition(), self.b.right)
+        data = Data(pd.DataFrame({"a": [1, 2, 3, 4]}), pd.Series([1, 2, 1, 1]))
+
+        first_condition = SplitCondition("a", 3)
+        second_condition = SplitCondition("a", 1)
+        split = Split(data)
+        updated_split = ((split + first_condition)[0] + second_condition)[1]
+        self.assertEqual((split + first_condition)[0].most_recent_split_condition(), first_condition)
+        self.assertEqual(updated_split.most_recent_split_condition(), second_condition)
 
 
 if __name__ == '__main__':
