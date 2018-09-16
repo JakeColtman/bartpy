@@ -80,6 +80,12 @@ class Tree:
         self.cache_up_to_date = True
         return self._prediction
 
+    def out_of_sample_predict(self, X) -> np.ndarray:
+        prediction = np.array([0.] * len(X))
+        for leaf in self.leaf_nodes:
+            prediction[leaf.split.out_of_sample_condition(X)] = leaf.predict()
+        return prediction
+
     def remove_node(self, node: TreeNode) -> None:
         """
         Remove a single node from the tree

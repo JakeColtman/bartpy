@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional ,Tuple
 from copy import deepcopy
 
 from bartpy.data import Data
@@ -28,29 +28,34 @@ class SplitCondition:
     def __str__(self):
         return self.splitting_variable + ": " + str(self.splitting_value)
 
-    def condition(self, data: Data) -> np.ndarray:
+    def condition(self, data: Data, cached=True) -> np.ndarray:
         """
         Returns a Bool array indicating which side of the split each row of `Data` should go
         False => Left
         True => Right
         """
-        if self._condition is None:
+        if not cached or self._condition is None:
             self._condition = data.X[self.splitting_variable] > self.splitting_value
         return self._condition
 
-    def left(self, data: Data) -> np.ndarray:
-        """
-        Returns a Bool array indicating whether each row should go into the left split.
-        Inverse of self.right
-        """
-        return ~self.condition(data)
+    def left_condition(self, data: Data, cached=True):
+        return ~self.condition(data, cached)
 
-    def right(self, data: Data) -> np.ndarray:
+    def left(self, data: Data) -> Tuple['SplitCondition', np.ndarray]:
         """
         Returns a Bool array indicating whether each row should go into the left split.
         Inverse of self.right
         """
-        return self.condition(data)
+        left_self = deepcopy(self)
+        left_self.condition = self.left_condition
+        return left_self, self.left_condition(data)
+
+    def right(self, data: Data) -> Tuple['SplitCondition', np.ndarray]:
+        """
+        Returns a Bool array indicating whether each row should go into the left split.
+        Inverse of self.right
+        """
+        return self, self.condition(data)
 
 
 class Split:
@@ -88,9 +93,18 @@ class Split:
         else:
             return self.combined_condition(data)
 
+    def out_of_sample_condition(self, X: pd.DataFrame):
+        data = Data(X, np.array([0] * len(X)))
+        condition = np.array([True] * len(X))
+        for split_condition in self._conditions:
+            condition = condition & split_condition.condition(data, cached=False)
+        return condition
+
     def __add__(self, other: SplitCondition):
-        left = Split(self._data, self._conditions + [other], combined_condition=self.condition() & other.left(self._data))
-        right = Split(self._data, self._conditions + [other], combined_condition=self.condition() & other.right(self._data))
+        left_split, left_condition = other.left(self._data)
+        right_split, right_condition = other.right(self._data)
+        left = Split(self._data, self._conditions + [left_split], combined_condition=self.condition() & left_condition)
+        right = Split(self._data, self._conditions + [right_split], combined_condition=self.condition() & right_condition)
         return left, right
 
     def most_recent_split_condition(self) -> Optional[SplitCondition]:
