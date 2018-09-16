@@ -46,6 +46,9 @@ class Model:
     def prediction_without_tree(self, index: int) -> np.ndarray:
         return np.sum(np.array([tree.predict() for ii, tree in enumerate(self.trees) if ii != index]), axis=0)
 
+    def out_of_sample_predict(self, X: np.ndarray):
+        return np.sum([tree.out_of_sample_predict(X) for tree in self.trees], axis=0)
+
     @property
     def trees(self) -> List[Tree]:
         return self._trees

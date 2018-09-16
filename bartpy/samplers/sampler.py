@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import numpy as np
 
 from bartpy.model import Model
@@ -19,8 +21,10 @@ class Sampler:
             print("Burn - ", bb)
             self.step()
         trace = []
+        model_trace = []
         for ss in range(n_samples):
             print("Sample - ", ss)
             self.step()
             trace.append(self.model.predict())
-        return np.array(trace)
+            model_trace.append(deepcopy(self.model))
+        return model_trace, np.array(trace)
