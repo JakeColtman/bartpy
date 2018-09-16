@@ -45,7 +45,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         return self
 
     def predict(self, X: np.ndarray=None):
-        if X is None or X == self.data.X:
+        if X is None:
             return self.data.unnormalize_y(self.prediction_samples.mean(axis=0))
         else:
             return self.out_of_sample_predict(X)
