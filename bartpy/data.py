@@ -139,3 +139,7 @@ class Data:
     @property
     def unnormalized_y(self) -> np.ndarray:
         return self.unnormalize_y(self.y)
+
+    @property
+    def normalizing_scale(self) -> float:
+        return self.original_y_max - self.original_y_min

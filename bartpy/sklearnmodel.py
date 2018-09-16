@@ -14,7 +14,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
 
     def __init__(self,
                  n_trees: int=50,
-                 sigma_a: int=100.,
+                 sigma_a: int=0.001,
                  sigma_b: float=0.001,
                  n_samples: int=200,
                  n_burn: int=200,
@@ -25,17 +25,18 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.n_trees = n_trees
         self.sigma_a = sigma_a
         self.sigma_b = sigma_b
-        self.sigma = Sigma(self.sigma_a, self.sigma_b)
         self.n_burn = n_burn
         self.n_samples = n_samples
         self.p_grow = p_grow
         self.p_prune = p_prune
         self.alpha = alpha
         self.beta = beta
-        self.data, self.model, self.proposer, self.sampler, self.prediction_samples, self.model_samples, self.schedule = [None] * 7
+        self.sigma, self.data, self.model, self.proposer, self.sampler, self.prediction_samples, self.model_samples, self.schedule = [None] * 8
 
     def fit(self, X: pd.DataFrame, y: np.ndarray) -> 'SklearnModel':
-        self.data = Data(X, y, normalize=True)
+        from copy import deepcopy
+        self.data = Data(deepcopy(X), deepcopy(y), normalize=True)
+        self.sigma = Sigma(self.sigma_a, self.sigma_b, self.data.normalizing_scale)
         self.model = Model(self.data, self.sigma, n_trees=self.n_trees, alpha=self.alpha, beta=self.beta)
         self.proposer = UniformMutationProposer({UniformGrowTreeMutationProposer: self.p_grow, UniformPruneTreeMutationProposer: self.p_prune})
         self.schedule = SampleSchedule(self.model, self.proposer)

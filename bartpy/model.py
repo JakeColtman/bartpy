@@ -34,8 +34,11 @@ class Model:
         trees = [Tree([LeafNode(Split(self.data, []))]) for _ in range(self.n_trees)]
         return trees
 
-    def residuals(self) -> pd.Series:
+    def residuals(self) -> np.ndarray:
         return self.data.y - self.predict()
+
+    def unnormalized_residuals(self) -> np.ndarray:
+        return self.data.unnormalized_y - self.data.unnormalize_y(self.predict())
 
     def residuals_without_tree(self, index: int) -> np.ndarray:
         return self.data.y - self.prediction_without_tree(index)
