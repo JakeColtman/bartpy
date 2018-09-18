@@ -28,6 +28,9 @@ class SplitCondition:
     def __str__(self):
         return self.splitting_variable + ": " + str(self.splitting_value)
 
+    def __eq__(self, other: 'SplitCondition'):
+        return self.splitting_variable == other.splitting_variable and self.splitting_value == other.splitting_value
+
     def condition(self, data: Data, cached=True) -> np.ndarray:
         """
         Returns a Bool array indicating which side of the split each row of `Data` should go
