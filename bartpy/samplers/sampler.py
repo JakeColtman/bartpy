@@ -1,6 +1,8 @@
 from copy import deepcopy
+from typing import List, Tuple
 
 import numpy as np
+from tqdm import tqdm
 
 from bartpy.model import Model
 from bartpy.samplers.schedule import SampleSchedule
@@ -16,14 +18,14 @@ class Sampler:
         for ss in self.schedule.steps():
             ss.step()
 
-    def samples(self, n_samples: int, n_burn: int) -> np.ndarray:
-        for bb in range(n_burn):
-            print("Burn - ", bb)
+    def samples(self, n_samples: int, n_burn: int) -> Tuple[List[Model], np.ndarray]:
+        print("Starting burn")
+        for _ in tqdm(range(n_burn)):
             self.step()
         trace = []
         model_trace = []
-        for ss in range(n_samples):
-            print("Sample - ", ss)
+        print("Starting sampling")
+        for ss in tqdm(range(n_samples)):
             self.step()
             trace.append(self.model.predict())
             model_trace.append(deepcopy(self.model))
