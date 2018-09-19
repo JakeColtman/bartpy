@@ -20,7 +20,10 @@ def log_probability_node_not_split(model: Model, node: TreeNode):
 
 def log_probability_split_within_node(mutation: GrowMutation) -> float:
     """
-    The probability of a node being split in the given way
+    The log probability of the particular grow mutation being selected conditional on growing a given node
+
+    i.e.
+    log(P(splitting_value | splitting_variable, node, grow) * P(splitting_variable | node, grow))
     """
 
     prob_splitting_variable_selected = - np.log(mutation.existing_node.data.n_splittable_variables)
@@ -30,6 +33,12 @@ def log_probability_split_within_node(mutation: GrowMutation) -> float:
 
 
 def log_probability_split_within_tree(tree_structure: Tree, mutation: GrowMutation) -> float:
+    """
+    The log probability of the particular grow mutation being selected conditional on growing a given tree
+    i.e.
+    log(P(mutation | node)P(node| tree)
+
+    """
     prob_node_chosen_to_split_on = - np.log(n_splittable_leaf_nodes(tree_structure))
     prob_split_chosen = log_probability_split_within_node(mutation)
     return prob_node_chosen_to_split_on + prob_split_chosen
@@ -103,7 +112,10 @@ class UniformMutationProposer(TreeMutationProposer):
         return prune_grow_ratio + prob_selection_ratio
 
     def log_prune_transition_ratio(self, tree_structure: Tree, mutation: PruneMutation):
-        prob_grow_node_selected = - np.log(n_splittable_leaf_nodes(tree_structure) - 1)
+        if n_splittable_leaf_nodes(tree_structure) == 1:
+            prob_grow_node_selected = - np.inf  # Infinitely unlikely to be able to grow a null tree
+        else:
+            prob_grow_node_selected = - np.log(n_splittable_leaf_nodes(tree_structure) - 1)
         prob_split = log_probability_split_within_node(GrowMutation(mutation.updated_node, mutation.existing_node))
         prob_grow_selected = prob_grow_node_selected + prob_split
 
@@ -162,7 +174,7 @@ def random_prunable_decision_node(tree: Tree) -> DecisionNode:
     """
     leaf_parents = tree.prunable_decision_nodes
     if len(leaf_parents) == 0:
-        raise NoPrunableNodeException
+        raise NoPrunableNodeException()
     return np.random.choice(leaf_parents)
 
 
