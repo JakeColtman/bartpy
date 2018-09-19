@@ -9,6 +9,6 @@ def plot_residuals(model: SklearnModel):
 
 
 def plot_modelled_against_actual(model: SklearnModel):
-    plt.plot(model.data.unnormalized_y)
+    plt.scatter(model.data.unnormalized_y)
     plt.plot(model.predict())
     plt.show()

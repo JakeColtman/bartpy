@@ -4,3 +4,4 @@ matplotlib
 scipy
 sklearn
 tqdm
+statsmodels
