@@ -1,6 +1,7 @@
+from typing import Type
+
 import numpy as np
 import pandas as pd
-import statsmodels.api as sm
 
 from bartpy.sklearnmodel import SklearnModel
 
@@ -8,7 +9,7 @@ from bartpy.sklearnmodel import SklearnModel
 class OLS(SklearnModel):
 
     def __init__(self,
-                 stat_model: sm.OLS,
+                 stat_model: Type,
                  n_trees: int = 50,
                  sigma_a: int = 0.001,
                  sigma_b: float = 0.001,
@@ -27,3 +28,10 @@ class OLS(SklearnModel):
         print(self.stat_model_fit.resid)
         SklearnModel.fit(self, X, self.stat_model_fit.resid)
         return self
+
+    def predict(self, X: np.ndarray=None):
+        if X is None:
+            X = self.data.X
+        sm_prediction = self.stat_model_fit.predict(X)
+        bart_prediction = SklearnModel.predict(self, X)
+        return sm_prediction + bart_prediction
