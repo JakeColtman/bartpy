@@ -1,7 +1,7 @@
 import unittest
 
 from bartpy.data import Data
-from bartpy.samplers.proposer import UniformGrowTreeMutationProposer, UniformPruneTreeMutationProposer
+from bartpy.samplers.treemutation.uniform.proposer import UniformGrowTreeMutationProposer, UniformPruneTreeMutationProposer
 from bartpy.split import Split
 from bartpy.tree import LeafNode, Tree, DecisionNode
 

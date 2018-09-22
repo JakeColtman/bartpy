@@ -9,7 +9,10 @@ from bartpy.data import Data
 from bartpy.samplers.schedule import SampleSchedule
 from bartpy.samplers.sampler import Sampler
 from bartpy.sigma import Sigma
-from bartpy.samplers.proposer import UniformMutationProposer, UniformGrowTreeMutationProposer, UniformPruneTreeMutationProposer
+from bartpy.samplers.treemutation.uniform.likihoodratio import UniformTreeMutationLikihoodRatio
+from bartpy.samplers.treemutation.uniform.proposer import UniformMutationProposer
+from bartpy.samplers.treemutation.treemutation import TreeMutationSampler
+
 
 
 class SklearnModel(BaseEstimator, RegressorMixin):
@@ -57,7 +60,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.p_prune = p_prune
         self.alpha = alpha
         self.beta = beta
-        self.sigma, self.data, self.model, self.proposer, self.sampler, self._prediction_samples, self._model_samples, self.schedule = [None] * 8
+        self.sigma, self.data, self.model, self.proposer, self.likihood_ratio, self.sampler, self._prediction_samples, self._model_samples, self.schedule = [None] * 9
 
     def fit(self, X: pd.DataFrame, y: np.ndarray) -> 'SklearnModel':
         """
@@ -79,8 +82,10 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.data = Data(deepcopy(X), deepcopy(y), normalize=True)
         self.sigma = Sigma(self.sigma_a, self.sigma_b, self.data.normalizing_scale)
         self.model = Model(self.data, self.sigma, n_trees=self.n_trees, alpha=self.alpha, beta=self.beta)
-        self.proposer = UniformMutationProposer({UniformGrowTreeMutationProposer: self.p_grow, UniformPruneTreeMutationProposer: self.p_prune})
-        self.schedule = SampleSchedule(self.model, self.proposer)
+        self.proposer = UniformMutationProposer([self.p_grow, self.p_prune])
+        self.likihood_ratio = UniformTreeMutationLikihoodRatio([self.p_grow, self.p_prune])
+        self.tree_sampler = TreeMutationSampler(self.proposer, self.likihood_ratio)
+        self.schedule = SampleSchedule(self.model, self.tree_sampler)
         self.sampler = Sampler(self.model, self.schedule)
         self._model_samples, self._prediction_samples = self.sampler.samples(self.n_samples, self.n_burn)
         return self
