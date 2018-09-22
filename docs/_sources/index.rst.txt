@@ -13,6 +13,8 @@ Welcome to BartPy's documentation!
    node
    split
    tree
+   model
+   sampling
 
 
 Indices and tables

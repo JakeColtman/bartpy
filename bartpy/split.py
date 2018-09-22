@@ -15,6 +15,7 @@ class SplitCondition:
     """
     A representation of a split in feature space.
     The two main components are:
+
         - splitting_variable: which variable is being split on
         - splitting_value: the value being split on
                            all values less than or equal to this go left, all values greater go right
@@ -125,8 +126,10 @@ def sample_split_condition(node) -> Optional[SplitCondition]:
     """
     Randomly sample a splitting rule for a particular leaf node
     Works based on two random draws
-        - draw a node to split on based on multinomial distribution
-        - draw an observation within that variable to split on
+
+      - draw a node to split on based on multinomial distribution
+      - draw an observation within that variable to split on
+
     Returns None if there isn't a possible non-degenerate split
     """
     split_variable = np.random.choice(list(node.splittable_variables))
