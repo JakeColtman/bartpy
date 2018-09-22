@@ -1,0 +1,357 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Model &mdash; BartPy 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Samplers" href="sampling.html" />
+    <link rel="prev" title="Tree" href="tree.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> BartPy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="node.html">Node</a></li>
+<li class="toctree-l1"><a class="reference internal" href="split.html">Split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tree.html">Tree</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sampling.html">Samplers</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BartPy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Model</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/model.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="model">
+<h1>Model<a class="headerlink" href="#model" title="Permalink to this headline">¶</a></h1>
+<p>The default API for a BartPy model follows the common sklearn API. In particular, it implements:</p>
+<blockquote>
+<div><ul class="simple">
+<li>fit</li>
+<li>predict</li>
+<li>score</li>
+</ul>
+</div></blockquote>
+<p>For example, if we just want to train the model using default parameters, we can do:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">bartpy.sklearnmodel</span> <span class="kn">import</span> <span class="n">SklearnModel</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">SklearnModel</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+<span class="n">prediction</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">y_test</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The default parameters are designed to be suitable for a wide range of data, but there are a number of parameters that can be passed into the model
+These parameters can be cross_validated and optimized through grid search in the normal sklearn way</p>
+<span class="target" id="module-bartpy.sklearnmodel"></span><dl class="class">
+<dt id="bartpy.sklearnmodel.SklearnModel">
+<em class="property">class </em><code class="descclassname">bartpy.sklearnmodel.</code><code class="descname">SklearnModel</code><span class="sig-paren">(</span><em>n_trees: int = 50</em>, <em>sigma_a: float = 0.001</em>, <em>sigma_b: float = 0.001</em>, <em>n_samples: int = 200</em>, <em>n_burn: int = 200</em>, <em>p_grow: float = 0.5</em>, <em>p_prune: float = 0.5</em>, <em>alpha: float = 0.95</em>, <em>beta: float = 2.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bartpy/sklearnmodel.html#SklearnModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.sklearnmodel.SklearnModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>The main access point to building BART models in BartPy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>n_trees</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – the number of trees to use, more trees will make a smoother fit, but slow training and fitting</li>
+<li><strong>sigma_a</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – shape parameter of the prior on sigma</li>
+<li><strong>sigma_b</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – scale parameter of the prior on sigma</li>
+<li><strong>n_samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – how many recorded samples to take</li>
+<li><strong>n_burn</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – how many samples to run without recording to reach convergence</li>
+<li><strong>p_grow</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – probability of choosing a grow mutation in tree mutation sampling</li>
+<li><strong>p_prune</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – probability of choosing a prune mutation in tree mutation sampling</li>
+<li><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – prior parameter on tree structure</li>
+<li><strong>beta</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – prior parameter on tree structure</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="bartpy.sklearnmodel.SklearnModel.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><em>X: pandas.core.frame.DataFrame</em>, <em>y: numpy.ndarray</em><span class="sig-paren">)</span> &#x2192; bartpy.sklearnmodel.SklearnModel<a class="reference internal" href="_modules/bartpy/sklearnmodel.html#SklearnModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.sklearnmodel.SklearnModel.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Learn the model based on training data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>X</strong> (<em>pd.DataFrame</em>) – training covariates</li>
+<li><strong>y</strong> (<em>np.ndarray</em>) – training targets</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">self with trained parameter values</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#bartpy.sklearnmodel.SklearnModel" title="bartpy.sklearnmodel.SklearnModel">SklearnModel</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bartpy.sklearnmodel.SklearnModel.model_samples">
+<code class="descname">model_samples</code><a class="headerlink" href="#bartpy.sklearnmodel.SklearnModel.model_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Array of the model as it was after each sample.
+Useful for examining for:</p>
+<blockquote>
+<div><ul class="simple">
+<li>examining the state of trees, nodes and sigma throughout the sampling</li>
+<li>out of sample prediction</li>
+</ul>
+</div></blockquote>
+<p>Returns None if the model hasn’t been fit</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">List[Model]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="bartpy.sklearnmodel.SklearnModel.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>X: numpy.ndarray = None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bartpy/sklearnmodel.html#SklearnModel.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.sklearnmodel.SklearnModel.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict the target corresponding to the provided covariate matrix
+If X is None, will predict based on training covariates</p>
+<p>Prediction is based on the mean of all samples</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>X</strong> (<em>pd.DataFrame</em>) – covariates to predict from</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">predictions for the X covariates</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">np.ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bartpy.sklearnmodel.SklearnModel.prediction_samples">
+<code class="descname">prediction_samples</code><a class="headerlink" href="#bartpy.sklearnmodel.SklearnModel.prediction_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Matrix of prediction samples at each point in sampling
+Useful for assessing convergence, calculating point estimates etc.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">prediction samples with dimensionality n_samples * n_points</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">np.ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="sampling.html" class="btn btn-neutral float-right" title="Samplers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="tree.html" class="btn btn-neutral" title="Tree" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Jake Coltman.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.0.1',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
