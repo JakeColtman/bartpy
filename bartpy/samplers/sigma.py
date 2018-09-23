@@ -2,9 +2,10 @@ import numpy as np
 
 from bartpy.model import Model
 from bartpy.sigma import Sigma
+from bartpy.samplers.sampler import Sampler
 
 
-class SigmaSampler:
+class SigmaSampler(Sampler):
 
     def step(self, model: Model, sigma: Sigma) -> None:
         sigma.set_value(self.sample(model, sigma))

@@ -169,6 +169,14 @@ Contains no logic, but keeps track of 4 different kinds of nodes within the tree
 <li>prunable decision nodes</li>
 </ul>
 </div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>nodes</strong> (<em>List</em><em>[</em><em>Node</em><em>]</em>) – All nodes contained in the tree, i.e. decision and leaf nodes</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="bartpy.tree.Tree.add_node">
 <code class="descname">add_node</code><span class="sig-paren">(</span><em>node: bartpy.node.TreeNode</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/bartpy/tree.html#Tree.add_node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.tree.Tree.add_node" title="Permalink to this definition">¶</a></dt>
@@ -193,6 +201,25 @@ Decision nodes are internal split nodes, i.e. not leaf nodes</p>
 <dt id="bartpy.tree.Tree.nodes">
 <code class="descname">nodes</code><a class="headerlink" href="#bartpy.tree.Tree.nodes" title="Permalink to this definition">¶</a></dt>
 <dd><p>List of all nodes contained in the tree</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bartpy.tree.Tree.out_of_sample_predict">
+<code class="descname">out_of_sample_predict</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span> &#x2192; numpy.ndarray<a class="reference internal" href="_modules/bartpy/tree.html#Tree.out_of_sample_predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.tree.Tree.out_of_sample_predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prediction for a covariate matrix not used for training</p>
+<p>Note that this is quite slow</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>X</strong> (<em>pd.DataFrame</em>) – Covariates to predict for</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">np.ndarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -237,6 +264,18 @@ Used to pass in the residuals from the sum of all of the other trees</p>
 <code class="descclassname">bartpy.tree.</code><code class="descname">mutate</code><span class="sig-paren">(</span><em>tree: bartpy.tree.Tree</em>, <em>mutation: bartpy.mutation.TreeMutation</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/bartpy/tree.html#mutate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.tree.mutate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Apply a change to the structure of the tree
 Modifies not only the tree, but also the links between the TreeNodes</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>tree</strong> (<a class="reference internal" href="#bartpy.tree.Tree" title="bartpy.tree.Tree"><em>Tree</em></a>) – The tree to mutate</li>
+<li><strong>mutation</strong> (<a class="reference internal" href="#bartpy.mutation.TreeMutation" title="bartpy.mutation.TreeMutation"><em>TreeMutation</em></a>) – The mutation to apply to the tree</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <span class="target" id="module-bartpy.mutation"></span><dl class="class">

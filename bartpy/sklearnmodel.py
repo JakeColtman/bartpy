@@ -7,12 +7,13 @@ from sklearn.base import RegressorMixin, BaseEstimator
 from bartpy.model import Model
 from bartpy.data import Data
 from bartpy.samplers.schedule import SampleSchedule
-from bartpy.samplers.sampler import Sampler
+from bartpy.samplers.modelsampler import ModelSampler
 from bartpy.sigma import Sigma
 from bartpy.samplers.treemutation.uniform.likihoodratio import UniformTreeMutationLikihoodRatio
 from bartpy.samplers.treemutation.uniform.proposer import UniformMutationProposer
 from bartpy.samplers.treemutation.treemutation import TreeMutationSampler
-
+from bartpy.samplers.sigma import SigmaSampler
+from bartpy.samplers.leafnode import LeafNodeSampler
 
 
 class SklearnModel(BaseEstimator, RegressorMixin):
@@ -85,9 +86,9 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.proposer = UniformMutationProposer([self.p_grow, self.p_prune])
         self.likihood_ratio = UniformTreeMutationLikihoodRatio([self.p_grow, self.p_prune])
         self.tree_sampler = TreeMutationSampler(self.proposer, self.likihood_ratio)
-        self.schedule = SampleSchedule(self.model, self.tree_sampler)
-        self.sampler = Sampler(self.model, self.schedule)
-        self._model_samples, self._prediction_samples = self.sampler.samples(self.n_samples, self.n_burn)
+        self.schedule = SampleSchedule(self.tree_sampler, LeafNodeSampler(), SigmaSampler())
+        self.sampler = ModelSampler(self.schedule)
+        self._model_samples, self._prediction_samples = self.sampler.samples(self.model, self.n_samples, self.n_burn)
         return self
 
     def predict(self, X: np.ndarray=None):
@@ -124,8 +125,9 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         """
         Array of the model as it was after each sample.
         Useful for examining for:
-          * examining the state of trees, nodes and sigma throughout the sampling
-          * out of sample prediction
+
+         - examining the state of trees, nodes and sigma throughout the sampling
+         - out of sample prediction
 
         Returns None if the model hasn't been fit
 

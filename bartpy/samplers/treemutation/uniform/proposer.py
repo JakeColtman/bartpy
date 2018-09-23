@@ -34,14 +34,14 @@ class UniformMutationProposer(TreeMutationProposer):
     def sample_mutation_method(self) -> Callable[[Tree], TreeMutation]:
         return np.random.choice(list(self.prob_method_lookup.keys()), p=list(self.prob_method_lookup.values()))
 
-    def propose(self, tree_structure: Tree) -> TreeMutation:
+    def propose(self, tree: Tree) -> TreeMutation:
         method = self.sample_mutation_method()
         try:
-            return method(tree_structure)
+            return method(tree)
         except NoSplittableVariableException:
-            return self.propose(tree_structure)
+            return self.propose(tree)
         except NoPrunableNodeException:
-            return self.propose(tree_structure)
+            return self.propose(tree)
 
 
 def random_splittable_leaf_node(tree: Tree) -> LeafNode:
