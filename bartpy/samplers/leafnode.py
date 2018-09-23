@@ -2,9 +2,10 @@ import numpy as np
 
 from bartpy.model import Model
 from bartpy.node import LeafNode
+from bartpy.samplers.sampler import Sampler
 
 
-class LeafNodeSampler:
+class LeafNodeSampler(Sampler):
 
     def step(self, model: Model, node: LeafNode):
         node.set_value(self.sample(model, node))

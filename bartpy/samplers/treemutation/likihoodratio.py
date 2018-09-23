@@ -28,7 +28,7 @@ class TreeMutationLikihoodRatio:
         float
             logged ratio of likihoods
         """
-        return self.log_transition_ratio(tree, mutation) + self.log_likihood_ratio(model, tree, mutation) + self.log_tree_structure_ratio(model, tree, mutation)
+        return self.log_transition_ratio(tree, mutation) + self.log_likihood_ratio(model, tree, mutation) + self.log_tree_ratio(model, tree, mutation)
 
     @abstractmethod
     def log_transition_ratio(self, tree: Tree, mutation: TreeMutation) -> float:
@@ -52,7 +52,7 @@ class TreeMutationLikihoodRatio:
         raise NotImplementedError()
 
     @abstractmethod
-    def log_tree_structure_ratio(self, model: Model, tree: Tree, mutation: TreeMutation) -> float:
+    def log_tree_ratio(self, model: Model, tree: Tree, mutation: TreeMutation) -> float:
         """
         Logged ratio of the likihood of the tree before and after the mutation
         i.e. the product of the probability of all split nodes being split and all leaf node note being split

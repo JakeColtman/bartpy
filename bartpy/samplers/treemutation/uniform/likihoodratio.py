@@ -45,7 +45,7 @@ class UniformTreeMutationLikihoodRatio(TreeMutationLikihoodRatio):
         else:
             raise NotImplementedError("kind {} not supported".format(mutation.kind))
 
-    def log_tree_structure_ratio(self, model: Model, tree: Tree, mutation: TreeMutation):
+    def log_tree_ratio(self, model: Model, tree: Tree, mutation: TreeMutation):
         if mutation.kind == "grow":
             return self.log_tree_ratio_grow(model, tree, mutation)
         if mutation.kind == "prune":
@@ -128,14 +128,14 @@ def n_splittable_leaf_nodes(tree: Tree) -> int:
     return len(tree.splittable_leaf_nodes)
 
 
-def log_probability_split_within_tree(tree_structure: Tree, mutation: GrowMutation) -> float:
+def log_probability_split_within_tree(tree: Tree, mutation: GrowMutation) -> float:
     """
     The log probability of the particular grow mutation being selected conditional on growing a given tree
     i.e.
     log(P(mutation | node)P(node| tree)
 
     """
-    prob_node_chosen_to_split_on = - np.log(n_splittable_leaf_nodes(tree_structure))
+    prob_node_chosen_to_split_on = - np.log(n_splittable_leaf_nodes(tree))
     prob_split_chosen = log_probability_split_within_node(mutation)
     return prob_node_chosen_to_split_on + prob_split_chosen
 

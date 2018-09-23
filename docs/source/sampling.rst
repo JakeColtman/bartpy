@@ -16,6 +16,11 @@ This means that we need to be able to do three types of sampling:
  - An updated value for a node | the tree structure, all other trees and sigma
  - An updated sigma | all trees and all nodes
 
+This is all coordinated by a the SampleSchedule class
+
+.. autoclass:: bartpy.samplers.schedule.SampleSchedule
+   :members:
+
 Sampling Tree Space
 -------------------
 
@@ -42,7 +47,7 @@ By default:
 
 It is possible to modify all of this behaviour using BartPy, but doing so requires some involved modification of the likihood functions.
 
-.. autoclass:: bartpy.samplers.proposer.TreeMutationProposer
+.. autoclass:: bartpy.samplers.treemutation.proposer.TreeMutationProposer
    :members:
 
 
