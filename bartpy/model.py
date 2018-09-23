@@ -40,14 +40,8 @@ class Model:
     def unnormalized_residuals(self) -> np.ndarray:
         return self.data.unnormalized_y - self.data.unnormalize_y(self.predict())
 
-    def residuals_without_tree(self, index: int) -> np.ndarray:
-        return self.data.y - self.prediction_without_tree(index)
-
     def predict(self) -> np.ndarray:
         return np.sum([tree.predict() for tree in self.trees], axis=0)
-
-    def prediction_without_tree(self, index: int) -> np.ndarray:
-        return np.sum(np.array([tree.predict() for ii, tree in enumerate(self.trees) if ii != index]), axis=0)
 
     def out_of_sample_predict(self, X: np.ndarray):
         return np.sum([tree.out_of_sample_predict(X) for tree in self.trees], axis=0)
