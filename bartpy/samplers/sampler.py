@@ -15,8 +15,8 @@ class Sampler:
         self.model = model
 
     def step(self):
-        for ss in self.schedule.steps():
-            ss()
+        for step in self.schedule.steps(self.model):
+            step()
 
     def samples(self, n_samples: int, n_burn: int) -> Tuple[List[Model], np.ndarray]:
         print("Starting burn")

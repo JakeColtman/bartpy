@@ -12,7 +12,8 @@ from bartpy.sigma import Sigma
 from bartpy.samplers.treemutation.uniform.likihoodratio import UniformTreeMutationLikihoodRatio
 from bartpy.samplers.treemutation.uniform.proposer import UniformMutationProposer
 from bartpy.samplers.treemutation.treemutation import TreeMutationSampler
-
+from bartpy.samplers.sigma import SigmaSampler
+from bartpy.samplers.leafnode import LeafNodeSampler
 
 
 class SklearnModel(BaseEstimator, RegressorMixin):
@@ -85,7 +86,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.proposer = UniformMutationProposer([self.p_grow, self.p_prune])
         self.likihood_ratio = UniformTreeMutationLikihoodRatio([self.p_grow, self.p_prune])
         self.tree_sampler = TreeMutationSampler(self.proposer, self.likihood_ratio)
-        self.schedule = SampleSchedule(self.model, self.tree_sampler)
+        self.schedule = SampleSchedule(self.tree_sampler, LeafNodeSampler(), SigmaSampler())
         self.sampler = Sampler(self.model, self.schedule)
         self._model_samples, self._prediction_samples = self.sampler.samples(self.n_samples, self.n_burn)
         return self

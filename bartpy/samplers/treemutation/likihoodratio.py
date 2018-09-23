@@ -59,6 +59,8 @@ class TreeMutationLikihoodRatio:
 
         Parameters
         ----------
+        model: Model
+            The model the tree to be changed is part of
         tree: Tree
             The tree being changed
         mutation: TreeMutation
@@ -80,6 +82,8 @@ class TreeMutationLikihoodRatio:
 
         Parameters
         ----------
+        model: Model
+            The model the tree to be changed is part of
         tree: Tree
             The tree being changed
         mutation: TreeMutation
