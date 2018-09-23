@@ -167,6 +167,11 @@
 <span class="sd">      - decision nodes</span>
 <span class="sd">      - splittable leaf nodes</span>
 <span class="sd">      - prunable decision nodes</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    nodes: List[Node]</span>
+<span class="sd">        All nodes contained in the tree, i.e. decision and leaf nodes</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nodes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TreeNode</span><span class="p">]):</span>
@@ -233,11 +238,24 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">cache_up_to_date</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prediction</span></div>
 
-    <span class="k">def</span> <span class="nf">out_of_sample_predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<div class="viewcode-block" id="Tree.out_of_sample_predict"><a class="viewcode-back" href="../../tree.html#bartpy.tree.Tree.out_of_sample_predict">[docs]</a>    <span class="k">def</span> <span class="nf">out_of_sample_predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Prediction for a covariate matrix not used for training</span>
+
+<span class="sd">        Note that this is quite slow</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X: pd.DataFrame</span>
+<span class="sd">            Covariates to predict for</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        np.ndarray</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">prediction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">))</span>
         <span class="k">for</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">leaf_nodes</span><span class="p">:</span>
             <span class="n">prediction</span><span class="p">[</span><span class="n">leaf</span><span class="o">.</span><span class="n">split</span><span class="o">.</span><span class="n">out_of_sample_condition</span><span class="p">(</span><span class="n">X</span><span class="p">)]</span> <span class="o">=</span> <span class="n">leaf</span><span class="o">.</span><span class="n">predict</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">prediction</span>
+        <span class="k">return</span> <span class="n">prediction</span></div>
 
 <div class="viewcode-block" id="Tree.remove_node"><a class="viewcode-back" href="../../tree.html#bartpy.tree.Tree.remove_node">[docs]</a>    <span class="k">def</span> <span class="nf">remove_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">TreeNode</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -258,6 +276,13 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Apply a change to the structure of the tree</span>
 <span class="sd">    Modifies not only the tree, but also the links between the TreeNodes</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tree: Tree</span>
+<span class="sd">        The tree to mutate</span>
+<span class="sd">    mutation: TreeMutation</span>
+<span class="sd">        The mutation to apply to the tree</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">tree</span><span class="o">.</span><span class="n">cache_up_to_date</span> <span class="o">=</span> <span class="kc">False</span>
 

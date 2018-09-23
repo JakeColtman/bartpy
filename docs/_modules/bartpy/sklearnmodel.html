@@ -240,8 +240,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">likihood_ratio</span> <span class="o">=</span> <span class="n">UniformTreeMutationLikihoodRatio</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">p_grow</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_prune</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tree_sampler</span> <span class="o">=</span> <span class="n">TreeMutationSampler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proposer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">likihood_ratio</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">schedule</span> <span class="o">=</span> <span class="n">SampleSchedule</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tree_sampler</span><span class="p">,</span> <span class="n">LeafNodeSampler</span><span class="p">(),</span> <span class="n">SigmaSampler</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sampler</span> <span class="o">=</span> <span class="n">ModelSampler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">schedule</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_model_samples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prediction_samples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampler</span><span class="o">.</span><span class="n">samples</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_burn</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sampler</span> <span class="o">=</span> <span class="n">ModelSampler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">schedule</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_samples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prediction_samples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampler</span><span class="o">.</span><span class="n">samples</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_burn</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
 <div class="viewcode-block" id="SklearnModel.predict"><a class="viewcode-back" href="../../model.html#bartpy.sklearnmodel.SklearnModel.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -278,8 +278,9 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Array of the model as it was after each sample.</span>
 <span class="sd">        Useful for examining for:</span>
-<span class="sd">          * examining the state of trees, nodes and sigma throughout the sampling</span>
-<span class="sd">          * out of sample prediction</span>
+<span class="sd">        </span>
+<span class="sd">         - examining the state of trees, nodes and sigma throughout the sampling</span>
+<span class="sd">         - out of sample prediction</span>
 
 <span class="sd">        Returns None if the model hasn&#39;t been fit</span>
 

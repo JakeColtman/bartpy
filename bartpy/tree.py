@@ -14,6 +14,11 @@ class Tree:
       - decision nodes
       - splittable leaf nodes
       - prunable decision nodes
+
+    Parameters
+    ----------
+    nodes: List[Node]
+        All nodes contained in the tree, i.e. decision and leaf nodes
     """
 
     def __init__(self, nodes: List[TreeNode]):
@@ -81,6 +86,19 @@ class Tree:
         return self._prediction
 
     def out_of_sample_predict(self, X) -> np.ndarray:
+        """
+        Prediction for a covariate matrix not used for training
+
+        Note that this is quite slow
+
+        Parameters
+        ----------
+        X: pd.DataFrame
+            Covariates to predict for
+        Returns
+        -------
+        np.ndarray
+        """
         prediction = np.array([0.] * len(X))
         for leaf in self.leaf_nodes:
             prediction[leaf.split.out_of_sample_condition(X)] = leaf.predict()
@@ -105,6 +123,13 @@ def mutate(tree: Tree, mutation: TreeMutation) -> None:
     """
     Apply a change to the structure of the tree
     Modifies not only the tree, but also the links between the TreeNodes
+
+    Parameters
+    ----------
+    tree: Tree
+        The tree to mutate
+    mutation: TreeMutation
+        The mutation to apply to the tree
     """
     tree.cache_up_to_date = False
 

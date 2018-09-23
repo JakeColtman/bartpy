@@ -125,8 +125,9 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         """
         Array of the model as it was after each sample.
         Useful for examining for:
-          * examining the state of trees, nodes and sigma throughout the sampling
-          * out of sample prediction
+
+         - examining the state of trees, nodes and sigma throughout the sampling
+         - out of sample prediction
 
         Returns None if the model hasn't been fit
 
