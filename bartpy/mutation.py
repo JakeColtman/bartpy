@@ -1,8 +1,7 @@
-from abc import ABC
 from bartpy.node import TreeNode, DecisionNode, LeafNode
 
 
-class TreeMutation(ABC):
+class TreeMutation:
     """
     An encapsulation of a change to be made to the tree.
     Constructed of three components
@@ -12,8 +11,6 @@ class TreeMutation(ABC):
     """
 
     def __init__(self, kind: str, existing_node: TreeNode, updated_node: TreeNode):
-        if kind not in ["grow", "prune"]:
-            raise NotImplementedError("{} is not a supported proposal".format(kind))
         self.kind = kind
         self.existing_node = existing_node
         self.updated_node = updated_node
