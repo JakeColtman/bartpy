@@ -1,7 +1,7 @@
 import unittest
 
 from bartpy.data import Data
-from bartpy.samplers.treemutation.uniform.proposer import UniformGrowTreeMutationProposer, UniformPruneTreeMutationProposer
+from bartpy.samplers.treemutation.uniform.proposer import UniformMutationProposer
 from bartpy.split import Split
 from bartpy.tree import LeafNode, Tree, DecisionNode
 
@@ -18,7 +18,7 @@ class TestPruneTreeMutationProposer(unittest.TestCase):
         self.b = LeafNode(Split(self.data))
         self.a = DecisionNode(Split(self.data), self.b, self.c)
         self.tree = Tree([self.a, self.b, self.c, self.d, self.e])
-        self.proposer = UniformPruneTreeMutationProposer()
+        self.proposer = UniformMutationProposer()
 
     def test_proposal_isnt_mutating(self):
         proposal = self.proposer.propose(self.tree)
@@ -41,7 +41,7 @@ class TestGrowTreeMutationProposer(unittest.TestCase):
         self.b = LeafNode(Split(self.data))
         self.a = DecisionNode(Split(self.data), self.b, self.c)
         self.tree = Tree([self.a, self.b, self.c, self.d, self.e])
-        self.proposer = UniformGrowTreeMutationProposer()
+        self.proposer = UniformMutationProposer()
 
     def test_proposal_isnt_mutating(self):
         proposal = self.proposer.propose(self.tree)
