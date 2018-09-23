@@ -3,7 +3,7 @@ from typing import Union
 import numpy as np
 
 from bartpy.data import Data
-from bartpy.split import Split, sample_split_condition, SplitCondition
+from bartpy.split import Split, SplitCondition
 
 
 class TreeNode:
@@ -120,12 +120,3 @@ def split_node(node: LeafNode, split_condition: SplitCondition) -> DecisionNode:
                         LeafNode(left_split, depth=node.depth + 1),
                         LeafNode(right_split, depth=node.depth + 1),
                         depth=node.depth)
-
-
-def sample_split_node(node: LeafNode) -> DecisionNode:
-    """
-    Split a leaf node into a decision node with two leaf children
-    The variable and value to split on is determined by sampling from their respective distributions
-    """
-    condition = sample_split_condition(node)
-    return split_node(node, condition)

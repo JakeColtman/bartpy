@@ -1,11 +1,12 @@
-from typing import Callable, List, Mapping
+from typing import Callable, List, Mapping, Optional
 
 import numpy as np
 
 from bartpy.errors import NoSplittableVariableException, NoPrunableNodeException
 from bartpy.mutation import TreeMutation, GrowMutation, PruneMutation
-from bartpy.node import sample_split_node, LeafNode, DecisionNode
+from bartpy.node import LeafNode, DecisionNode, split_node
 from bartpy.samplers.treemutation.proposer import TreeMutationProposer
+from bartpy.split import SplitCondition
 from bartpy.tree import Tree
 
 
@@ -65,3 +66,29 @@ def random_prunable_decision_node(tree: Tree) -> DecisionNode:
     if len(leaf_parents) == 0:
         raise NoPrunableNodeException()
     return np.random.choice(leaf_parents)
+
+
+def sample_split_condition(node: LeafNode) -> Optional[SplitCondition]:
+    """
+    Randomly sample a splitting rule for a particular leaf node
+    Works based on two random draws
+
+      - draw a node to split on based on multinomial distribution
+      - draw an observation within that variable to split on
+
+    Returns None if there isn't a possible non-degenerate split
+    """
+    split_variable = np.random.choice(list(node.splittable_variables))
+    split_value = node.data.random_splittable_value(split_variable)
+    if split_value is None:
+        return None
+    return SplitCondition(split_variable, split_value)
+
+
+def sample_split_node(node: LeafNode) -> DecisionNode:
+    """
+    Split a leaf node into a decision node with two leaf children
+    The variable and value to split on is determined by sampling from their respective distributions
+    """
+    condition = sample_split_condition(node)
+    return split_node(node, condition)
