@@ -24,7 +24,7 @@ if __name__ == "__main__":
     import cProfile
     from datetime import datetime as dt
     print(dt.now())
-    #model, x, y = run(0.95, 2., 50, 5)
-    cProfile.run("run(0.95, 2., 30, 5)")
+    model, x, y = run(0.95, 2., 200, 5)
+    #cProfile.run("run(0.95, 2., 30, 5)")
 
     print(dt.now())

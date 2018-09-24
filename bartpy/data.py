@@ -1,5 +1,5 @@
 from collections import namedtuple
-from typing import Any, Set
+from typing import Any, Set, List
 
 import pandas as pd
 import numpy as np
@@ -24,10 +24,10 @@ class Data:
         else:
             self._y = y
         if cache:
-            self._max_values_cache = {x[0]: x[1] for x in zip(self._X.columns, self._X.values.max(axis=0))}
-            self._min_values_cache = {x[0]: x[1] for x in zip(self._X.columns, self._X.values.min(axis=0))}
-            self._splittable_values = [x for x in self._max_values_cache if self._min_values_cache[x] != self._max_values_cache[x]]
-            self._n_unique_values_cache = {x: None for x in self._X.columns}
+            self._max_values_cache = self._X.max(axis=0)
+            self._min_values_cache = self._X.min(axis=0)
+            self._splittable_variables = [x for x in range(0, self._X.shape[1]) if self._min_values_cache[x] != self._max_values_cache[x]]
+            self._n_unique_values_cache = [None] * self._X.shape[1]
 
     @property
     def y(self) -> np.ndarray:
@@ -37,8 +37,8 @@ class Data:
     def X(self) -> pd.DataFrame:
         return self._X
 
-    def splittable_variables(self) -> Set[str]:
-        return self._splittable_values
+    def splittable_variables(self) -> List[int]:
+        return self._splittable_variables
 
     @property
     def variables(self) -> Set[str]:
@@ -50,7 +50,7 @@ class Data:
         -------
         Set[str]
         """
-        return set(self.X.columns)
+        return list(range(0, self._X.shape[1]))
 
     def random_splittable_variable(self) -> str:
         """
@@ -82,28 +82,11 @@ class Data:
         -----
           - Won't create degenerate splits, all splits will have at least one row on both sides of the split
         """
-        if self._max_values_cache[variable] is None:
-            self._max_values_cache[variable] = np.max(self._X[variable])
         max_value = self._max_values_cache[variable]
-        candidate = np.random.choice(self.X[variable])
+        candidate = np.random.choice(self.X[:, variable])
         while candidate == max_value:
-            candidate = np.random.choice(self.X[variable])
+            candidate = np.random.choice(self.X[:, variable])
         return candidate
-
-    def unique_values(self, variable: str) -> Set[Any]:
-        """
-        Set of all values a variable takes in the feature set
-
-        Parameters
-        ----------
-        variable - str
-            name of the variable
-
-        Returns
-        -------
-        Set[Any] - all possible values
-        """
-        return set(self.X[variable])
 
     @property
     def n_obsv(self) -> int:
@@ -115,7 +98,7 @@ class Data:
 
     def n_unique_values(self, variable: str) -> int:
         if self._n_unique_values_cache[variable] is None:
-            self._n_unique_values_cache[variable] = self._X[variable].nunique()
+            self._n_unique_values_cache[variable] = len(np.unique(self._X[:, variable]))
         return self._n_unique_values_cache[variable]
 
     @staticmethod
