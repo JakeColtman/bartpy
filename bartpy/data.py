@@ -3,11 +3,24 @@ from typing import Any, Set, List
 
 import pandas as pd
 import numpy as np
+import numba as nb
 
 from bartpy.errors import NoSplittableVariableException
 
 
 SplitData = namedtuple("SplitData", ["left_data", "right_data"])
+
+
+@nb.jit()
+def is_not_unique(series):
+    if len(series) == 1:
+        return False
+    unique_values = {series[0]}
+    for val in series[1:]:
+        if val not in unique_values:
+            return True
+        unique_values.add(val)
+    return False
 
 
 class Data:
@@ -25,8 +38,7 @@ class Data:
             self._y = y
         if cache:
             self._max_values_cache = self._X.max(axis=0)
-            self._min_values_cache = self._X.min(axis=0)
-            self._splittable_variables = [x for x in range(0, self._X.shape[1]) if self._min_values_cache[x] != self._max_values_cache[x]]
+            self._splittable_variables = [x for x in range(0, self._X.shape[1]) if is_not_unique(self._X[:, x])]
             self._n_unique_values_cache = [None] * self._X.shape[1]
 
     @property
@@ -41,7 +53,7 @@ class Data:
         return self._splittable_variables
 
     @property
-    def variables(self) -> Set[str]:
+    def variables(self) -> List[str]:
         """
         The set of variable names the data contains.
         Of dimensionality p
@@ -98,7 +110,7 @@ class Data:
 
     def n_unique_values(self, variable: str) -> int:
         if self._n_unique_values_cache[variable] is None:
-            self._n_unique_values_cache[variable] = len(np.unique(self._X[:, variable]))
+            self._n_unique_values_cache[variable] = np.sum(self._X[:, variable] != self._max_values_cache[variable])
         return self._n_unique_values_cache[variable]
 
     @staticmethod
