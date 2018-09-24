@@ -24,8 +24,10 @@ class Data:
         else:
             self._y = y
         if cache:
-            self._n_unique_values = self._X.apply(pd.Series.nunique).to_dict()
-            self._max_values = self._X.apply(np.max).to_dict()
+            self._max_values_cache = {x[0]: x[1] for x in zip(self._X.columns, self._X.values.max(axis=0))}
+            self._min_values_cache = {x[0]: x[1] for x in zip(self._X.columns, self._X.values.min(axis=0))}
+            self._splittable_values = [x for x in self._max_values_cache if self._min_values_cache[x] != self._max_values_cache[x]]
+            self._n_unique_values_cache = {x: None for x in self._X.columns}
 
     @property
     def y(self) -> np.ndarray:
@@ -36,7 +38,7 @@ class Data:
         return self._X
 
     def splittable_variables(self) -> Set[str]:
-        return {x for x in self._n_unique_values.keys() if self._n_unique_values[x] > 1}
+        return self._splittable_values
 
     @property
     def variables(self) -> Set[str]:
@@ -80,7 +82,9 @@ class Data:
         -----
           - Won't create degenerate splits, all splits will have at least one row on both sides of the split
         """
-        max_value = self._max_values[variable]
+        if self._max_values_cache[variable] is None:
+            self._max_values_cache[variable] = np.max(self._X[variable])
+        max_value = self._max_values_cache[variable]
         candidate = np.random.choice(self.X[variable])
         while candidate == max_value:
             candidate = np.random.choice(self.X[variable])
@@ -110,7 +114,9 @@ class Data:
         return len(self.splittable_variables())
 
     def n_unique_values(self, variable: str) -> int:
-        return self._n_unique_values[variable]
+        if self._n_unique_values_cache[variable] is None:
+            self._n_unique_values_cache[variable] = self._X[variable].nunique()
+        return self._n_unique_values_cache[variable]
 
     @staticmethod
     def normalize_y(y: np.ndarray) -> np.ndarray:
