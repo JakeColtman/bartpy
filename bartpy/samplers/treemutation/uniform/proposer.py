@@ -25,16 +25,25 @@ def uniformly_sample_prune_mutation(tree: Tree) -> TreeMutation:
 
 class UniformMutationProposer(TreeMutationProposer):
 
-    def __init__(self, prob_method: List[float]=None, prob_method_lookup: Mapping[Callable[[Tree], TreeMutation], float]=None):
+    def __init__(self, prob_method: List[float]=None, prob_method_lookup: Mapping[Callable[[Tree], TreeMutation], float]=None, n_proposals=250):
         if prob_method_lookup is not None:
             self.prob_method_lookup = prob_method_lookup
         else:
             if prob_method is None:
                 prob_method = [0.5, 0.5]
             self.prob_method_lookup = {x[0]: x[1] for x in zip([uniformly_sample_grow_mutation, uniformly_sample_prune_mutation], prob_method)}
+        self.methods = list(self.prob_method_lookup.keys())
+        self.proposals = None
+        self.refresh_proposal_cache()
+
+    def refresh_proposal_cache(self):
+        self.proposals = list(np.random.choice(list(self.prob_method_lookup.keys()), p=list(self.prob_method_lookup.values()), size=250))
 
     def sample_mutation_method(self) -> Callable[[Tree], TreeMutation]:
-        return np.random.choice(list(self.prob_method_lookup.keys()), p=list(self.prob_method_lookup.values()))
+        prop = self.proposals.pop()
+        if len(self.proposals) == 0:
+            self.refresh_proposal_cache()
+        return prop
 
     def propose(self, tree: Tree) -> TreeMutation:
         method = self.sample_mutation_method()
