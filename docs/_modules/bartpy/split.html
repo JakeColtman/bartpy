@@ -273,25 +273,6 @@
     <span class="k">def</span> <span class="nf">update_y</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cache_up_to_date</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">_y</span> <span class="o">=</span> <span class="n">y</span>
-
-
-<div class="viewcode-block" id="sample_split_condition"><a class="viewcode-back" href="../../split.html#bartpy.split.sample_split_condition">[docs]</a><span class="k">def</span> <span class="nf">sample_split_condition</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SplitCondition</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Randomly sample a splitting rule for a particular leaf node</span>
-<span class="sd">    Works based on two random draws</span>
-
-<span class="sd">      - draw a node to split on based on multinomial distribution</span>
-<span class="sd">      - draw an observation within that variable to split on</span>
-
-<span class="sd">    Returns None if there isn&#39;t a possible non-degenerate split</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">split_variable</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">splittable_variables</span><span class="p">))</span>
-    <span class="n">split_value</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">random_splittable_value</span><span class="p">(</span><span class="n">split_variable</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">split_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">None</span>
-    <span class="k">return</span> <span class="n">SplitCondition</span><span class="p">(</span><span class="n">split_variable</span><span class="p">,</span> <span class="n">split_value</span><span class="p">)</span></div>
-
-
 </pre></div>
 
            </div>

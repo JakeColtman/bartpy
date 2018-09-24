@@ -151,11 +151,10 @@
            <div itemprop="articleBody">
             
   <h1>Source code for bartpy.mutation</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">abc</span> <span class="k">import</span> <span class="n">ABC</span>
-<span class="kn">from</span> <span class="nn">bartpy.node</span> <span class="k">import</span> <span class="n">TreeNode</span><span class="p">,</span> <span class="n">DecisionNode</span><span class="p">,</span> <span class="n">LeafNode</span>
+<span></span><span class="kn">from</span> <span class="nn">bartpy.node</span> <span class="k">import</span> <span class="n">TreeNode</span><span class="p">,</span> <span class="n">DecisionNode</span><span class="p">,</span> <span class="n">LeafNode</span>
 
 
-<div class="viewcode-block" id="TreeMutation"><a class="viewcode-back" href="../../tree.html#bartpy.mutation.TreeMutation">[docs]</a><span class="k">class</span> <span class="nc">TreeMutation</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<div class="viewcode-block" id="TreeMutation"><a class="viewcode-back" href="../../tree.html#bartpy.mutation.TreeMutation">[docs]</a><span class="k">class</span> <span class="nc">TreeMutation</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    An encapsulation of a change to be made to the tree.</span>
 <span class="sd">    Constructed of three components</span>
@@ -165,8 +164,6 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">existing_node</span><span class="p">:</span> <span class="n">TreeNode</span><span class="p">,</span> <span class="n">updated_node</span><span class="p">:</span> <span class="n">TreeNode</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;grow&quot;</span><span class="p">,</span> <span class="s2">&quot;prune&quot;</span><span class="p">]:</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> is not a supported proposal&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">kind</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kind</span> <span class="o">=</span> <span class="n">kind</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">existing_node</span> <span class="o">=</span> <span class="n">existing_node</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">updated_node</span> <span class="o">=</span> <span class="n">updated_node</span>

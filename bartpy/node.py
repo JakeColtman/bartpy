@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Tuple
 
 import numpy as np
 
@@ -110,12 +110,14 @@ class DecisionNode(TreeNode):
         return self.left_child.split.most_recent_split_condition()
 
 
-def split_node(node: LeafNode, split_condition: SplitCondition) -> DecisionNode:
+def split_node(node: LeafNode, split_conditions: Tuple[SplitCondition, SplitCondition]) -> DecisionNode:
     """
     Converts a `LeafNode` into an internal `DecisionNode` by applying the split condition
     The left node contains all values for the splitting variable less than the splitting value
     """
-    left_split, right_split = node.split + split_condition
+    left_split = node.split + split_conditions[0]
+    right_split = node.split + split_conditions[1]
+
     return DecisionNode(node.split,
                         LeafNode(left_split, depth=node.depth + 1),
                         LeafNode(right_split, depth=node.depth + 1),

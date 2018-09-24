@@ -156,7 +156,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">bartpy.data</span> <span class="k">import</span> <span class="n">Data</span>
-<span class="kn">from</span> <span class="nn">bartpy.split</span> <span class="k">import</span> <span class="n">Split</span><span class="p">,</span> <span class="n">sample_split_condition</span><span class="p">,</span> <span class="n">SplitCondition</span>
+<span class="kn">from</span> <span class="nn">bartpy.split</span> <span class="k">import</span> <span class="n">Split</span><span class="p">,</span> <span class="n">SplitCondition</span>
 
 
 <div class="viewcode-block" id="TreeNode"><a class="viewcode-back" href="../../node.html#bartpy.node.TreeNode">[docs]</a><span class="k">class</span> <span class="nc">TreeNode</span><span class="p">:</span>
@@ -273,15 +273,6 @@
                         <span class="n">LeafNode</span><span class="p">(</span><span class="n">left_split</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
                         <span class="n">LeafNode</span><span class="p">(</span><span class="n">right_split</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
                         <span class="n">depth</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">depth</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="sample_split_node"><a class="viewcode-back" href="../../node.html#bartpy.node.sample_split_node">[docs]</a><span class="k">def</span> <span class="nf">sample_split_node</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">LeafNode</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DecisionNode</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Split a leaf node into a decision node with two leaf children</span>
-<span class="sd">    The variable and value to split on is determined by sampling from their respective distributions</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">condition</span> <span class="o">=</span> <span class="n">sample_split_condition</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">split_node</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span></div>
 </pre></div>
 
            </div>

@@ -154,9 +154,18 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-bartpy.node">
-<span id="node"></span><h1>Node<a class="headerlink" href="#module-bartpy.node" title="Permalink to this headline">¶</a></h1>
-<dl class="class">
+  <div class="section" id="node">
+<h1>Node<a class="headerlink" href="#node" title="Permalink to this headline">¶</a></h1>
+<dl class="docutils">
+<dt>In BartPy, Trees are made up of two types of Nodes:</dt>
+<dd><ol class="first last arabic simple">
+<li>DecisionNodes - representing binary splits of feature space</li>
+<li>LeafNodes - representing the final grouping of points together</li>
+</ol>
+</dd>
+</dl>
+<p>Each Node maps to a <cite>Split</cite> class which contains all of the information about how a <cite>Node</cite> relates to data</p>
+<span class="target" id="module-bartpy.node"></span><dl class="class">
 <dt id="bartpy.node.DecisionNode">
 <em class="property">class </em><code class="descclassname">bartpy.node.</code><code class="descname">DecisionNode</code><span class="sig-paren">(</span><em>split: bartpy.split.Split, left_child_node: typing.Union[bartpy.node.LeafNode, _ForwardRef('DecisionNode')], right_child_node: typing.Union[bartpy.node.LeafNode, _ForwardRef('DecisionNode')], depth=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bartpy/node.html#DecisionNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.node.DecisionNode" title="Permalink to this definition">¶</a></dt>
 <dd><p>A <cite>DecisionNode</cite> encapsulates internal node in the tree
@@ -187,13 +196,6 @@ Contains two main types of information:</p>
 <li>Links to children nodes</li>
 </ul>
 </div></blockquote>
-</dd></dl>
-
-<dl class="function">
-<dt id="bartpy.node.sample_split_node">
-<code class="descclassname">bartpy.node.</code><code class="descname">sample_split_node</code><span class="sig-paren">(</span><em>node: bartpy.node.LeafNode</em><span class="sig-paren">)</span> &#x2192; bartpy.node.DecisionNode<a class="reference internal" href="_modules/bartpy/node.html#sample_split_node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.node.sample_split_node" title="Permalink to this definition">¶</a></dt>
-<dd><p>Split a leaf node into a decision node with two leaf children
-The variable and value to split on is determined by sampling from their respective distributions</p>
 </dd></dl>
 
 <dl class="function">

@@ -1,5 +1,6 @@
-from typing import List, Optional ,Tuple
 from copy import deepcopy
+from typing import List, Optional, Tuple, Union
+from operator import le, gt
 
 from bartpy.data import Data
 
@@ -21,16 +22,17 @@ class SplitCondition:
                            all values less than or equal to this go left, all values greater go right
     """
 
-    def __init__(self, splitting_variable: str, splitting_value: float):
+    def __init__(self, splitting_variable: str, splitting_value: float, operator: Union[gt, le]):
         self.splitting_variable = splitting_variable
         self.splitting_value = splitting_value
         self._condition = None
+        self.operator = operator
 
     def __str__(self):
         return self.splitting_variable + ": " + str(self.splitting_value)
 
     def __eq__(self, other: 'SplitCondition'):
-        return self.splitting_variable == other.splitting_variable and self.splitting_value == other.splitting_value
+        return self.splitting_variable == other.splitting_variable and self.splitting_value == other.splitting_value and self.operator == other.operator
 
     def condition(self, data: Data, cached=True) -> np.ndarray:
         """
@@ -39,11 +41,8 @@ class SplitCondition:
         True => Right
         """
         if not cached or self._condition is None:
-            self._condition = data.X[self.splitting_variable] > self.splitting_value
+            self._condition = self.operator(data.X[self.splitting_variable], self.splitting_value)
         return self._condition
-
-    def left_condition(self, data: Data, cached=True):
-        return ~self.condition(data, cached)
 
     def left(self, data: Data) -> Tuple['SplitCondition', np.ndarray]:
         """
@@ -105,11 +104,7 @@ class Split:
         return condition
 
     def __add__(self, other: SplitCondition):
-        left_split, left_condition = other.left(self._data)
-        right_split, right_condition = other.right(self._data)
-        left = Split(self._data, self._conditions + [left_split], combined_condition=self.condition() & left_condition)
-        right = Split(self._data, self._conditions + [right_split], combined_condition=self.condition() & right_condition)
-        return left, right
+        return Split(self._data, self._conditions + [other], combined_condition=self.condition() & other.condition(self._data))
 
     def most_recent_split_condition(self) -> Optional[SplitCondition]:
         if len(self._conditions) > 0:
