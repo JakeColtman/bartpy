@@ -8,10 +8,6 @@ import pandas as pd
 import numpy as np
 
 
-def fancy_bool(x, bool_mask):
-    return x[bool_mask]
-
-
 class SplitCondition:
     """
     A representation of a split in feature space.
@@ -20,12 +16,13 @@ class SplitCondition:
         - splitting_variable: which variable is being split on
         - splitting_value: the value being split on
                            all values less than or equal to this go left, all values greater go right
+
     """
 
-    def __init__(self, splitting_variable: str, splitting_value: float, operator: Union[gt, le]):
+    def __init__(self, splitting_variable: str, splitting_value: float, operator: Union[gt, le], condition=None):
         self.splitting_variable = splitting_variable
         self.splitting_value = splitting_value
-        self._condition = None
+        self._condition = condition
         self.operator = operator
 
     def __str__(self):
@@ -41,7 +38,7 @@ class SplitCondition:
         True => Right
         """
         if not cached or self._condition is None:
-            self._condition = self.operator(data.X[self.splitting_variable], self.splitting_value)
+            self._condition = self.operator(data.X[self.splitting_variable].values, self.splitting_value)
         return self._condition
 
     def left(self, data: Data) -> Tuple['SplitCondition', np.ndarray]:
@@ -62,24 +59,26 @@ class SplitCondition:
 
 
 class Split:
+    """
+    The Split class represents the conditioned data at any point in the decision tree
+    It contains the logic for:
+
+     - Maintaining a record of which rows of the covariate matrix are in the split
+     - Being able to easily access a `Data` object with the relevant rows
+     - Applying `SplitConditions` to further break up the data
+    """
 
     def __init__(self, data: Data, split_conditions: List[SplitCondition]=None, combined_condition=None):
         if split_conditions is None:
             split_conditions = []
         self._conditions = split_conditions
-        self._data = deepcopy(data)
+        self._data = Data(data.X, deepcopy(data.y), cache=False)
         self._combined_condition = combined_condition
-        self._conditioned_X = pd.DataFrame(fancy_bool(self._data.X.values, np.array(self.condition())), columns=self._data.X.columns)
-        self._cache_up_to_date = False
-        self._conditioned_data = None
+        self._conditioned_X = pd.DataFrame(self._data.X.values[self.condition()], columns=self._data.X.columns)
+        self._conditioned_data = Data(self._conditioned_X, self._data._y[self.condition()])
 
     @property
     def data(self):
-        if self._cache_up_to_date:
-            return self._conditioned_data
-        else:
-            self._conditioned_data = Data(self._conditioned_X, fancy_bool(self._data.y.values, np.array(self.condition())))
-            self._cache_up_to_date = True
         return self._conditioned_data
 
     def combined_condition(self, data):
@@ -94,7 +93,7 @@ class Split:
                 self._combined_condition = self.combined_condition(self._data)
             return self._combined_condition
         else:
-            return self.combined_condition(data)
+            return self.out_of_sample_condition(data)
 
     def out_of_sample_condition(self, X: pd.DataFrame):
         data = Data(X, np.array([0] * len(X)))
@@ -113,5 +112,5 @@ class Split:
             return None
 
     def update_y(self, y):
-        self._cache_up_to_date = False
+        self._conditioned_data._y = y[self.condition()]
         self._data._y = y

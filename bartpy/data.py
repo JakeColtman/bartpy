@@ -16,13 +16,16 @@ class Data:
     Useful for providing cached access to commonly used functions of the data
     """
 
-    def __init__(self, X: pd.DataFrame, y: np.ndarray, normalize=False):
+    def __init__(self, X: pd.DataFrame, y: np.ndarray, normalize=False, cache=True):
         self._X = X
         if normalize:
             self.original_y_min, self.original_y_max = y.min(), y.max()
             self._y = self.normalize_y(y)
         else:
             self._y = y
+        if cache:
+            self._n_unique_values = self._X.apply(pd.Series.nunique).to_dict()
+            self._max_values = self._X.apply(np.max).to_dict()
 
     @property
     def y(self) -> np.ndarray:
@@ -33,7 +36,7 @@ class Data:
         return self._X
 
     def splittable_variables(self) -> Set[str]:
-        return {x for x in self.X.columns if self.n_unique_values(x) > 1}
+        return {x for x in self._n_unique_values.keys() if self._n_unique_values[x] > 1}
 
     @property
     def variables(self) -> Set[str]:
@@ -77,11 +80,11 @@ class Data:
         -----
           - Won't create degenerate splits, all splits will have at least one row on both sides of the split
         """
-        possible_values = np.array(list(self.unique_values(variable)))
-        possible_values = possible_values[possible_values != np.max(possible_values)]
-        if len(possible_values) == 0:
-            return None
-        return np.random.choice(possible_values)
+        max_value = self._max_values[variable]
+        candidate = np.random.choice(self.X[variable])
+        while candidate == max_value:
+            candidate = np.random.choice(self.X[variable])
+        return candidate
 
     def unique_values(self, variable: str) -> Set[Any]:
         """
@@ -107,7 +110,7 @@ class Data:
         return len(self.splittable_variables())
 
     def n_unique_values(self, variable: str) -> int:
-        return len(self.unique_values(variable))
+        return self._n_unique_values[variable]
 
     @staticmethod
     def normalize_y(y: np.ndarray) -> np.ndarray:
@@ -129,7 +132,7 @@ class Data:
         array([-0.5,  0. ,  0.5])
         """
         y_min, y_max = np.min(y), np.max(y)
-        return pd.Series(-0.5 + (y - y_min) / (y_max - y_min))
+        return -0.5 + ((y - y_min) / (y_max - y_min))
 
     def unnormalize_y(self, y: np.ndarray) -> np.ndarray:
         distance_from_min = y - (-0.5)
