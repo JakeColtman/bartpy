@@ -16,7 +16,7 @@ class Data:
     Useful for providing cached access to commonly used functions of the data
     """
 
-    def __init__(self, X: pd.DataFrame, y: pd.Series, normalize=False):
+    def __init__(self, X: pd.DataFrame, y: np.ndarray, normalize=False):
         self._X = X
         if normalize:
             self.original_y_min, self.original_y_max = y.min(), y.max()
@@ -110,7 +110,7 @@ class Data:
         return len(self.unique_values(variable))
 
     @staticmethod
-    def normalize_y(y: pd.Series) -> pd.Series:
+    def normalize_y(y: np.ndarray) -> np.ndarray:
         """
         Normalize y into the range (-0.5, 0.5)
         Useful for allowing the leaf parameter prior to be 0, and to standardize the sigma prior

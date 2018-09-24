@@ -18,15 +18,19 @@ class ModelSampler(Sampler):
         for step in self.schedule.steps(model):
             step()
 
-    def samples(self, model: Model, n_samples: int, n_burn: int) -> Tuple[List[Model], np.ndarray]:
+    def samples(self, model: Model, n_samples: int, n_burn: int, thin: float=0.1) -> Tuple[List[Model], np.ndarray]:
         print("Starting burn")
         for _ in tqdm(range(n_burn)):
             self.step(model)
         trace = []
         model_trace = []
         print("Starting sampling")
+
+        thin_inverse = 1. / thin
+
         for ss in tqdm(range(n_samples)):
             self.step(model)
-            trace.append(model.predict())
-            model_trace.append(deepcopy(model))
+            if ss % thin_inverse == 0:
+                trace.append(model.predict())
+                model_trace.append(deepcopy(model))
         return model_trace, np.array(trace)

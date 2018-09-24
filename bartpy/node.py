@@ -1,9 +1,9 @@
-from typing import Union
+from typing import Union, Tuple
 
 import numpy as np
 
 from bartpy.data import Data
-from bartpy.split import Split, sample_split_condition, SplitCondition
+from bartpy.split import Split, SplitCondition
 
 
 class TreeNode:
@@ -110,22 +110,15 @@ class DecisionNode(TreeNode):
         return self.left_child.split.most_recent_split_condition()
 
 
-def split_node(node: LeafNode, split_condition: SplitCondition) -> DecisionNode:
+def split_node(node: LeafNode, split_conditions: Tuple[SplitCondition, SplitCondition]) -> DecisionNode:
     """
     Converts a `LeafNode` into an internal `DecisionNode` by applying the split condition
     The left node contains all values for the splitting variable less than the splitting value
     """
-    left_split, right_split = node.split + split_condition
+    left_split = node.split + split_conditions[0]
+    right_split = node.split + split_conditions[1]
+
     return DecisionNode(node.split,
                         LeafNode(left_split, depth=node.depth + 1),
                         LeafNode(right_split, depth=node.depth + 1),
                         depth=node.depth)
-
-
-def sample_split_node(node: LeafNode) -> DecisionNode:
-    """
-    Split a leaf node into a decision node with two leaf children
-    The variable and value to split on is determined by sampling from their respective distributions
-    """
-    condition = sample_split_condition(node)
-    return split_node(node, condition)
