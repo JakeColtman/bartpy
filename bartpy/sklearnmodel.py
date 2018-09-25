@@ -114,7 +114,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
             return self._out_of_sample_predict(X)
 
     def _out_of_sample_predict(self, X):
-        return self.data.unnormalize_y(np.mean([x._out_of_sample_predict(X) for x in self._model_samples], axis=0))
+        return self.data.unnormalize_y(np.mean([x.predict(X) for x in self._model_samples], axis=0))
 
     def fit_predict(self, X, y):
         self.fit(X, y)
