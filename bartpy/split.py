@@ -19,7 +19,7 @@ class SplitCondition:
 
     """
 
-    def __init__(self, splitting_variable: str, splitting_value: float, operator: Union[gt, le], condition=None):
+    def __init__(self, splitting_variable: int, splitting_value: float, operator: Union[gt, le], condition=None):
         self.splitting_variable = splitting_variable
         self.splitting_value = splitting_value
         self._condition = condition
