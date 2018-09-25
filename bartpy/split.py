@@ -41,22 +41,6 @@ class SplitCondition:
             self._condition = self.operator(data.X[:, self.splitting_variable], self.splitting_value)
         return self._condition
 
-    def left(self, data: Data) -> Tuple['SplitCondition', np.ndarray]:
-        """
-        Returns a Bool array indicating whether each row should go into the left split.
-        Inverse of self.right
-        """
-        left_self = deepcopy(self)
-        left_self.condition = self.left_condition
-        return left_self, self.left_condition(data)
-
-    def right(self, data: Data) -> Tuple['SplitCondition', np.ndarray]:
-        """
-        Returns a Bool array indicating whether each row should go into the left split.
-        Inverse of self.right
-        """
-        return self, self.condition(data)
-
 
 class Split:
     """
