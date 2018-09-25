@@ -1,9 +1,7 @@
 from collections import namedtuple
 from typing import Any, Set, List
 
-import pandas as pd
 import numpy as np
-import numba as nb
 
 from bartpy.errors import NoSplittableVariableException
 
@@ -11,15 +9,13 @@ from bartpy.errors import NoSplittableVariableException
 SplitData = namedtuple("SplitData", ["left_data", "right_data"])
 
 
-@nb.jit()
 def is_not_unique(series):
     if len(series) == 1:
         return False
-    unique_values = {series[0]}
+    start_value = series[0]
     for val in series[1:]:
-        if val not in unique_values:
+        if val != start_value:
             return True
-        unique_values.add(val)
     return False
 
 
