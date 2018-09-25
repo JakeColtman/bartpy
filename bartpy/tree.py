@@ -101,7 +101,7 @@ class Tree:
         """
         prediction = np.array([0.] * len(X))
         for leaf in self.leaf_nodes:
-            prediction[leaf.split.out_of_sample_condition(X)] = leaf.predict()
+            prediction[leaf.split.condition(X)] = leaf.predict()
         return prediction
 
     def remove_node(self, node: TreeNode) -> None:

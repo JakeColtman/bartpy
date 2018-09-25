@@ -20,10 +20,9 @@ def run(alpha, beta, n_trees):
 
 
 if __name__ == "__main__":
-    print("here")
     import cProfile
     from datetime import datetime as dt
     print(dt.now())
-    run(0.95, 2., 200)
+    run(0.95, 2., 50)
     #cProfile.run("run(0.95, 2., 50)")
     print(dt.now())
