@@ -26,7 +26,7 @@ class SplitCondition:
         self.operator = operator
 
     def __str__(self):
-        return self.splitting_variable + ": " + str(self.splitting_value)
+        return str(self.splitting_variable) + ": " + str(self.splitting_value)
 
     def __eq__(self, other: 'SplitCondition'):
         return self.splitting_variable == other.splitting_variable and self.splitting_value == other.splitting_value and self.operator == other.operator
