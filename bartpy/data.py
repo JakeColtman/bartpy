@@ -49,17 +49,30 @@ class Data:
         You really only want to turn this off if you're not going to the resulting object for anything (e.g. when testing)
     """
 
-    def __init__(self, X: np.ndarray, y: np.ndarray, normalize=False, cache=True):
+    def __init__(self, X: np.ndarray, y: np.ndarray, normalize=False, cache=True, unique_columns=None):
         self._X = X
+        self._unique_columns = unique_columns
+
         if normalize:
             self.original_y_min, self.original_y_max = y.min(), y.max()
             self._y = self.normalize_y(y)
         else:
             self._y = y
+
         if cache:
             self._max_values_cache = self._X.max(axis=0)
             self._splittable_variables = [x for x in range(0, self._X.shape[1]) if is_not_unique(self._X[:, x])]
             self._n_unique_values_cache = [None] * self._X.shape[1]
+
+    @property
+    def unique_columns(self):
+        if self._unique_columns is None:
+            unique_columns = []
+            for i in range(self._X.shape[1]):
+                if len(np.unique(self._X[:, i])) == len(self._X):
+                    unique_columns.append(i)
+            self._unique_columns = unique_columns
+        return self._unique_columns
 
     @property
     def y(self) -> np.ndarray:
@@ -138,10 +151,11 @@ class Data:
     def n_splittable_variables(self) -> int:
         return len(self.splittable_variables())
 
-    def n_unique_values(self, variable: int) -> int:
-        if self._n_unique_values_cache[variable] is None:
-            self._n_unique_values_cache[variable] = np.sum(self._X[:, variable] != self._max_values_cache[variable])
-        return self._n_unique_values_cache[variable]
+    def proportion_of_value_in_variable(self, variable: int, value: float) -> float:
+        if variable in self.unique_columns:
+            return 1. / self.n_obsv
+        else:
+            return np.mean(self._X[:, variable] == value)
 
     @staticmethod
     def normalize_y(y: np.ndarray) -> np.ndarray:

@@ -55,11 +55,11 @@ class Split:
     def __init__(self, data: Data, split_conditions: List[SplitCondition]=None, combined_condition=None):
         if split_conditions is None:
             split_conditions = []
-        self._data = Data(data.X, deepcopy(data.y), cache=False)
+        self._data = Data(data.X, deepcopy(data.y), cache=False, unique_columns=data.unique_columns)
         self._conditions = split_conditions
         self._combined_condition = combined_condition
         self._conditioned_X = self._data.X[self.condition()]
-        self._conditioned_data = Data(self._conditioned_X, self._data._y[self.condition()])
+        self._conditioned_data = Data(self._conditioned_X, self._data._y[self.condition()], unique_columns=data.unique_columns)
 
     @property
     def data(self):
