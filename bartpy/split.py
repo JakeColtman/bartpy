@@ -26,7 +26,7 @@ class SplitCondition:
         self.operator = operator
 
     def __str__(self):
-        return self.splitting_variable + ": " + str(self.splitting_value)
+        return str(self.splitting_variable) + ": " + str(self.splitting_value)
 
     def __eq__(self, other: 'SplitCondition'):
         return self.splitting_variable == other.splitting_variable and self.splitting_value == other.splitting_value and self.operator == other.operator
@@ -40,22 +40,6 @@ class SplitCondition:
         if not cached or self._condition is None:
             self._condition = self.operator(data.X[:, self.splitting_variable], self.splitting_value)
         return self._condition
-
-    def left(self, data: Data) -> Tuple['SplitCondition', np.ndarray]:
-        """
-        Returns a Bool array indicating whether each row should go into the left split.
-        Inverse of self.right
-        """
-        left_self = deepcopy(self)
-        left_self.condition = self.left_condition
-        return left_self, self.left_condition(data)
-
-    def right(self, data: Data) -> Tuple['SplitCondition', np.ndarray]:
-        """
-        Returns a Bool array indicating whether each row should go into the left split.
-        Inverse of self.right
-        """
-        return self, self.condition(data)
 
 
 class Split:
@@ -71,11 +55,11 @@ class Split:
     def __init__(self, data: Data, split_conditions: List[SplitCondition]=None, combined_condition=None):
         if split_conditions is None:
             split_conditions = []
-        self._data = Data(data.X, deepcopy(data.y), cache=False)
+        self._data = Data(data.X, deepcopy(data.y), cache=False, unique_columns=data.unique_columns)
         self._conditions = split_conditions
         self._combined_condition = combined_condition
         self._conditioned_X = self._data.X[self.condition()]
-        self._conditioned_data = Data(self._conditioned_X, self._data._y[self.condition()])
+        self._conditioned_data = Data(self._conditioned_X, self._data._y[self.condition()], unique_columns=data.unique_columns)
 
     @property
     def data(self):

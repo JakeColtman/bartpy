@@ -73,11 +73,14 @@ class Tree:
         for node in self.nodes:
             node.split.update_y(y)
 
-    def predict(self) -> np.ndarray:
+    def predict(self, X: np.ndarray=None) -> np.ndarray:
         """
         Generate a set of predictions with the same dimensionality as the target array
         Note that the prediction is from one tree, so represents only (1 / number_of_trees) of the target
         """
+        if X is not None:
+            return self._out_of_sample_predict(X)
+
         if self.cache_up_to_date:
             return self._prediction
         for leaf in self.leaf_nodes:
@@ -85,7 +88,7 @@ class Tree:
         self.cache_up_to_date = True
         return self._prediction
 
-    def out_of_sample_predict(self, X) -> np.ndarray:
+    def _out_of_sample_predict(self, X) -> np.ndarray:
         """
         Prediction for a covariate matrix not used for training
 

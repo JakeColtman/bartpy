@@ -9,7 +9,19 @@ from bartpy.errors import NoSplittableVariableException
 SplitData = namedtuple("SplitData", ["left_data", "right_data"])
 
 
-def is_not_unique(series):
+def is_not_unique(series: np.ndarray) -> bool:
+    """
+    Quickly identify whether a series contains more than 1 distinct value
+    Parameters
+    ----------
+    series: np.ndarray
+    The series to assess
+
+    Returns
+    -------
+    bool
+        True if more than one distinct value found
+    """
     if len(series) == 1:
         return False
     start_value = series[0]
@@ -21,21 +33,46 @@ def is_not_unique(series):
 
 class Data:
     """
-    Encapsulates feature data
-    Useful for providing cached access to commonly used functions of the data
+    Encapsulates the data within a split of feature space.
+    Primarily used to cache computations on the data for better performance
+
+    Parameters
+    ----------
+    X: np.ndarray
+        The subset of the covariate matrix that falls into the split
+    y: np.ndarry
+        The subset of the target array that falls into the split
+    normalize: bool
+        Whether to map the target into -0.5, 0.5
+    cache: bool
+        Whether to cache common values.
+        You really only want to turn this off if you're not going to the resulting object for anything (e.g. when testing)
     """
 
-    def __init__(self, X: np.ndarray, y: np.ndarray, normalize=False, cache=True):
+    def __init__(self, X: np.ndarray, y: np.ndarray, normalize=False, cache=True, unique_columns=None):
         self._X = X
+        self._unique_columns = unique_columns
+
         if normalize:
             self.original_y_min, self.original_y_max = y.min(), y.max()
             self._y = self.normalize_y(y)
         else:
             self._y = y
+
         if cache:
             self._max_values_cache = self._X.max(axis=0)
             self._splittable_variables = [x for x in range(0, self._X.shape[1]) if is_not_unique(self._X[:, x])]
             self._n_unique_values_cache = [None] * self._X.shape[1]
+
+    @property
+    def unique_columns(self):
+        if self._unique_columns is None:
+            unique_columns = []
+            for i in range(self._X.shape[1]):
+                if len(np.unique(self._X[:, i])) == len(self._X):
+                    unique_columns.append(i)
+            self._unique_columns = unique_columns
+        return self._unique_columns
 
     @property
     def y(self) -> np.ndarray:
@@ -46,6 +83,14 @@ class Data:
         return self._X
 
     def splittable_variables(self) -> List[int]:
+        """
+        List of columns that can be split on, i.e. that have more than one unique value
+
+        Returns
+        -------
+        List[int]
+            List of column numbers that can be split on
+        """
         return self._splittable_variables
 
     @property
@@ -106,10 +151,11 @@ class Data:
     def n_splittable_variables(self) -> int:
         return len(self.splittable_variables())
 
-    def n_unique_values(self, variable: str) -> int:
-        if self._n_unique_values_cache[variable] is None:
-            self._n_unique_values_cache[variable] = np.sum(self._X[:, variable] != self._max_values_cache[variable])
-        return self._n_unique_values_cache[variable]
+    def proportion_of_value_in_variable(self, variable: int, value: float) -> float:
+        if variable in self.unique_columns:
+            return 1. / self.n_obsv
+        else:
+            return np.mean(self._X[:, variable] == value)
 
     @staticmethod
     def normalize_y(y: np.ndarray) -> np.ndarray:

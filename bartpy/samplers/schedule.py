@@ -46,5 +46,5 @@ class SampleSchedule:
         for tree in model.refreshed_trees():
             yield lambda: self.tree_sampler.step(model, tree)
             for node in tree.leaf_nodes:
-                yield lambda: LeafNodeSampler().step(model, node)
-        yield lambda: SigmaSampler().step(model, model.sigma)
+                yield lambda: self.leaf_sampler.step(model, node)
+        yield lambda: self.sigma_sampler.step(model, model.sigma)
