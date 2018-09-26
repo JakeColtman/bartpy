@@ -19,9 +19,6 @@ class TreeNode:
         self._left_child = left_child
         self._right_child = right_child
 
-    def update_data(self, data: Data) -> None:
-        self._split._data = data
-
     @property
     def data(self) -> Data:
         return self.split.data
@@ -33,12 +30,6 @@ class TreeNode:
     @property
     def right_child(self) -> 'TreeNode':
         return self._right_child
-
-    def is_leaf_node(self) -> bool:
-        return False
-
-    def is_decision_node(self) -> bool:
-        return False
 
     @property
     def split(self):
@@ -61,21 +52,10 @@ class LeafNode(TreeNode):
 
     def __init__(self, split: Split, depth=0):
         self._value = 0.0
-        self._residuals = 0.0
-        self._splittable_variables = None
         super().__init__(split, depth, None, None)
-
-    @property
-    def splittable_variables(self):
-        if self._splittable_variables is None:
-            self._splittable_variables = self.split.data.splittable_variables()
-        return self._splittable_variables
 
     def set_value(self, value: float) -> None:
         self._value = value
-
-    def residuals(self) -> np.ndarray:
-        return self.data.y - self.predict()
 
     @property
     def current_value(self):
@@ -85,10 +65,7 @@ class LeafNode(TreeNode):
         return self.current_value
 
     def is_splittable(self) -> bool:
-        return len(self.splittable_variables) > 0
-
-    def is_leaf_node(self):
-        return True
+        return len(self.split.data.splittable_variables()) > 0
 
 
 class DecisionNode(TreeNode):
@@ -101,10 +78,7 @@ class DecisionNode(TreeNode):
         super().__init__(split, depth, left_child_node, right_child_node)
 
     def is_prunable(self) -> bool:
-        return self.left_child.is_leaf_node() and self.right_child.is_leaf_node()
-
-    def is_decision_node(self) -> bool:
-        return True
+        return type(self.left_child) == LeafNode and type(self.right_child) == LeafNode
 
     def variable_split_on(self) -> SplitCondition:
         return self.left_child.split.most_recent_split_condition()
