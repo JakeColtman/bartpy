@@ -1,7 +1,8 @@
 from collections import namedtuple
-from typing import Any, Set, List
+from typing import Any, List
 
 import numpy as np
+import pandas as pd
 
 from bartpy.errors import NoSplittableVariableException
 
@@ -9,7 +10,7 @@ from bartpy.errors import NoSplittableVariableException
 SplitData = namedtuple("SplitData", ["left_data", "right_data"])
 
 
-def is_not_unique(series: np.ndarray) -> bool:
+def is_not_constant(series: np.ndarray) -> bool:
     """
     Quickly identify whether a series contains more than 1 distinct value
     Parameters
@@ -50,6 +51,8 @@ class Data:
     """
 
     def __init__(self, X: np.ndarray, y: np.ndarray, normalize=False, cache=True, unique_columns=None):
+        if type(X) == pd.DataFrame:
+            X = X.values
         self._X = X
         self._unique_columns = unique_columns
 
@@ -61,7 +64,7 @@ class Data:
 
         if cache:
             self._max_values_cache = self._X.max(axis=0)
-            self._splittable_variables = [x for x in range(0, self._X.shape[1]) if is_not_unique(self._X[:, x])]
+            self._splittable_variables = [x for x in range(0, self._X.shape[1]) if is_not_constant(self._X[:, x])]
             self._n_unique_values_cache = [None] * self._X.shape[1]
 
     @property

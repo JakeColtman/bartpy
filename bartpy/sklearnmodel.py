@@ -80,7 +80,10 @@ class SklearnModel(BaseEstimator, RegressorMixin):
             self with trained parameter values
         """
         from copy import deepcopy
-        self.data = Data(deepcopy(X.values), deepcopy(y), normalize=True)
+        if type(X) == pd.DataFrame:
+            X = X.values
+
+        self.data = Data(deepcopy(X), deepcopy(y), normalize=True)
         self.sigma = Sigma(self.sigma_a, self.sigma_b, self.data.normalizing_scale)
         self.model = Model(self.data, self.sigma, n_trees=self.n_trees, alpha=self.alpha, beta=self.beta)
         self.proposer = UniformMutationProposer([self.p_grow, self.p_prune])

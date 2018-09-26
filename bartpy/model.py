@@ -46,6 +46,8 @@ class Model:
         return np.sum([tree.predict() for tree in self.trees], axis=0)
 
     def _out_of_sample_predict(self, X: np.ndarray):
+        if type(X) == pd.DataFrame:
+            X = X.values
         return np.sum([tree.predict(X) for tree in self.trees], axis=0)
 
     @property

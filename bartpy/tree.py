@@ -38,7 +38,7 @@ class Tree:
         """
         List of all of the leaf nodes in the tree
         """
-        return [x for x in self._nodes if x.is_leaf_node()]
+        return [x for x in self._nodes if type(x) == LeafNode]
 
     @property
     def splittable_leaf_nodes(self) -> List[LeafNode]:
@@ -54,7 +54,7 @@ class Tree:
         List of decision nodes in the tree.
         Decision nodes are internal split nodes, i.e. not leaf nodes
         """
-        return [x for x in self._nodes if x.is_decision_node()]
+        return [x for x in self._nodes if type(x) == DecisionNode]
 
     @property
     def prunable_decision_nodes(self) -> List[DecisionNode]:
