@@ -25,7 +25,7 @@ class TestNode(unittest.TestCase):
         d = DecisionNode(Split(self.data), a, b)
         e = DecisionNode(Split(self.data), c, d)
 
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(TypeError):
             GrowMutation(d, a)
 
     def test_pruning_non_leaf_parent(self):
