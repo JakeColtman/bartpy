@@ -97,14 +97,14 @@ class Data:
         return self._splittable_variables
 
     @property
-    def variables(self) -> List[str]:
+    def variables(self) -> List[int]:
         """
         The set of variable names the data contains.
         Of dimensionality p
 
         Returns
         -------
-        Set[str]
+        List[int]
         """
         return list(range(0, self._X.shape[1]))
 

@@ -58,10 +58,8 @@ class CombinedVariableCondition:
 
 class CombinedCondition:
 
-    def __init__(self, variables: List[int]):
+    def __init__(self, variables: List[int], conditions: List[SplitCondition]):
         self.variables = {v: CombinedVariableCondition(v, -np.inf, np.inf) for v in variables}
-
-    def add_conditions(self, conditions: List[SplitCondition]):
         for condition in conditions:
             self.variables[condition.splitting_variable] = self.variables[condition.splitting_variable].add_condition(condition)
 
@@ -116,8 +114,7 @@ class Split:
 
     def out_of_sample_conditioner(self) -> CombinedCondition:
         if self._combined_conditioner is None:
-            self._combined_conditioner = CombinedCondition(self.data.variables)
-            self._combined_conditioner.add_conditions(self._conditions)
+            self._combined_conditioner = CombinedCondition(self.data.variables, self._conditions)
         return self._combined_conditioner
 
     def __add__(self, other: SplitCondition):
