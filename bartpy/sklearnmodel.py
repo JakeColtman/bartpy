@@ -32,6 +32,9 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         how many recorded samples to take
     n_burn: int
         how many samples to run without recording to reach convergence
+    thin: float
+        percentage of samples to store.
+        use this to save memory when running large models
     p_grow: float
         probability of choosing a grow mutation in tree mutation sampling
     p_prune: float
@@ -40,6 +43,9 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         prior parameter on tree structure
     beta: float
         prior parameter on tree structure
+    store_in_sample_predictions: bool
+        whether to store full prediction samples
+        set to False if you don't need in sample results - saves a lot of memory
     """
 
     def __init__(self,
@@ -48,10 +54,12 @@ class SklearnModel(BaseEstimator, RegressorMixin):
                  sigma_b: float=0.001,
                  n_samples: int=200,
                  n_burn: int=200,
+                 thin: float=0.1,
                  p_grow: float=0.5,
                  p_prune: float=0.5,
                  alpha: float=0.95,
-                 beta: float=2.):
+                 beta: float=2.,
+                 store_in_sample_predictions: bool=True):
         self.n_trees = n_trees
         self.sigma_a = sigma_a
         self.sigma_b = sigma_b
@@ -61,6 +69,8 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.p_prune = p_prune
         self.alpha = alpha
         self.beta = beta
+        self.thin = thin
+        self.store_in_sample_predictions = store_in_sample_predictions
         self.sigma, self.data, self.model, self.proposer, self.likihood_ratio, self.sampler, self._prediction_samples, self._model_samples, self.schedule = [None] * 9
 
     def fit(self, X: pd.DataFrame, y: np.ndarray) -> 'SklearnModel':
@@ -91,7 +101,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.tree_sampler = TreeMutationSampler(self.proposer, self.likihood_ratio)
         self.schedule = SampleSchedule(self.tree_sampler, LeafNodeSampler(), SigmaSampler())
         self.sampler = ModelSampler(self.schedule)
-        self._model_samples, self._prediction_samples = self.sampler.samples(self.model, self.n_samples, self.n_burn)
+        self._model_samples, self._prediction_samples = self.sampler.samples(self.model, self.n_samples, self.n_burn, thin=self.thin, store_in_sample_predictions=self.store_in_sample_predictions)
         return self
 
     def predict(self, X: np.ndarray=None):
