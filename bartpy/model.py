@@ -6,7 +6,7 @@ import pandas as pd
 
 from bartpy.data import Data
 from bartpy.sigma import Sigma
-from bartpy.tree import Tree, LeafNode
+from bartpy.tree import Tree, LeafNode, deep_copy_tree
 from bartpy.split import Split
 
 
@@ -26,7 +26,7 @@ class Model:
             self.n_trees = len(trees)
             self._trees = trees
 
-        self._prediction = self.predict()
+        self._prediction = None
 
     def initialize_trees(self) -> List[Tree]:
         tree_data = deepcopy(self.data)
@@ -55,7 +55,8 @@ class Model:
         return self._trees
 
     def refreshed_trees(self) -> Generator[Tree, None, None]:
-
+        if self._prediction is None:
+            self._prediction = self.predict()
         for tree in self.trees:
             self._prediction -= tree.predict()
             tree.update_y(self.data.y - self._prediction)
@@ -69,3 +70,8 @@ class Model:
     @property
     def sigma(self):
         return self._sigma
+
+
+def deep_copy_model(model: Model) -> Model:
+    copied_model = Model(None, deepcopy(model.sigma), [deep_copy_tree(tree) for tree in model.trees])
+    return copied_model

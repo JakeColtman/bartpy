@@ -50,8 +50,8 @@ class LeafNode(TreeNode):
         - Making predictions
     """
 
-    def __init__(self, split: Split, depth=0):
-        self._value = 0.0
+    def __init__(self, split: Split, depth=0, value=0.0):
+        self._value = value
         super().__init__(split, depth, None, None)
 
     def set_value(self, value: float) -> None:
@@ -96,3 +96,12 @@ def split_node(node: LeafNode, split_conditions: Tuple[SplitCondition, SplitCond
                         LeafNode(left_split, depth=node.depth + 1),
                         LeafNode(right_split, depth=node.depth + 1),
                         depth=node.depth)
+
+
+def deep_copy_node(node: TreeNode):
+    if type(node) == LeafNode:
+        return LeafNode(node.split.out_of_sample_conditioner(), value=node.current_value)
+    elif type(node) == DecisionNode:
+        return DecisionNode(node.split.out_of_sample_conditioner(), node.left_child, node.right_child)
+    else:
+        raise TypeError("Unsupported node type")

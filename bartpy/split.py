@@ -1,10 +1,9 @@
 from copy import deepcopy
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Union
 from operator import le, gt
 
 from bartpy.data import Data
 
-import pandas as pd
 import numpy as np
 
 
@@ -33,13 +32,42 @@ class SplitCondition:
 
     def condition(self, data: Data, cached=True) -> np.ndarray:
         """
-        Returns a Bool array indicating which side of the split each row of `Data` should go
-        False => Left
-        True => Right
+        Returns a Bool array indicating whether each row falls into this side of the split condition
         """
         if not cached or self._condition is None:
             self._condition = self.operator(data.X[:, self.splitting_variable], self.splitting_value)
         return self._condition
+
+
+class CombinedVariableCondition:
+
+    def __init__(self, splitting_variable: int, min_value: float, max_value: float):
+        self.splitting_variable = splitting_variable
+        self.min_value, self.max_value = min_value, max_value
+
+    def add_condition(self, split_condition: SplitCondition) -> 'CombinedVariableCondition':
+        if self.splitting_variable != split_condition.splitting_variable:
+            return self
+        if split_condition.operator == gt and split_condition.splitting_value > self.min_value:
+            return CombinedVariableCondition(self.splitting_variable, split_condition.splitting_value, self.max_value)
+        elif split_condition.operator == le and split_condition.splitting_value < self.max_value:
+            return CombinedVariableCondition(self.splitting_variable, self.min_value, split_condition.splitting_value)
+        else:
+            return self
+
+
+class CombinedCondition:
+
+    def __init__(self, variables: List[int], conditions: List[SplitCondition]):
+        self.variables = {v: CombinedVariableCondition(v, -np.inf, np.inf) for v in variables}
+        for condition in conditions:
+            self.variables[condition.splitting_variable] = self.variables[condition.splitting_variable].add_condition(condition)
+
+    def condition(self, X: np.ndarray):
+        c = np.array([True] * len(X))
+        for variable in self.variables.keys():
+            c = c & (X[:, variable] > self.variables[variable].min_value) & (X[:, variable] <= self.variables[variable].max_value)
+        return c
 
 
 class Split:
@@ -60,6 +88,7 @@ class Split:
         self._combined_condition = combined_condition
         self._conditioned_X = self._data.X[self.condition()]
         self._conditioned_data = Data(self._conditioned_X, self._data._y[self.condition()], unique_columns=data.unique_columns)
+        self._combined_conditioner = None
 
     @property
     def data(self):
@@ -79,12 +108,14 @@ class Split:
         else:
             return self.out_of_sample_condition(data)
 
-    def out_of_sample_condition(self, X: pd.DataFrame):
-        data = Data(X, np.array([0] * len(X)))
-        condition = np.array([True] * len(X))
-        for split_condition in self._conditions:
-            condition = condition & split_condition.condition(data, cached=False)
-        return condition
+    def out_of_sample_condition(self, X: np.ndarray):
+        data = Data(X, np.array([0] * len(X)), cache=False)
+        return self.out_of_sample_conditioner().condition(X)
+
+    def out_of_sample_conditioner(self) -> CombinedCondition:
+        if self._combined_conditioner is None:
+            self._combined_conditioner = CombinedCondition(self.data.variables, self._conditions)
+        return self._combined_conditioner
 
     def __add__(self, other: SplitCondition):
         return Split(self._data, self._conditions + [other], combined_condition=self.condition() & other.condition(self._data))

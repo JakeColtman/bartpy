@@ -3,7 +3,7 @@ from typing import List
 import numpy as np
 
 from bartpy.mutation import TreeMutation
-from bartpy.node import TreeNode, LeafNode, DecisionNode
+from bartpy.node import TreeNode, LeafNode, DecisionNode, deep_copy_node
 
 
 class Tree:
@@ -24,7 +24,7 @@ class Tree:
     def __init__(self, nodes: List[TreeNode]):
         self._nodes = nodes
         self.cache_up_to_date = False
-        self._prediction = np.zeros_like(self._nodes[0]._split._data._y)
+        self._prediction = None
 
     @property
     def nodes(self) -> List[TreeNode]:
@@ -84,6 +84,8 @@ class Tree:
         if self.cache_up_to_date:
             return self._prediction
         for leaf in self.leaf_nodes:
+            if self._prediction is None:
+                self._prediction = np.zeros_like(self._nodes[0]._split._data._y)
             self._prediction[leaf.split.condition()] = leaf.predict()
         self.cache_up_to_date = True
         return self._prediction
@@ -153,3 +155,7 @@ def mutate(tree: Tree, mutation: TreeMutation) -> None:
             node._right_child = mutation.updated_node
         if node.left_child == mutation.existing_node:
             node._left_child = mutation.updated_node
+
+
+def deep_copy_tree(tree: Tree):
+    return Tree([deep_copy_node(x) for x in tree.nodes])
