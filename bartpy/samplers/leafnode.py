@@ -8,14 +8,14 @@ from bartpy.samplers.sampler import Sampler
 class LeafNodeSampler(Sampler):
 
     def __init__(self):
-        self.random_samples = list(np.random.normal(size = 50000))
+        self.random_samples = list(np.random.normal(size=50000))
 
     def step(self, model: Model, node: LeafNode):
         node.set_value(self.sample(model, node))
 
     def get_next_rand(self):
         if len(self.random_samples) == 0:
-            self.random_samples = list(np.random.normal(size = 50000))
+            self.random_samples = list(np.random.normal(size=50000))
         return self.random_samples.pop()
 
     def sample(self, model: Model, node: LeafNode) -> float:
