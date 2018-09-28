@@ -82,7 +82,7 @@ def deep_copy_model(model: Model) -> Model:
             node._split._combined_condition = None
             node._split._conditioned_X = None
             node._split._conditioned_data = None
-            for split in node._conditions:
-                split._condition = None
+            for split_condition in node._split._conditions:
+                split_condition._condition = None
 
     return copied_model
