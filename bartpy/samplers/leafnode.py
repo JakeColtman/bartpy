@@ -6,6 +6,12 @@ from bartpy.samplers.sampler import Sampler
 
 
 class LeafNodeSampler(Sampler):
+    """
+    Responsible for generating samples of the leaf node predictions
+    Essentially just draws from a normal distribution with prior specified by model parameters
+
+    Uses a cache of draws from a normal(0, 1) distribution to improve sampling performance
+    """
 
     def __init__(self):
         self.random_samples = list(np.random.normal(size=50000))
