@@ -69,3 +69,11 @@ class Model:
     @property
     def sigma(self):
         return self._sigma
+
+
+def deep_copy_model(model: Model) -> Model:
+    copied_model = deepcopy(model)
+    for tree in copied_model._trees:
+        for node in tree._nodes:
+            node._split._data = None
+    return copied_model

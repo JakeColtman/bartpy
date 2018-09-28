@@ -4,7 +4,7 @@ from typing import List, Tuple
 import numpy as np
 from tqdm import tqdm
 
-from bartpy.model import Model
+from bartpy.model import Model, deep_copy_model
 from bartpy.samplers.schedule import SampleSchedule
 from bartpy.samplers.sampler import Sampler
 
@@ -32,5 +32,5 @@ class ModelSampler(Sampler):
             self.step(model)
             if ss % thin_inverse == 0:
                 trace.append(model.predict())
-                model_trace.append(deepcopy(model))
+                model_trace.append(deep_copy_model(model))
         return model_trace, np.array(trace)
