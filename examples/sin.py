@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from matplotlib import pyplot as plt
 
 from bartpy.sklearnmodel import SklearnModel
 from bartpy.plotting import plot_residuals, plot_modelled_against_actual
@@ -12,9 +13,11 @@ def run(alpha, beta, n_trees):
 
     model = SklearnModel(n_samples=200, n_burn=50, n_trees=n_trees, alpha=alpha, beta=beta)
     model.fit(X, y)
-    predictions = model.predict()
-    plot_residuals(model)
-    plot_modelled_against_actual(model)
+    plt.plot(model.data.unnormalized_y)
+    plt.plot(model.predict(X))
+    plt.show()
+    # plot_residuals(model)
+    # plot_modelled_against_actual(model)
 
     return model, x, y
 

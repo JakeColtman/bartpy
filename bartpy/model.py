@@ -74,6 +74,15 @@ class Model:
 def deep_copy_model(model: Model) -> Model:
     copied_model = deepcopy(model)
     for tree in copied_model._trees:
+        tree.cache_up_to_date = False
+        tree._prediction = None
         for node in tree._nodes:
+            node._split._combined_conditioner = node._split.out_of_sample_conditioner()
             node._split._data = None
+            node._split._combined_condition = None
+            node._split._conditioned_X = None
+            node._split._conditioned_data = None
+            for split in node._conditions:
+                split._condition = None
+
     return copied_model
