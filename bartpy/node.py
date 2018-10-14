@@ -100,8 +100,8 @@ def split_node(node: LeafNode, split_conditions: Tuple[SplitCondition, SplitCond
 
 def deep_copy_node(node: TreeNode):
     if type(node) == LeafNode:
-        return LeafNode(node.split.out_of_sample_conditioner(), value=node.current_value)
+        return LeafNode(node.split.out_of_sample_conditioner(), value=node.current_value, depth=node.depth)
     elif type(node) == DecisionNode:
-        return DecisionNode(node.split.out_of_sample_conditioner(), node.left_child, node.right_child)
+        return DecisionNode(node.split.out_of_sample_conditioner(), node.left_child, node.right_child, depth=node.depth)
     else:
         raise TypeError("Unsupported node type")

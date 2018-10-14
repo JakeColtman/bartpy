@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 
 from bartpy.sklearnmodel import SklearnModel
 from bartpy.plotting import plot_residuals, plot_modelled_against_actual
+from bartpy.diagnostics.trees import plot_tree_depth
 
 
 def run(alpha, beta, n_trees):
@@ -16,6 +17,7 @@ def run(alpha, beta, n_trees):
     plt.plot(model.data.unnormalized_y)
     plt.plot(model.predict(X))
     plt.show()
+    plot_tree_depth(model.model_samples)
     # plot_residuals(model)
     # plot_modelled_against_actual(model)
 
