@@ -1,0 +1,384 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Samplers &mdash; BartPy 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Model" href="model.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> BartPy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="node.html">Node</a></li>
+<li class="toctree-l1"><a class="reference internal" href="split.html">Split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tree.html">Tree</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">Model</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Samplers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#sampling-tree-space">Sampling Tree Space</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#proposing">Proposing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#likihood-ratio">Likihood ratio</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#sampling-node-values">Sampling Node Values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sampling-sigma-values">Sampling Sigma Values</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BartPy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Samplers</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/sampling.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="samplers">
+<h1>Samplers<a class="headerlink" href="#samplers" title="Permalink to this headline">¶</a></h1>
+<p>At the core, BartPy’s sampling is a Gibbs sampler in which each step looks like:</p>
+<dl class="docutils">
+<dt>For each tree:</dt>
+<dd><p class="first">Sample a mutation to the tree
+For each node in the tree:</p>
+<blockquote class="last">
+<div>Sample a prediction</div></blockquote>
+</dd>
+</dl>
+<p>Sample sigma</p>
+<p>This means that we need to be able to do three types of sampling:</p>
+<blockquote>
+<div><ul class="simple">
+<li>An updated tree structure | all other trees and sigma</li>
+<li>An updated value for a node | the tree structure, all other trees and sigma</li>
+<li>An updated sigma | all trees and all nodes</li>
+</ul>
+</div></blockquote>
+<p>This is all coordinated by a the SampleSchedule class</p>
+<dl class="class">
+<dt id="bartpy.samplers.schedule.SampleSchedule">
+<em class="property">class </em><code class="descclassname">bartpy.samplers.schedule.</code><code class="descname">SampleSchedule</code><span class="sig-paren">(</span><em>tree_sampler: bartpy.samplers.treemutation.treemutation.TreeMutationSampler</em>, <em>leaf_sampler: bartpy.samplers.leafnode.LeafNodeSampler</em>, <em>sigma_sampler: bartpy.samplers.sigma.SigmaSampler</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bartpy/samplers/schedule.html#SampleSchedule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.samplers.schedule.SampleSchedule" title="Permalink to this definition">¶</a></dt>
+<dd><p>The SampleSchedule class is responsible for handling the ordering of sampling within a Gibbs step
+It is useful to encapsulate this logic if we wish to expand the model</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>tree_sampler</strong> (<em>TreeMutationSampler</em>) – How to sample tree mutation space</li>
+<li><strong>leaf_sampler</strong> (<a class="reference internal" href="#bartpy.samplers.leafnode.LeafNodeSampler" title="bartpy.samplers.leafnode.LeafNodeSampler"><em>LeafNodeSampler</em></a>) – How to sample leaf node predictions</li>
+<li><strong>sigma_sampler</strong> (<a class="reference internal" href="#bartpy.samplers.sigma.SigmaSampler" title="bartpy.samplers.sigma.SigmaSampler"><em>SigmaSampler</em></a>) – How to sample sigma values</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="bartpy.samplers.schedule.SampleSchedule.steps">
+<code class="descname">steps</code><span class="sig-paren">(</span><em>model: bartpy.model.Model</em><span class="sig-paren">)</span> &#x2192; typing.Generator[[typing.Callable[bartpy.model.Model, bartpy.samplers.sampler.Sampler], NoneType], NoneType]<a class="reference internal" href="_modules/bartpy/samplers/schedule.html#SampleSchedule.steps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.samplers.schedule.SampleSchedule.steps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a generator of the steps that need to be called to complete a full Gibbs sample</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>model</strong> (<em>Model</em>) – The model being sampled</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A generator a function to be called</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">Generator[Callable[[Model], Sampler], <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.7)">None</a>, <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.7)">None</a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<div class="section" id="sampling-tree-space">
+<h2>Sampling Tree Space<a class="headerlink" href="#sampling-tree-space" title="Permalink to this headline">¶</a></h2>
+<p>Each sample of tree space in BartPy works by:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Generate a mutation proposal through some method</li>
+<li>Calculate the ratio of the likihood of the mutation over the likihood of the reverse operation</li>
+<li>Accept the proposal if the likihood ratio is greater than a uniform(0, 1) draw</li>
+</ol>
+</div></blockquote>
+<div class="section" id="proposing">
+<h3>Proposing<a class="headerlink" href="#proposing" title="Permalink to this headline">¶</a></h3>
+<p>By default there are two types of proposals:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Grow: split a leaf node into a decision node with two leaf children</li>
+<li>Prune: merge two leaf node with the same parent into a single leaf node</li>
+</ul>
+</div></blockquote>
+<p>There are a number of other possible mutations we could use, however, trees in BART tend to be very short and numerous, so these two allow for rapid changing of trees</p>
+<p>By default:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Grow or Prune is chosen with probability (0.5, 0.5)</li>
+<li>Particular instances of growing or pruning are chosen uniformly from all possible grows or prunes</li>
+</ul>
+</div></blockquote>
+<p>It is possible to modify all of this behaviour using BartPy, but doing so requires some involved modification of the likihood functions.</p>
+<dl class="class">
+<dt id="bartpy.samplers.treemutation.proposer.TreeMutationProposer">
+<em class="property">class </em><code class="descclassname">bartpy.samplers.treemutation.proposer.</code><code class="descname">TreeMutationProposer</code><a class="reference internal" href="_modules/bartpy/samplers/treemutation/proposer.html#TreeMutationProposer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.samplers.treemutation.proposer.TreeMutationProposer" title="Permalink to this definition">¶</a></dt>
+<dd><p>A TreeMutationProposer is responsible for generating samples from tree space
+It is capable of generating proposed TreeMutations</p>
+<dl class="method">
+<dt id="bartpy.samplers.treemutation.proposer.TreeMutationProposer.propose">
+<code class="descname">propose</code><span class="sig-paren">(</span><em>tree: bartpy.tree.Tree</em><span class="sig-paren">)</span> &#x2192; bartpy.mutation.TreeMutation<a class="reference internal" href="_modules/bartpy/samplers/treemutation/proposer.html#TreeMutationProposer.propose"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.samplers.treemutation.proposer.TreeMutationProposer.propose" title="Permalink to this definition">¶</a></dt>
+<dd><p>Propose a mutation to make to the given tree</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tree</strong> (<a class="reference internal" href="tree.html#bartpy.tree.Tree" title="bartpy.tree.Tree"><em>Tree</em></a>) – The tree to be mutate</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A way to update the input tree</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="tree.html#bartpy.mutation.TreeMutation" title="bartpy.mutation.TreeMutation">TreeMutation</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="likihood-ratio">
+<h3>Likihood ratio<a class="headerlink" href="#likihood-ratio" title="Permalink to this headline">¶</a></h3>
+<p>The likihood ratio is a product of three components:</p>
+<blockquote>
+<div><ul class="simple">
+<li>How likely it was that a particular mutation was selected</li>
+<li>How likely the resulting tree structure is given our tree structure prior (e.g. very deep trees have less prior likihood)</li>
+<li>How well the resulting tree fits the observed data</li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="sampling-node-values">
+<h2>Sampling Node Values<a class="headerlink" href="#sampling-node-values" title="Permalink to this headline">¶</a></h2>
+<p>Conditional on all other variables in the model, sampling the prediction of a node is straightforward.
+In fact, it is as simple as sampling from a normal distribution with:</p>
+<blockquote>
+<div><ul class="simple">
+<li>prior given by the model</li>
+<li>observations as those data points that fall into the leaf’s split condition</li>
+</ul>
+</div></blockquote>
+<dl class="class">
+<dt id="bartpy.samplers.leafnode.LeafNodeSampler">
+<em class="property">class </em><code class="descclassname">bartpy.samplers.leafnode.</code><code class="descname">LeafNodeSampler</code><a class="reference internal" href="_modules/bartpy/samplers/leafnode.html#LeafNodeSampler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.samplers.leafnode.LeafNodeSampler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="sampling-sigma-values">
+<h2>Sampling Sigma Values<a class="headerlink" href="#sampling-sigma-values" title="Permalink to this headline">¶</a></h2>
+<p>Sampling sigma proceeds as normal for a regression.  From the point of view of the sigma conditional, there is no difference between the BART predictions, and a standard OLS model</p>
+<dl class="class">
+<dt id="bartpy.samplers.sigma.SigmaSampler">
+<em class="property">class </em><code class="descclassname">bartpy.samplers.sigma.</code><code class="descname">SigmaSampler</code><a class="reference internal" href="_modules/bartpy/samplers/sigma.html#SigmaSampler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.samplers.sigma.SigmaSampler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="model.html" class="btn btn-neutral" title="Model" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Jake Coltman.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.0.1',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

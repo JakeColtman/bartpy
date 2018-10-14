@@ -1,0 +1,366 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>bartpy.sklearnmodel &mdash; BartPy 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> BartPy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../node.html">Node</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../split.html">Split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tree.html">Tree</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../model.html">Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../sampling.html">Samplers</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">BartPy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>bartpy.sklearnmodel</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for bartpy.sklearnmodel</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="k">import</span> <span class="n">RegressorMixin</span><span class="p">,</span> <span class="n">BaseEstimator</span>
+
+<span class="kn">from</span> <span class="nn">bartpy.model</span> <span class="k">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">bartpy.data</span> <span class="k">import</span> <span class="n">Data</span>
+<span class="kn">from</span> <span class="nn">bartpy.samplers.schedule</span> <span class="k">import</span> <span class="n">SampleSchedule</span>
+<span class="kn">from</span> <span class="nn">bartpy.samplers.modelsampler</span> <span class="k">import</span> <span class="n">ModelSampler</span>
+<span class="kn">from</span> <span class="nn">bartpy.sigma</span> <span class="k">import</span> <span class="n">Sigma</span>
+<span class="kn">from</span> <span class="nn">bartpy.samplers.treemutation.uniform.likihoodratio</span> <span class="k">import</span> <span class="n">UniformTreeMutationLikihoodRatio</span>
+<span class="kn">from</span> <span class="nn">bartpy.samplers.treemutation.uniform.proposer</span> <span class="k">import</span> <span class="n">UniformMutationProposer</span>
+<span class="kn">from</span> <span class="nn">bartpy.samplers.treemutation.treemutation</span> <span class="k">import</span> <span class="n">TreeMutationSampler</span>
+<span class="kn">from</span> <span class="nn">bartpy.samplers.sigma</span> <span class="k">import</span> <span class="n">SigmaSampler</span>
+<span class="kn">from</span> <span class="nn">bartpy.samplers.leafnode</span> <span class="k">import</span> <span class="n">LeafNodeSampler</span>
+
+
+<div class="viewcode-block" id="SklearnModel"><a class="viewcode-back" href="../../model.html#bartpy.sklearnmodel.SklearnModel">[docs]</a><span class="k">class</span> <span class="nc">SklearnModel</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">RegressorMixin</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The main access point to building BART models in BartPy</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    n_trees: int</span>
+<span class="sd">        the number of trees to use, more trees will make a smoother fit, but slow training and fitting</span>
+<span class="sd">    sigma_a: float</span>
+<span class="sd">        shape parameter of the prior on sigma</span>
+<span class="sd">    sigma_b: float</span>
+<span class="sd">        scale parameter of the prior on sigma</span>
+<span class="sd">    n_samples: int</span>
+<span class="sd">        how many recorded samples to take</span>
+<span class="sd">    n_burn: int</span>
+<span class="sd">        how many samples to run without recording to reach convergence</span>
+<span class="sd">    p_grow: float</span>
+<span class="sd">        probability of choosing a grow mutation in tree mutation sampling</span>
+<span class="sd">    p_prune: float</span>
+<span class="sd">        probability of choosing a prune mutation in tree mutation sampling</span>
+<span class="sd">    alpha: float</span>
+<span class="sd">        prior parameter on tree structure</span>
+<span class="sd">    beta: float</span>
+<span class="sd">        prior parameter on tree structure</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">n_trees</span><span class="p">:</span> <span class="nb">int</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+                 <span class="n">sigma_a</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>
+                 <span class="n">sigma_b</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>
+                 <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+                 <span class="n">n_burn</span><span class="p">:</span> <span class="nb">int</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+                 <span class="n">p_grow</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+                 <span class="n">p_prune</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+                 <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+                 <span class="n">beta</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">2.</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_trees</span> <span class="o">=</span> <span class="n">n_trees</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma_a</span> <span class="o">=</span> <span class="n">sigma_a</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma_b</span> <span class="o">=</span> <span class="n">sigma_b</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_burn</span> <span class="o">=</span> <span class="n">n_burn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span> <span class="o">=</span> <span class="n">n_samples</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_grow</span> <span class="o">=</span> <span class="n">p_grow</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_prune</span> <span class="o">=</span> <span class="n">p_prune</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">=</span> <span class="n">beta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proposer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">likihood_ratio</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampler</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prediction_samples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_samples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">schedule</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="mi">9</span>
+
+<div class="viewcode-block" id="SklearnModel.fit"><a class="viewcode-back" href="../../model.html#bartpy.sklearnmodel.SklearnModel.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;SklearnModel&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Learn the model based on training data</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X: pd.DataFrame</span>
+<span class="sd">            training covariates</span>
+<span class="sd">        y: np.ndarray</span>
+<span class="sd">            training targets</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        SklearnModel</span>
+<span class="sd">            self with trained parameter values</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">deepcopy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span> <span class="o">=</span> <span class="n">Sigma</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma_a</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_b</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">normalizing_scale</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="p">,</span> <span class="n">n_trees</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_trees</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proposer</span> <span class="o">=</span> <span class="n">UniformMutationProposer</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">p_grow</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_prune</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">likihood_ratio</span> <span class="o">=</span> <span class="n">UniformTreeMutationLikihoodRatio</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">p_grow</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_prune</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tree_sampler</span> <span class="o">=</span> <span class="n">TreeMutationSampler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proposer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">likihood_ratio</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">schedule</span> <span class="o">=</span> <span class="n">SampleSchedule</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tree_sampler</span><span class="p">,</span> <span class="n">LeafNodeSampler</span><span class="p">(),</span> <span class="n">SigmaSampler</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sampler</span> <span class="o">=</span> <span class="n">ModelSampler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">schedule</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_samples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prediction_samples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampler</span><span class="o">.</span><span class="n">samples</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_burn</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="SklearnModel.predict"><a class="viewcode-back" href="../../model.html#bartpy.sklearnmodel.SklearnModel.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Predict the target corresponding to the provided covariate matrix</span>
+<span class="sd">        If X is None, will predict based on training covariates</span>
+
+<span class="sd">        Prediction is based on the mean of all samples</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X: pd.DataFrame</span>
+<span class="sd">            covariates to predict from</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        np.ndarray</span>
+<span class="sd">            predictions for the X covariates</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">X</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">unnormalize_y</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_prediction_samples</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_out_of_sample_predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_out_of_sample_predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">unnormalize_y</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">x</span><span class="o">.</span><span class="n">_out_of_sample_predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_samples</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">fit_predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">model_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Model</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Array of the model as it was after each sample.</span>
+<span class="sd">        Useful for examining for:</span>
+
+<span class="sd">         - examining the state of trees, nodes and sigma throughout the sampling</span>
+<span class="sd">         - out of sample prediction</span>
+
+<span class="sd">        Returns None if the model hasn&#39;t been fit</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        List[Model]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_samples</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">prediction_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Matrix of prediction samples at each point in sampling</span>
+<span class="sd">        Useful for assessing convergence, calculating point estimates etc.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        np.ndarray</span>
+<span class="sd">            prediction samples with dimensionality n_samples * n_points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">prediction_samples</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Jake Coltman.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'0.0.1',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

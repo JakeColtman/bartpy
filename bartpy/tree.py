@@ -2,164 +2,153 @@ from typing import List
 
 import numpy as np
 
-from bartpy.errors import NoSplittableVariableException, NoPrunableNodeException
 from bartpy.mutation import TreeMutation
-from bartpy.node import TreeNode, LeafNode, DecisionNode
+from bartpy.node import TreeNode, LeafNode, DecisionNode, deep_copy_node
 
 
 class Tree:
     """
-    An encapsulation of the structure of the tree as a whole
+    An encapsulation of the structure of a single decision tree
+    Contains no logic, but keeps track of 4 different kinds of nodes within the tree:
+      - leaf nodes
+      - decision nodes
+      - splittable leaf nodes
+      - prunable decision nodes
+
+    Parameters
+    ----------
+    nodes: List[Node]
+        All nodes contained in the tree, i.e. decision and leaf nodes
     """
 
     def __init__(self, nodes: List[TreeNode]):
         self._nodes = nodes
         self.cache_up_to_date = False
-        self._prediction = np.zeros_like(self._nodes[0]._split._data._y)
+        self._prediction = None
 
     @property
     def nodes(self) -> List[TreeNode]:
         """
-
-        Returns
-        -------
-            List[TreeNode]
-
-        Examples
-        --------
-        >>> a, b, c, = TreeNode(None), TreeNode(None), TreeNode(None)
-        >>> a.update_left_child(b)
-        >>> b.update_left_child(c)
-        >>> structure = Tree(a)
-        >>> nodes = structure.nodes()
-        >>> len(nodes)
-        3
-        >>> a in nodes
-        True
-        >>> 1 in nodes
-        False
+        List of all nodes contained in the tree
         """
         return self._nodes
 
     @property
     def leaf_nodes(self) -> List[LeafNode]:
         """
-
-        Returns
-        -------
-            List[TreeNode]
-
-        Examples
-        --------
-        >>> a, b, c, = TreeNode(None), TreeNode(None), TreeNode(None)
-        >>> a.update_left_child(b)
-        >>> b.update_left_child(c)
-        >>> structure = Tree(a)
-        >>> nodes = structure.leaf_nodes()
-        >>> len(nodes)
-        1
-        >>> c == list(nodes)[0]
-        True
+        List of all of the leaf nodes in the tree
         """
-        return [x for x in self._nodes if x.is_leaf_node()]
+        return [x for x in self._nodes if type(x) == LeafNode]
 
     @property
-    def splittable_leaf_nodes(self):
+    def splittable_leaf_nodes(self) -> List[LeafNode]:
+        """
+        List of all leaf nodes in the tree which can be split in a non-degenerate way
+        i.e. not all rows of the covariate matrix are duplicates
+        """
         return [x for x in self.leaf_nodes if x.is_splittable()]
 
     @property
     def decision_nodes(self) -> List[DecisionNode]:
         """
-
-        Returns
-        -------
-            List[TreeNode]
-
-        Examples
-        --------
-        >>> a, b, c, = TreeNode(None), TreeNode(None), TreeNode(None)
-        >>> a.update_left_child(b)
-        >>> a.update_right_child(c)
-        >>> structure = Tree(a)
-        >>> nodes = structure.split_nodes()
-        >>> len(nodes)
-        1
-        >>> a == list(nodes)[0]
-        True
+        List of decision nodes in the tree.
+        Decision nodes are internal split nodes, i.e. not leaf nodes
         """
-        return [x for x in self._nodes if x.is_decision_node()]
+        return [x for x in self._nodes if type(x) == DecisionNode]
 
     @property
     def prunable_decision_nodes(self) -> List[DecisionNode]:
+        """
+        List of decision nodes in the tree that are suitable for pruning
+        In particular, decision nodes that have two leaf node children
+        """
         return [x for x in self.decision_nodes if x.is_prunable()]
 
     def update_y(self, y: np.ndarray) -> None:
+        """
+        Update the cached value of the target array in all nodes
+        Used to pass in the residuals from the sum of all of the other trees
+        """
         self.cache_up_to_date = False
         for node in self.nodes:
             node.split.update_y(y)
 
-    def predict(self) -> np.ndarray:
+    def predict(self, X: np.ndarray=None) -> np.ndarray:
+        """
+        Generate a set of predictions with the same dimensionality as the target array
+        Note that the prediction is from one tree, so represents only (1 / number_of_trees) of the target
+        """
+        if X is not None:
+            return self._out_of_sample_predict(X)
+
         if self.cache_up_to_date:
             return self._prediction
         for leaf in self.leaf_nodes:
+            if self._prediction is None:
+                self._prediction = np.zeros_like(self._nodes[0]._split._data._y)
             self._prediction[leaf.split.condition()] = leaf.predict()
         self.cache_up_to_date = True
         return self._prediction
 
+    def _out_of_sample_predict(self, X) -> np.ndarray:
+        """
+        Prediction for a covariate matrix not used for training
 
-def random_splittable_leaf_node(tree: Tree) -> LeafNode:
-    splittable_nodes = tree.splittable_leaf_nodes
-    if len(splittable_nodes) > 0:
-        return np.random.choice(splittable_nodes)
-    else:
-        raise NoSplittableVariableException()
+        Note that this is quite slow
 
+        Parameters
+        ----------
+        X: pd.DataFrame
+            Covariates to predict for
+        Returns
+        -------
+        np.ndarray
+        """
+        prediction = np.array([0.] * len(X))
+        for leaf in self.leaf_nodes:
+            prediction[leaf.split.condition(X)] = leaf.predict()
+        return prediction
 
-def random_prunable_decision_node(tree: Tree) -> DecisionNode:
-    leaf_parents = tree.prunable_decision_nodes
-    if len(leaf_parents) == 0:
-        raise NoPrunableNodeException
-    return np.random.choice(leaf_parents)
+    def remove_node(self, node: TreeNode) -> None:
+        """
+        Remove a single node from the tree
+        Note that this is non-recursive, only drops the node and not any children
+        """
+        self._nodes.remove(node)
 
-
-def random_decision_node(tree: Tree) -> DecisionNode:
-    leaf_parents = tree.decision_nodes
-    if len(leaf_parents) == 0:
-        raise NoPrunableNodeException
-    return np.random.choice(leaf_parents)
-
-
-def n_prunable_decision_nodes(tree: Tree) -> int:
-    return len(tree.prunable_decision_nodes)
-
-
-def n_splittable_leaf_nodes(tree: Tree) -> int:
-    return len(tree.splittable_leaf_nodes)
+    def add_node(self, node: TreeNode) -> None:
+        """
+        Add a node to the tree
+        Note that this is non-recursive, only adds the node and not any children
+        """
+        self._nodes.append(node)
 
 
 def mutate(tree: Tree, mutation: TreeMutation) -> None:
+    """
+    Apply a change to the structure of the tree
+    Modifies not only the tree, but also the links between the TreeNodes
 
+    Parameters
+    ----------
+    tree: Tree
+        The tree to mutate
+    mutation: TreeMutation
+        The mutation to apply to the tree
+    """
     tree.cache_up_to_date = False
 
     if mutation.kind == "prune":
-        tree._nodes.remove(mutation.existing_node)
-        tree._nodes.append(mutation.updated_node)
-        tree._nodes.remove(mutation.existing_node.left_child)
-        tree._nodes.remove(mutation.existing_node.right_child)
+        tree.remove_node(mutation.existing_node)
+        tree.remove_node(mutation.existing_node.left_child)
+        tree.remove_node(mutation.existing_node.right_child)
+        tree.add_node(mutation.updated_node)
 
     if mutation.kind == "grow":
-        tree._nodes.remove(mutation.existing_node)
-        tree._nodes.append(mutation.updated_node.left_child)
-        tree._nodes.append(mutation.updated_node.right_child)
-        tree._nodes.append(mutation.updated_node)
-
-    if mutation.kind == "change":
-        tree._nodes.remove(mutation.existing_node.left_child)
-        tree._nodes.remove(mutation.existing_node.right_child)
-        tree._nodes.append(mutation.updated_node.left_child)
-        tree._nodes.append(mutation.updated_node.right_child)
-        tree._nodes.remove(mutation.existing_node)
-        tree._nodes.append(mutation.updated_node)
+        tree.remove_node(mutation.existing_node)
+        tree.add_node(mutation.updated_node.left_child)
+        tree.add_node(mutation.updated_node.right_child)
+        tree.add_node(mutation.updated_node)
 
     for node in tree.nodes:
         if node.right_child == mutation.existing_node:
@@ -168,6 +157,5 @@ def mutate(tree: Tree, mutation: TreeMutation) -> None:
             node._left_child = mutation.updated_node
 
 
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
+def deep_copy_tree(tree: Tree):
+    return Tree([deep_copy_node(x) for x in tree.nodes])

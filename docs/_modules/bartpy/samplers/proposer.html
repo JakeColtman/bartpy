@@ -1,0 +1,409 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>bartpy.samplers.proposer &mdash; BartPy 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> BartPy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../node.html">Node</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../split.html">Split</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tree.html">Tree</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../model.html">Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../sampling.html">Samplers</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">BartPy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>bartpy.samplers.proposer</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for bartpy.samplers.proposer</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">abc</span> <span class="k">import</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Any</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">bartpy.errors</span> <span class="k">import</span> <span class="n">NoSplittableVariableException</span><span class="p">,</span> <span class="n">NoPrunableNodeException</span>
+<span class="kn">from</span> <span class="nn">bartpy.model</span> <span class="k">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">bartpy.mutation</span> <span class="k">import</span> <span class="n">TreeMutation</span><span class="p">,</span> <span class="n">PruneMutation</span><span class="p">,</span> <span class="n">GrowMutation</span>
+<span class="kn">from</span> <span class="nn">bartpy.node</span> <span class="k">import</span> <span class="n">sample_split_node</span><span class="p">,</span> <span class="n">TreeNode</span><span class="p">,</span> <span class="n">LeafNode</span><span class="p">,</span> <span class="n">DecisionNode</span>
+<span class="kn">from</span> <span class="nn">bartpy.tree</span> <span class="k">import</span> <span class="n">LeafNode</span><span class="p">,</span> <span class="n">Tree</span>
+
+
+<span class="k">def</span> <span class="nf">log_probability_node_split</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">TreeNode</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">node</span><span class="o">.</span><span class="n">depth</span><span class="p">,</span> <span class="o">-</span><span class="n">model</span><span class="o">.</span><span class="n">beta</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">log_probability_node_not_split</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">TreeNode</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="n">model</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">node</span><span class="o">.</span><span class="n">depth</span><span class="p">,</span> <span class="o">-</span><span class="n">model</span><span class="o">.</span><span class="n">beta</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">log_probability_split_within_node</span><span class="p">(</span><span class="n">mutation</span><span class="p">:</span> <span class="n">GrowMutation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The log probability of the particular grow mutation being selected conditional on growing a given node</span>
+
+<span class="sd">    i.e.</span>
+<span class="sd">    log(P(splitting_value | splitting_variable, node, grow) * P(splitting_variable | node, grow))</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">prob_splitting_variable_selected</span> <span class="o">=</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mutation</span><span class="o">.</span><span class="n">existing_node</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">n_splittable_variables</span><span class="p">)</span>
+    <span class="n">splitting_variable</span> <span class="o">=</span> <span class="n">mutation</span><span class="o">.</span><span class="n">updated_node</span><span class="o">.</span><span class="n">variable_split_on</span><span class="p">()</span><span class="o">.</span><span class="n">splitting_variable</span>
+    <span class="n">prob_value_selected_within_variable</span> <span class="o">=</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mutation</span><span class="o">.</span><span class="n">existing_node</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">n_unique_values</span><span class="p">(</span><span class="n">splitting_variable</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">prob_splitting_variable_selected</span> <span class="o">+</span> <span class="n">prob_value_selected_within_variable</span>
+
+
+<span class="k">def</span> <span class="nf">log_probability_split_within_tree</span><span class="p">(</span><span class="n">tree_structure</span><span class="p">:</span> <span class="n">Tree</span><span class="p">,</span> <span class="n">mutation</span><span class="p">:</span> <span class="n">GrowMutation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The log probability of the particular grow mutation being selected conditional on growing a given tree</span>
+<span class="sd">    i.e.</span>
+<span class="sd">    log(P(mutation | node)P(node| tree)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">prob_node_chosen_to_split_on</span> <span class="o">=</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">n_splittable_leaf_nodes</span><span class="p">(</span><span class="n">tree_structure</span><span class="p">))</span>
+    <span class="n">prob_split_chosen</span> <span class="o">=</span> <span class="n">log_probability_split_within_node</span><span class="p">(</span><span class="n">mutation</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">prob_node_chosen_to_split_on</span> <span class="o">+</span> <span class="n">prob_split_chosen</span>
+
+
+<div class="viewcode-block" id="TreeMutationProposer"><a class="viewcode-back" href="../../../sampling.html#bartpy.samplers.proposer.TreeMutationProposer">[docs]</a><span class="k">class</span> <span class="nc">TreeMutationProposer</span><span class="p">:</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">propose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tree_structure</span><span class="p">:</span> <span class="n">Tree</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TreeMutation</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">log_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mutation</span><span class="p">:</span> <span class="n">TreeMutation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">log_transition_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mutation</span><span class="p">:</span> <span class="n">TreeMutation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_probability</span><span class="p">(</span><span class="n">mutation</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_probability</span><span class="p">(</span><span class="n">mutation</span><span class="o">.</span><span class="n">reverse</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">log_tree_structure_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mutation</span><span class="p">:</span> <span class="n">TreeMutation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+
+<span class="k">class</span> <span class="nc">UniformGrowTreeMutationProposer</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="nf">propose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tree_structure</span><span class="p">:</span> <span class="n">Tree</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TreeMutation</span><span class="p">:</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="n">random_splittable_leaf_node</span><span class="p">(</span><span class="n">tree_structure</span><span class="p">)</span>
+        <span class="n">updated_node</span> <span class="o">=</span> <span class="n">sample_split_node</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">GrowMutation</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">updated_node</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">UniformPruneTreeMutationProposer</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="nf">propose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tree_structure</span><span class="p">:</span> <span class="n">Tree</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TreeMutation</span><span class="p">:</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="n">random_prunable_decision_node</span><span class="p">(</span><span class="n">tree_structure</span><span class="p">)</span>
+        <span class="n">updated_node</span> <span class="o">=</span> <span class="n">LeafNode</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">split</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">depth</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PruneMutation</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">updated_node</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">UniformMutationProposer</span><span class="p">(</span><span class="n">TreeMutationProposer</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prob_method_lookup</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">float</span><span class="p">]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prob_method_lookup</span> <span class="o">=</span> <span class="n">prob_method_lookup</span>
+
+    <span class="k">def</span> <span class="nf">sample_mutation_method</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Tree</span><span class="p">],</span> <span class="n">TreeMutationProposer</span><span class="p">]:</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prob_method_lookup</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span> <span class="n">p</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prob_method_lookup</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+        <span class="k">return</span> <span class="n">method</span>
+
+    <span class="k">def</span> <span class="nf">propose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tree_structure</span><span class="p">:</span> <span class="n">Tree</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TreeMutation</span><span class="p">:</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_mutation_method</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">method</span><span class="p">()</span><span class="o">.</span><span class="n">propose</span><span class="p">(</span><span class="n">tree_structure</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">NoSplittableVariableException</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">propose</span><span class="p">(</span><span class="n">tree_structure</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">NoPrunableNodeException</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">propose</span><span class="p">(</span><span class="n">tree_structure</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">log_transition_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tree_structure</span><span class="p">:</span> <span class="n">Tree</span><span class="p">,</span> <span class="n">mutation</span><span class="p">:</span> <span class="n">TreeMutation</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">mutation</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;prune&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_prune_transition_ratio</span><span class="p">(</span><span class="n">tree_structure</span><span class="p">,</span> <span class="n">mutation</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mutation</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;grow&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_grow_transition_ratio</span><span class="p">(</span><span class="n">tree_structure</span><span class="p">,</span> <span class="n">mutation</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;kind </span><span class="si">{}</span><span class="s2"> not supported&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mutation</span><span class="o">.</span><span class="n">kind</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">log_grow_transition_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tree_structure</span><span class="p">:</span> <span class="n">Tree</span><span class="p">,</span> <span class="n">mutation</span><span class="p">:</span> <span class="n">GrowMutation</span><span class="p">):</span>
+        <span class="n">prob_prune_selected</span> <span class="o">=</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">n_prunable_decision_nodes</span><span class="p">(</span><span class="n">tree_structure</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">prob_grow_selected</span> <span class="o">=</span> <span class="n">log_probability_split_within_tree</span><span class="p">(</span><span class="n">tree_structure</span><span class="p">,</span> <span class="n">mutation</span><span class="p">)</span>
+
+        <span class="n">prob_selection_ratio</span> <span class="o">=</span> <span class="n">prob_prune_selected</span> <span class="o">-</span> <span class="n">prob_grow_selected</span>
+        <span class="n">prune_grow_ratio</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prob_method_lookup</span><span class="p">[</span><span class="n">UniformPruneTreeMutationProposer</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">prob_method_lookup</span><span class="p">[</span><span class="n">UniformGrowTreeMutationProposer</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">prune_grow_ratio</span> <span class="o">+</span> <span class="n">prob_selection_ratio</span>
+
+    <span class="k">def</span> <span class="nf">log_prune_transition_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tree_structure</span><span class="p">:</span> <span class="n">Tree</span><span class="p">,</span> <span class="n">mutation</span><span class="p">:</span> <span class="n">PruneMutation</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">n_splittable_leaf_nodes</span><span class="p">(</span><span class="n">tree_structure</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">prob_grow_node_selected</span> <span class="o">=</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>  <span class="c1"># Infinitely unlikely to be able to grow a null tree</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">prob_grow_node_selected</span> <span class="o">=</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">n_splittable_leaf_nodes</span><span class="p">(</span><span class="n">tree_structure</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">prob_split</span> <span class="o">=</span> <span class="n">log_probability_split_within_node</span><span class="p">(</span><span class="n">GrowMutation</span><span class="p">(</span><span class="n">mutation</span><span class="o">.</span><span class="n">updated_node</span><span class="p">,</span> <span class="n">mutation</span><span class="o">.</span><span class="n">existing_node</span><span class="p">))</span>
+        <span class="n">prob_grow_selected</span> <span class="o">=</span> <span class="n">prob_grow_node_selected</span> <span class="o">+</span> <span class="n">prob_split</span>
+
+        <span class="n">prob_prune_selected</span> <span class="o">=</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">n_prunable_decision_nodes</span><span class="p">(</span><span class="n">tree_structure</span><span class="p">))</span>
+
+        <span class="n">prob_selection_ratio</span> <span class="o">=</span> <span class="n">prob_grow_selected</span> <span class="o">-</span> <span class="n">prob_prune_selected</span>
+        <span class="n">grow_prune_ratio</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prob_method_lookup</span><span class="p">[</span><span class="n">UniformGrowTreeMutationProposer</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">prob_method_lookup</span><span class="p">[</span><span class="n">UniformPruneTreeMutationProposer</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">grow_prune_ratio</span> <span class="o">+</span> <span class="n">prob_selection_ratio</span>
+
+    <span class="k">def</span> <span class="nf">log_tree_structure_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span> <span class="n">tree_structure</span><span class="p">:</span> <span class="n">Tree</span><span class="p">,</span> <span class="n">proposal</span><span class="p">:</span> <span class="n">TreeMutation</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">proposal</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;grow&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_tree_structure_ratio_grow</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">tree_structure</span><span class="p">,</span> <span class="n">proposal</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">proposal</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;prune&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_tree_structure_ratio_prune</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">proposal</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">log_tree_structure_ratio_grow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span> <span class="n">tree_structure</span><span class="p">:</span> <span class="n">Tree</span><span class="p">,</span> <span class="n">proposal</span><span class="p">:</span> <span class="n">GrowMutation</span><span class="p">):</span>
+        <span class="n">denominator</span> <span class="o">=</span> <span class="n">log_probability_node_not_split</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">proposal</span><span class="o">.</span><span class="n">existing_node</span><span class="p">)</span>
+
+        <span class="n">prob_left_not_split</span> <span class="o">=</span> <span class="n">log_probability_node_not_split</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">proposal</span><span class="o">.</span><span class="n">updated_node</span><span class="o">.</span><span class="n">left_child</span><span class="p">)</span>
+        <span class="n">prob_right_not_split</span> <span class="o">=</span> <span class="n">log_probability_node_not_split</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">proposal</span><span class="o">.</span><span class="n">updated_node</span><span class="o">.</span><span class="n">right_child</span><span class="p">)</span>
+        <span class="n">prob_updated_node_split</span> <span class="o">=</span> <span class="n">log_probability_node_split</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">proposal</span><span class="o">.</span><span class="n">updated_node</span><span class="p">)</span>
+        <span class="n">prob_chosen_split</span> <span class="o">=</span> <span class="n">log_probability_split_within_tree</span><span class="p">(</span><span class="n">tree_structure</span><span class="p">,</span> <span class="n">proposal</span><span class="p">)</span>
+        <span class="n">numerator</span> <span class="o">=</span> <span class="n">prob_left_not_split</span> <span class="o">+</span> <span class="n">prob_right_not_split</span> <span class="o">+</span> <span class="n">prob_updated_node_split</span> <span class="o">+</span> <span class="n">prob_chosen_split</span>
+
+        <span class="k">return</span> <span class="n">numerator</span> <span class="o">-</span> <span class="n">denominator</span>
+
+    <span class="k">def</span> <span class="nf">log_tree_structure_ratio_prune</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span> <span class="n">proposal</span><span class="p">:</span> <span class="n">PruneMutation</span><span class="p">):</span>
+        <span class="n">numerator</span> <span class="o">=</span> <span class="n">log_probability_node_not_split</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">proposal</span><span class="o">.</span><span class="n">updated_node</span><span class="p">)</span>
+
+        <span class="n">prob_left_not_split</span> <span class="o">=</span> <span class="n">log_probability_node_not_split</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">proposal</span><span class="o">.</span><span class="n">existing_node</span><span class="o">.</span><span class="n">left_child</span><span class="p">)</span>
+        <span class="n">prob_right_not_split</span> <span class="o">=</span> <span class="n">log_probability_node_not_split</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">proposal</span><span class="o">.</span><span class="n">existing_node</span><span class="o">.</span><span class="n">left_child</span><span class="p">)</span>
+        <span class="n">prob_updated_node_split</span> <span class="o">=</span> <span class="n">log_probability_node_split</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">proposal</span><span class="o">.</span><span class="n">existing_node</span><span class="p">)</span>
+        <span class="n">prob_chosen_split</span> <span class="o">=</span> <span class="n">log_probability_split_within_node</span><span class="p">(</span><span class="n">GrowMutation</span><span class="p">(</span><span class="n">proposal</span><span class="o">.</span><span class="n">updated_node</span><span class="p">,</span> <span class="n">proposal</span><span class="o">.</span><span class="n">existing_node</span><span class="p">))</span>
+        <span class="n">denominator</span> <span class="o">=</span> <span class="n">prob_left_not_split</span> <span class="o">+</span> <span class="n">prob_right_not_split</span> <span class="o">+</span> <span class="n">prob_updated_node_split</span> <span class="o">+</span> <span class="n">prob_chosen_split</span>
+
+        <span class="k">return</span> <span class="n">numerator</span> <span class="o">-</span> <span class="n">denominator</span>
+
+
+<span class="k">def</span> <span class="nf">random_splittable_leaf_node</span><span class="p">(</span><span class="n">tree</span><span class="p">:</span> <span class="n">Tree</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LeafNode</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns a random leaf node that can be split in a non-degenerate way</span>
+<span class="sd">    i.e. a random draw from the set of leaf nodes that have at least two distinct values in their covariate matrix</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">splittable_nodes</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">splittable_leaf_nodes</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">splittable_nodes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">splittable_nodes</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">NoSplittableVariableException</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">random_prunable_decision_node</span><span class="p">(</span><span class="n">tree</span><span class="p">:</span> <span class="n">Tree</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DecisionNode</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns a random decision node that can be pruned</span>
+<span class="sd">    i.e. a random draw from the set of decision nodes that have two leaf node children</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">leaf_parents</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">prunable_decision_nodes</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">leaf_parents</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">NoPrunableNodeException</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">leaf_parents</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">n_prunable_decision_nodes</span><span class="p">(</span><span class="n">tree</span><span class="p">:</span> <span class="n">Tree</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The number of prunable decision nodes</span>
+<span class="sd">    i.e. how many decision nodes have two leaf children</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">prunable_decision_nodes</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">n_splittable_leaf_nodes</span><span class="p">(</span><span class="n">tree</span><span class="p">:</span> <span class="n">Tree</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The number of splittable leaf nodes</span>
+<span class="sd">    i.e. how many leaf nodes have more than one distinct values in their covariate matrix</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">splittable_leaf_nodes</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Jake Coltman.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.0.1',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

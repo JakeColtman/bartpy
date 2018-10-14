@@ -1,0 +1,366 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Tree &mdash; BartPy 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Model" href="model.html" />
+    <link rel="prev" title="Split" href="split.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> BartPy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="node.html">Node</a></li>
+<li class="toctree-l1"><a class="reference internal" href="split.html">Split</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tree</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sampling.html">Samplers</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BartPy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Tree</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/tree.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-bartpy.tree">
+<span id="tree"></span><h1>Tree<a class="headerlink" href="#module-bartpy.tree" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="bartpy.tree.Tree">
+<em class="property">class </em><code class="descclassname">bartpy.tree.</code><code class="descname">Tree</code><span class="sig-paren">(</span><em>nodes: typing.List[bartpy.node.TreeNode]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bartpy/tree.html#Tree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.tree.Tree" title="Permalink to this definition">¶</a></dt>
+<dd><p>An encapsulation of the structure of a single decision tree
+Contains no logic, but keeps track of 4 different kinds of nodes within the tree:</p>
+<blockquote>
+<div><ul class="simple">
+<li>leaf nodes</li>
+<li>decision nodes</li>
+<li>splittable leaf nodes</li>
+<li>prunable decision nodes</li>
+</ul>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>nodes</strong> (<em>List</em><em>[</em><em>Node</em><em>]</em>) – All nodes contained in the tree, i.e. decision and leaf nodes</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="bartpy.tree.Tree.add_node">
+<code class="descname">add_node</code><span class="sig-paren">(</span><em>node: bartpy.node.TreeNode</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/bartpy/tree.html#Tree.add_node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.tree.Tree.add_node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a node to the tree
+Note that this is non-recursive, only adds the node and not any children</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bartpy.tree.Tree.decision_nodes">
+<code class="descname">decision_nodes</code><a class="headerlink" href="#bartpy.tree.Tree.decision_nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of decision nodes in the tree.
+Decision nodes are internal split nodes, i.e. not leaf nodes</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bartpy.tree.Tree.leaf_nodes">
+<code class="descname">leaf_nodes</code><a class="headerlink" href="#bartpy.tree.Tree.leaf_nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of all of the leaf nodes in the tree</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bartpy.tree.Tree.nodes">
+<code class="descname">nodes</code><a class="headerlink" href="#bartpy.tree.Tree.nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of all nodes contained in the tree</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bartpy.tree.Tree.out_of_sample_predict">
+<code class="descname">out_of_sample_predict</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span> &#x2192; numpy.ndarray<a class="reference internal" href="_modules/bartpy/tree.html#Tree.out_of_sample_predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.tree.Tree.out_of_sample_predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prediction for a covariate matrix not used for training</p>
+<p>Note that this is quite slow</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>X</strong> (<em>pd.DataFrame</em>) – Covariates to predict for</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">np.ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="bartpy.tree.Tree.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; numpy.ndarray<a class="reference internal" href="_modules/bartpy/tree.html#Tree.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.tree.Tree.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a set of predictions with the same dimensionality as the target array
+Note that the prediction is from one tree, so represents only (1 / number_of_trees) of the target</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bartpy.tree.Tree.prunable_decision_nodes">
+<code class="descname">prunable_decision_nodes</code><a class="headerlink" href="#bartpy.tree.Tree.prunable_decision_nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of decision nodes in the tree that are suitable for pruning
+In particular, decision nodes that have two leaf node children</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bartpy.tree.Tree.remove_node">
+<code class="descname">remove_node</code><span class="sig-paren">(</span><em>node: bartpy.node.TreeNode</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/bartpy/tree.html#Tree.remove_node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.tree.Tree.remove_node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a single node from the tree
+Note that this is non-recursive, only drops the node and not any children</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="bartpy.tree.Tree.splittable_leaf_nodes">
+<code class="descname">splittable_leaf_nodes</code><a class="headerlink" href="#bartpy.tree.Tree.splittable_leaf_nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of all leaf nodes in the tree which can be split in a non-degenerate way
+i.e. not all rows of the covariate matrix are duplicates</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="bartpy.tree.Tree.update_y">
+<code class="descname">update_y</code><span class="sig-paren">(</span><em>y: numpy.ndarray</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/bartpy/tree.html#Tree.update_y"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.tree.Tree.update_y" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the cached value of the target array in all nodes
+Used to pass in the residuals from the sum of all of the other trees</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="bartpy.tree.mutate">
+<code class="descclassname">bartpy.tree.</code><code class="descname">mutate</code><span class="sig-paren">(</span><em>tree: bartpy.tree.Tree</em>, <em>mutation: bartpy.mutation.TreeMutation</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/bartpy/tree.html#mutate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.tree.mutate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply a change to the structure of the tree
+Modifies not only the tree, but also the links between the TreeNodes</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>tree</strong> (<a class="reference internal" href="#bartpy.tree.Tree" title="bartpy.tree.Tree"><em>Tree</em></a>) – The tree to mutate</li>
+<li><strong>mutation</strong> (<a class="reference internal" href="#bartpy.mutation.TreeMutation" title="bartpy.mutation.TreeMutation"><em>TreeMutation</em></a>) – The mutation to apply to the tree</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<span class="target" id="module-bartpy.mutation"></span><dl class="class">
+<dt id="bartpy.mutation.TreeMutation">
+<em class="property">class </em><code class="descclassname">bartpy.mutation.</code><code class="descname">TreeMutation</code><span class="sig-paren">(</span><em>kind: str</em>, <em>existing_node: bartpy.node.TreeNode</em>, <em>updated_node: bartpy.node.TreeNode</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bartpy/mutation.html#TreeMutation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bartpy.mutation.TreeMutation" title="Permalink to this definition">¶</a></dt>
+<dd><p>An encapsulation of a change to be made to the tree.
+Constructed of three components</p>
+<blockquote>
+<div><ul class="simple">
+<li>the node to be changed</li>
+<li>what it should be changed to</li>
+<li>a string name of the kind of change (normally grow or prune)</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="model.html" class="btn btn-neutral float-right" title="Model" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="split.html" class="btn btn-neutral" title="Split" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Jake Coltman.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.0.1',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

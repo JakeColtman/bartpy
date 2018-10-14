@@ -6,7 +6,7 @@ import pandas as pd
 
 from bartpy.data import Data
 from bartpy.sigma import Sigma
-from bartpy.tree import Tree, LeafNode
+from bartpy.tree import Tree, LeafNode, deep_copy_tree
 from bartpy.split import Split
 
 
@@ -26,32 +26,37 @@ class Model:
             self.n_trees = len(trees)
             self._trees = trees
 
-        self._prediction = self.predict()
+        self._prediction = None
 
     def initialize_trees(self) -> List[Tree]:
         tree_data = deepcopy(self.data)
         tree_data._y = tree_data.y / self.n_trees
-        trees = [Tree([LeafNode(Split(self.data, []))]) for _ in range(self.n_trees)]
+        trees = [Tree([LeafNode(Split(self.data))]) for _ in range(self.n_trees)]
         return trees
 
-    def residuals(self) -> pd.Series:
+    def residuals(self) -> np.ndarray:
         return self.data.y - self.predict()
 
-    def residuals_without_tree(self, index: int) -> np.ndarray:
-        return self.data.y - self.prediction_without_tree(index)
+    def unnormalized_residuals(self) -> np.ndarray:
+        return self.data.unnormalized_y - self.data.unnormalize_y(self.predict())
 
-    def predict(self) -> np.ndarray:
+    def predict(self, X: np.ndarray=None) -> np.ndarray:
+        if X is not None:
+            return self._out_of_sample_predict(X)
         return np.sum([tree.predict() for tree in self.trees], axis=0)
 
-    def prediction_without_tree(self, index: int) -> np.ndarray:
-        return np.sum(np.array([tree.predict() for ii, tree in enumerate(self.trees) if ii != index]), axis=0)
+    def _out_of_sample_predict(self, X: np.ndarray):
+        if type(X) == pd.DataFrame:
+            X = X.values
+        return np.sum([tree.predict(X) for tree in self.trees], axis=0)
 
     @property
     def trees(self) -> List[Tree]:
         return self._trees
 
     def refreshed_trees(self) -> Generator[Tree, None, None]:
-
+        if self._prediction is None:
+            self._prediction = self.predict()
         for tree in self.trees:
             self._prediction -= tree.predict()
             tree.update_y(self.data.y - self._prediction)
@@ -67,12 +72,6 @@ class Model:
         return self._sigma
 
 
-if __name__ == "__main__":
-    data = Data(pd.DataFrame({"b": [1, 2, 3]}), pd.Series([1, 2, 3]), normalize=True)
-    sigma = Sigma(1., 2.)
-    model = Model(data, sigma)
-    full_prediction = model.predict()
-    tree_prediction = model.trees[1].predict(data)
-
-    for tree in model.refreshed_trees():
-        print(tree)
+def deep_copy_model(model: Model) -> Model:
+    copied_model = Model(None, deepcopy(model.sigma), [deep_copy_tree(tree) for tree in model.trees])
+    return copied_model
