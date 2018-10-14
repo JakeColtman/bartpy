@@ -1,7 +1,8 @@
+joblib
+matplotlib
 numpy
 pandas
-matplotlib
 scipy
 sklearn
-tqdm
 statsmodels
+tqdm
