@@ -2,10 +2,10 @@ from abc import ABC
 from typing import List, Optional
 from copy import deepcopy
 
-from bartpy.data import Data
-
 import pandas as pd
 import numpy as np
+
+from bartpy.data import Data
 
 
 def fancy_bool(x, bool_mask):
