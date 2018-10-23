@@ -1,5 +1,6 @@
 from typing import List
 
+from joblib import Parallel, delayed
 import numpy as np
 import pandas as pd
 from sklearn.base import RegressorMixin, BaseEstimator
@@ -24,6 +25,9 @@ class SklearnModel(BaseEstimator, RegressorMixin):
     ----------
     n_trees: int
         the number of trees to use, more trees will make a smoother fit, but slow training and fitting
+    n_chains: int
+        the number of independent chains to run
+        more chains will improve the quality of the samples, but will require more computation
     sigma_a: float
         shape parameter of the prior on sigma
     sigma_b: float
@@ -46,10 +50,13 @@ class SklearnModel(BaseEstimator, RegressorMixin):
     store_in_sample_predictions: bool
         whether to store full prediction samples
         set to False if you don't need in sample results - saves a lot of memory
+    n_jobs: int
+        how many cores to use when computing MCMC samples
     """
 
     def __init__(self,
                  n_trees: int=50,
+                 n_chains: int=4,
                  sigma_a: float=0.001,
                  sigma_b: float=0.001,
                  n_samples: int=200,
@@ -59,8 +66,10 @@ class SklearnModel(BaseEstimator, RegressorMixin):
                  p_prune: float=0.5,
                  alpha: float=0.95,
                  beta: float=2.,
-                 store_in_sample_predictions: bool=True):
+                 store_in_sample_predictions: bool=True,
+                 n_jobs=4):
         self.n_trees = n_trees
+        self.n_chains = n_chains
         self.sigma_a = sigma_a
         self.sigma_b = sigma_b
         self.n_burn = n_burn
@@ -70,6 +79,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.alpha = alpha
         self.beta = beta
         self.thin = thin
+        self.n_jobs = n_jobs
         self.store_in_sample_predictions = store_in_sample_predictions
         self.sigma, self.data, self.model, self.proposer, self.likihood_ratio, self.sampler, self._prediction_samples, self._model_samples, self.schedule = [None] * 9
 
@@ -101,7 +111,15 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.tree_sampler = TreeMutationSampler(self.proposer, self.likihood_ratio)
         self.schedule = SampleSchedule(self.tree_sampler, LeafNodeSampler(), SigmaSampler())
         self.sampler = ModelSampler(self.schedule)
-        self._model_samples, self._prediction_samples = self.sampler.samples(self.model, self.n_samples, self.n_burn, thin=self.thin, store_in_sample_predictions=self.store_in_sample_predictions)
+
+        def sample_thread(sampler, model, n_samples, n_burn, thin, store_in_sample_predictions):
+            return Parallel(n_jobs=self.n_jobs)(delayed(sampler.samples)(model, n_samples, n_burn, thin, store_in_sample_predictions) for x in range(self.n_chains))
+        self.extract = sample_thread(self.sampler, self.model, self.n_samples, self.n_burn, thin = self.thin, store_in_sample_predictions = self.store_in_sample_predictions)
+
+        self._model_samples, self._prediction_samples = self.extract[0]
+        for x in self.extract[1:]:
+            self._model_samples += x[0]
+            self._prediction_samples = np.concatenate([self._prediction_samples, x[1]], axis=0)
         return self
 
     def predict(self, X: np.ndarray=None):
