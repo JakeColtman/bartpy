@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 from bartpy.sklearnmodel import SklearnModel
 from bartpy.diagnostics.trees import plot_tree_depth
 from bartpy.diagnostics.features import plot_feature_split_proportions
+from bartpy.diagnostics.residuals import plot_qq
 
 
 def run(alpha, beta, n_trees):
@@ -19,6 +20,7 @@ def run(alpha, beta, n_trees):
     plt.show()
     plot_tree_depth(model.model_samples)
     plot_feature_split_proportions(model.model_samples)
+    plot_qq(model)
     return model, x, y
 
 
