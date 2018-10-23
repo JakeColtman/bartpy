@@ -1,5 +1,6 @@
 from typing import List
 
+from joblib import Parallel, delayed
 import numpy as np
 import pandas as pd
 from sklearn.base import RegressorMixin, BaseEstimator
@@ -110,7 +111,6 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.tree_sampler = TreeMutationSampler(self.proposer, self.likihood_ratio)
         self.schedule = SampleSchedule(self.tree_sampler, LeafNodeSampler(), SigmaSampler())
         self.sampler = ModelSampler(self.schedule)
-        from joblib import Parallel, delayed
 
         def sample_thread(sampler, model, n_samples, n_burn, thin, store_in_sample_predictions):
             return Parallel(n_jobs=self.n_jobs)(delayed(sampler.samples)(model, n_samples, n_burn, thin, store_in_sample_predictions) for x in range(self.n_chains))
