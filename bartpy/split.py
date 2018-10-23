@@ -62,6 +62,10 @@ class CombinedCondition:
         self.variables = {v: CombinedVariableCondition(v, -np.inf, np.inf) for v in variables}
         for condition in conditions:
             self.variables[condition.splitting_variable] = self.variables[condition.splitting_variable].add_condition(condition)
+        if len(conditions) > 0:
+            self.splitting_variable = conditions[-1].splitting_variable
+        else:
+            self.splitting_variable = None
 
     def condition(self, X: np.ndarray):
         c = np.array([True] * len(X))
