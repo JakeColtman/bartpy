@@ -24,6 +24,9 @@ class SklearnModel(BaseEstimator, RegressorMixin):
     ----------
     n_trees: int
         the number of trees to use, more trees will make a smoother fit, but slow training and fitting
+    n_chains: int
+        the number of independent chains to run
+        more chains will improve the quality of the samples, but will require more computation
     sigma_a: float
         shape parameter of the prior on sigma
     sigma_b: float
@@ -46,6 +49,8 @@ class SklearnModel(BaseEstimator, RegressorMixin):
     store_in_sample_predictions: bool
         whether to store full prediction samples
         set to False if you don't need in sample results - saves a lot of memory
+    n_jobs: int
+        how many cores to use when computing MCMC samples
     """
 
     def __init__(self,
