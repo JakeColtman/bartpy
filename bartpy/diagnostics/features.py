@@ -93,3 +93,29 @@ def global_thresholds(null_distributions: ImportanceDistributionMap, percentile:
         q_s.append(np.max(row))
     threshold = np.percentile(q_s, percentile)
     return {feature: threshold for feature in null_distributions}
+
+
+def partition_into_passed_and_failed_features(feature_proportions, thresholds):
+    passed_features, failed_features = {}, {}
+    for feature in feature_proportions:
+        if feature_proportions[feature] > thresholds[feature]:
+            passed_features[feature] = feature_proportions[feature]
+        else:
+            failed_features[feature] = feature_proportions[feature]
+
+    return passed_features, failed_features
+
+
+def plot_feature_proportions_against_thresholds(feature_proportions, thresholds):
+    passed_features, failed_features = partition_into_passed_and_failed_features(feature_proportions, thresholds)
+
+    plt.bar(thresholds.keys(), [x * 100 for x in thresholds.values()], width=0.01, color="black", alpha=0.5)
+    plt.scatter(passed_features.keys(), [x * 100 for x in passed_features.values()], c="g")
+    plt.scatter(failed_features.keys(), [x * 100 for x in failed_features.values()], c="r")
+    plt.title("Feature Importance Compared to Threshold")
+    plt.xlabel("Feature")
+    plt.ylabel("% Splits")
+
+
+
+
