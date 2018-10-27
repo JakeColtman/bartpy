@@ -4,9 +4,13 @@ from typing import List, Mapping, Tuple, Union
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 
 from bartpy.model import Model
 from bartpy.sklearnmodel import SklearnModel
+
+ImportanceMap = Mapping[str, float]
+ImportanceDistributionMap = Mapping[str, List[float]]
 
 
 def feature_split_proportions_counter(model_samples: List[Model]) -> Mapping[int, float]:
@@ -68,3 +72,24 @@ def null_feature_split_proportions_distribution(model: SklearnModel,
             inclusion_dict[key].append(value)
 
     return inclusion_dict
+
+
+def plot_null_feature_importance_distributions(null_distributions: Mapping[str, List[float]]) -> None:
+    df = pd.DataFrame(null_distributions)
+    df = pd.DataFrame(df.unstack()).reset_index().drop("level_1", axis=1)
+    df.columns = ["variable", "p"]
+    ax = sns.boxplot(x="variable", y="p", data=df)
+    ax.set_title("Null Feature Importance Distribution")
+    
+
+def local_thresholds(null_distributions: ImportanceDistributionMap, percentile: float) -> Mapping[str, float]:
+    return {feature: np.percentile(null_distributions[feature], percentile) for feature in null_distributions}
+
+
+def global_thresholds(null_distributions: ImportanceDistributionMap, percentile: float) -> Mapping[str, float]:
+    q_s = []
+    df = pd.DataFrame(null_distributions)
+    for row in df.iter_rows():
+        q_s.append(np.max(row))
+    threshold = np.percentile(q_s, percentile)
+    return {feature: threshold for feature in null_distributions}
