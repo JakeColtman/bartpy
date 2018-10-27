@@ -7,6 +7,24 @@ from bartpy.diagnostics.features import null_feature_split_proportions_distribut
 from bartpy.sklearnmodel import SklearnModel
 
 
+class SelectSplitProportionThreshold(BaseEstimator, SelectorMixin):
+
+    def __init__(self,
+                 model: SklearnModel,
+                 percentile: float=0.2):
+        self.model = model
+        self.percentile = percentile
+
+    def fit(self, X, y):
+        self.model.fit(X, y)
+        self.X, self.y = X, y
+        self.feature_proportions = feature_split_proportions_counter(self.model.model_samples)
+        return self
+
+    def _get_support_mask(self):
+        return np.array([proportion > self.percentile for proportion in self.feature_proportions.values()])
+
+
 class SelectNullDistributionThreshold(BaseEstimator, SelectorMixin):
 
     def __init__(self,
