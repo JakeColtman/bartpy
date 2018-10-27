@@ -1,14 +1,15 @@
 from collections import Counter
-from typing import Mapping, List, Tuple
+from typing import List, Mapping, Tuple, Union
 
 from matplotlib import pyplot as plt
 import numpy as np
+import pandas as pd
 
 from bartpy.model import Model
 from bartpy.sklearnmodel import SklearnModel
 
 
-def feature_split_proportions_counter(model_samples: List[Model]) -> Tuple[int, Counter]:
+def feature_split_proportions_counter(model_samples: List[Model]) -> Mapping[int, float]:
 
     split_variables = []
     for sample in model_samples:
@@ -16,15 +17,14 @@ def feature_split_proportions_counter(model_samples: List[Model]) -> Tuple[int, 
             for node in tree.nodes:
                 splitting_var = node.split.splitting_variable
                 split_variables.append(splitting_var)
-    return len(split_variables), Counter(split_variables)
+    return {x[0]: x[1] / len(split_variables) for x in Counter(split_variables).items() if x[0] is not None}
 
 
 def plot_feature_split_proportions(model_samples: List[Model]):
-    total_count, counts = feature_split_proportions_counter(model_samples)
+    proportions = feature_split_proportions_counter(model_samples)
 
-    y_pos = np.arange(len(counts))
-    name = counts.keys()
-    count = [x / total_count for x in counts.values()]
+    y_pos = np.arange(len(proportions))
+    name, count = proportions.keys(), proportions.values()
 
     plt.barh(y_pos, count, align='center', alpha=0.5)
     plt.yticks(y_pos, name)
@@ -33,7 +33,7 @@ def plot_feature_split_proportions(model_samples: List[Model]):
 
 
 def null_feature_split_proportions_distribution(model: SklearnModel,
-                                                X: np.ndarray,
+                                                X: Union[pd.DataFrame, np.ndarray],
                                                 y: np.ndarray,
                                                 n_permutations: int=10) -> Mapping[int, List[float]]:
     """
@@ -63,8 +63,8 @@ def null_feature_split_proportions_distribution(model: SklearnModel,
     for _ in range(n_permutations):
         y_perm = np.random.permutation(y)
         model.fit(X, y_perm)
-        splits_perm = feature_split_proportions_counter(model)
-        for key, value in splits_perm:
+        splits_perm = feature_split_proportions_counter(model.model_samples)
+        for key, value in splits_perm.items():
             inclusion_dict[key].append(value)
 
     return inclusion_dict

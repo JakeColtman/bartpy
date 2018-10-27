@@ -6,7 +6,7 @@ from bartpy.sklearnmodel import SklearnModel
 from bartpy.diagnostics.trees import plot_tree_depth
 from bartpy.diagnostics.features import plot_feature_split_proportions
 from bartpy.diagnostics.residuals import plot_qq
-
+from bartpy.diagnostics.features import null_feature_split_proportions_distribution
 
 def run(alpha, beta, n_trees):
     x = np.linspace(0, 5, 3000)
@@ -21,6 +21,8 @@ def run(alpha, beta, n_trees):
     plot_tree_depth(model.model_samples)
     plot_feature_split_proportions(model.model_samples)
     plot_qq(model)
+    #null_distr = null_feature_split_proportions_distribution(model, X, y)
+    #print(null_distr)
     return model, x, y
 
 
