@@ -81,6 +81,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.thin = thin
         self.n_jobs = n_jobs
         self.store_in_sample_predictions = store_in_sample_predictions
+        self.columns = None
         self.sigma, self.data, self.model, self.proposer, self.likihood_ratio, self.sampler, self._prediction_samples, self._model_samples, self.schedule = [None] * 9
 
     def fit(self, X: Union[pd.DataFrame, np.ndarray], y: np.ndarray) -> 'SklearnModel':
@@ -101,7 +102,10 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         """
         from copy import deepcopy
         if type(X) == pd.DataFrame:
+            self.columns = X.columns
             X = X.values
+        else:
+            self.columns = list(map(str, range(X.shape[1])))
 
         self.data = Data(deepcopy(X), deepcopy(y), normalize=True)
         self.sigma = Sigma(self.sigma_a, self.sigma_b, self.data.normalizing_scale)
