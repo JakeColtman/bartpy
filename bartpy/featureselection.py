@@ -30,7 +30,8 @@ class SelectNullDistributionThreshold(BaseEstimator, SelectorMixin):
     def __init__(self,
                  model: SklearnModel,
                  percentile: float=0.95,
-                 method="local"):
+                 method="local",
+                 n_permutations=10):
         if method == "local":
             self.method = local_thresholds
         elif method == "global":
@@ -39,11 +40,12 @@ class SelectNullDistributionThreshold(BaseEstimator, SelectorMixin):
             raise NotImplementedError("Currently only local and global methods are supported, found {}".format(self.method))
         self.model = model
         self.percentile = percentile
+        self.n_permutations = n_permutations
 
     def fit(self, X, y):
         self.model.fit(X, y)
         self.X, self.y = X, y
-        self.null_distribution = null_feature_split_proportions_distribution(self.model, X, y)
+        self.null_distribution = null_feature_split_proportions_distribution(self.model, X, y, self.n_permutations)
         self.thresholds = local_thresholds(self.null_distribution, self.percentile)
         self.feature_proportions = feature_split_proportions_counter(self.model.model_samples)
         return self
