@@ -28,11 +28,13 @@ def plot_feature_split_proportions(model_samples: List[Model]):
     proportions = feature_split_proportions_counter(model_samples)
 
     y_pos = np.arange(len(proportions))
-    name, count = proportions.keys(), proportions.values()
+    name, count = list(proportions.keys()), list(proportions.values())
 
     plt.barh(y_pos, count, align='center', alpha=0.5)
     plt.yticks(y_pos, name)
     plt.xlabel('Proportion of all splits')
+    plt.ylabel('Feature')
+    plt.title('Proportion of Splits Made on Each Variable')
     plt.show()
 
 
@@ -95,14 +97,18 @@ def global_thresholds(null_distributions: ImportanceDistributionMap, percentile:
     return {feature: threshold for feature in null_distributions}
 
 
-def partition_into_passed_and_failed_features(feature_proportions, thresholds):
-    passed_features, failed_features = {}, {}
+def kept_features(feature_proportions, thresholds):
+    kept_features = []
     for feature in feature_proportions:
         if feature_proportions[feature] > thresholds[feature]:
-            passed_features[feature] = feature_proportions[feature]
-        else:
-            failed_features[feature] = feature_proportions[feature]
+            kept_features.append(feature)
+    return kept_features
 
+
+def partition_into_passed_and_failed_features(feature_proportions, thresholds):
+    kept = kept_features(feature_proportions, thresholds)
+    passed_features = {x[0]: x[1] for x in feature_proportions.items() if x[0] in kept}
+    failed_features = {x[0]: x[1] for x in feature_proportions.items() if x[0] not in kept}
     return passed_features, failed_features
 
 
