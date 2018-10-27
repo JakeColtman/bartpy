@@ -1,4 +1,4 @@
-from typing import List
+from typing import Union, List
 
 from joblib import Parallel, delayed
 import numpy as np
@@ -83,7 +83,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.store_in_sample_predictions = store_in_sample_predictions
         self.sigma, self.data, self.model, self.proposer, self.likihood_ratio, self.sampler, self._prediction_samples, self._model_samples, self.schedule = [None] * 9
 
-    def fit(self, X: pd.DataFrame, y: np.ndarray) -> 'SklearnModel':
+    def fit(self, X: Union[pd.DataFrame, np.ndarray], y: np.ndarray) -> 'SklearnModel':
         """
         Learn the model based on training data
 
