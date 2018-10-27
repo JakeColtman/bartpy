@@ -105,6 +105,10 @@ def kept_features(feature_proportions, thresholds):
     return kept_features
 
 
+def is_kept(feature_proportions, thresholds):
+    return [feature_proportions[feature] > thresholds[feature] for feature in feature_proportions]
+
+
 def partition_into_passed_and_failed_features(feature_proportions, thresholds):
     kept = kept_features(feature_proportions, thresholds)
     passed_features = {x[0]: x[1] for x in feature_proportions.items() if x[0] in kept}
