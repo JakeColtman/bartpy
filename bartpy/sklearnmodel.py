@@ -216,6 +216,23 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         return self.prediction_samples
 
     def from_extract(self, extract, X, y) -> 'SklearnModel':
+        """
+        Create a copy of the model using an extract
+        Useful for doing operations on extracts created in external processes like feature selection
+        Parameters
+        ----------
+        extract
+            samples produced by delayed chain methods
+        X: np.ndarray
+            Covariate matrix
+        y: np.ndarray
+            Target variable
+
+        Returns
+        -------
+        SklearnModel
+            Copy of the current model with samples
+        """
         new_model = deepcopy(self)
         new_model._model_samples, new_model._prediction_samples = self._combine_chains(extract)
         new_model.data = self._convert_covariates_to_data(X, y)
