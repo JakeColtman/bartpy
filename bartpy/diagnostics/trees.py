@@ -13,7 +13,6 @@ def plot_tree_depth(model_samples: List[Model], ax=None):
     for sample in model_samples:
         model_depths = []
         for tree in sample.trees:
-            print(tree.nodes[0].depth)
             model_depths += [x.depth for x in tree.nodes]
         min_depth.append(np.min(model_depths))
         mean_depth.append(np.mean(model_depths))
