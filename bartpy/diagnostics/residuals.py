@@ -7,6 +7,6 @@ from bartpy.sklearnmodel import SklearnModel
 def plot_qq(model: SklearnModel, ax=None) -> None:
     if ax is None:
         fig, ax = plt.subplots(1, 1)
-    residuals = model.residuals()
+    residuals = model.residuals(model.data.X)
     sm.qqplot(residuals, fit=True, line="45", ax=ax)
-    plt.show()
+    ax.set_title("QQ plot")
