@@ -1,6 +1,7 @@
 from copy import deepcopy
 from typing import List, Mapping, Union, Tuple
 
+from joblib import Parallel
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
@@ -60,13 +61,18 @@ def null_rmse_distribution(model: SklearnModel,
 
     null_rmses = []
 
-    for _ in range(n_permutations):
-        for train_index, test_index in kf.split(X):
+    for train_index, test_index in kf.split(X):
+        delayed_chains = []
+        for _ in range(n_permutations):
             permuted_model = deepcopy(model)
             permuted_X = deepcopy(X)
             permuted_X[:, variable] = np.random.permutation(permuted_X[:, variable])
-            permuted_model.fit(permuted_X[train_index], y[train_index])
-            null_rmses.append(permuted_model.rmse(permuted_X[test_index], y[test_index]))
+            delayed_chains += permuted_model.delayed_chains(permuted_X[train_index], y[train_index])
+
+            combined_extracts = Parallel(model.n_jobs)(delayed_chains)
+            for extract in combined_extracts:
+                extracted_model = model.from_extract(extract)
+                null_rmses.append(extracted_model.rmse(permuted_X[test_index], y[test_index]))
 
     return null_rmses
 

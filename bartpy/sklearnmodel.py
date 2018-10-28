@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import Union, List
 
 from joblib import Parallel, delayed
@@ -213,3 +214,9 @@ class SklearnModel(BaseEstimator, RegressorMixin):
             prediction samples with dimensionality n_samples * n_points
         """
         return self.prediction_samples
+
+    def from_extract(self, extract, X, y) -> 'SklearnModel':
+        new_model = deepcopy(self)
+        new_model._model_samples, new_model._prediction_samples = self._combine_chains(extract)
+        new_model.data = self._convert_covariates_to_data(X, y)
+        return new_model

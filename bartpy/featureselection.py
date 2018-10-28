@@ -28,7 +28,6 @@ class SelectSplitProportionThreshold(BaseEstimator, SelectorMixin):
     def _get_support_mask(self):
         return np.array([proportion > self.percentile for proportion in self.feature_proportions.values()])
 
-
     def plot(self):
         plot_feature_split_proportions(self.model.model_samples)
 

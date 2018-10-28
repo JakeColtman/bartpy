@@ -6,7 +6,9 @@ import numpy as np
 from bartpy.model import Model
 
 
-def plot_tree_depth(model_samples: List[Model]):
+def plot_tree_depth(model_samples: List[Model], ax=None):
+    if ax is None:
+        fig, ax = plt.subplots(1, 1)
     min_depth, mean_depth, max_depth = [], [], []
     for sample in model_samples:
         model_depths = []
@@ -17,7 +19,7 @@ def plot_tree_depth(model_samples: List[Model]):
         mean_depth.append(np.mean(model_depths))
         max_depth.append(np.max(model_depths))
 
-    plt.plot(min_depth)
-    plt.plot(mean_depth)
-    plt.plot(max_depth)
+    ax.plot(min_depth)
+    ax.plot(mean_depth)
+    ax.plot(max_depth)
     plt.show()
