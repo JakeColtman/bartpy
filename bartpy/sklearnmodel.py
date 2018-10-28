@@ -161,8 +161,10 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         np.ndarray
             predictions for the X covariates
         """
-        if X is None:
+        if X is None and self.store_in_sample_predictions:
             return self.data.unnormalize_y(self._prediction_samples.mean(axis=0))
+        elif X is None and not self.store_in_sample_predictions:
+            raise ValueError("In sample predictions only possible if model.store_in_sample_predictions is `True`.")
         else:
             return self._out_of_sample_predict(X)
 
@@ -183,7 +185,10 @@ class SklearnModel(BaseEstimator, RegressorMixin):
 
     def fit_predict(self, X, y):
         self.fit(X, y)
-        return self.predict()
+        if self.store_in_sample_predictions:
+            return self.predict()
+        else:
+            return self.predict(X)
 
     @property
     def model_samples(self) -> List[Model]:
