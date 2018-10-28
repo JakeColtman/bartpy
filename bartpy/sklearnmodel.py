@@ -165,11 +165,17 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         else:
             return self._out_of_sample_predict(X)
 
-    def residuals(self, X=None):
-        return self.model.data.unnormalized_y - self.predict(X)
+    def residuals(self, X=None, y=None) -> np.ndarray:
+        if y is None:
+            return self.model.data.unnormalized_y - self.predict(X)
+        else:
+            return y - self.predict(X)
 
-    def l2_error(self, X=None):
-        return np.square(self.residuals(X))
+    def l2_error(self, X=None, y=None) -> np.ndarray:
+        return np.square(self.residuals(X, y))
+
+    def rmse(self, X, y) -> float:
+        return np.sqrt(np.sum(self.l2_error(X, y)))
 
     def _out_of_sample_predict(self, X):
         return self.data.unnormalize_y(np.mean([x.predict(X) for x in self._model_samples], axis=0))
