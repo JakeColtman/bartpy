@@ -99,11 +99,11 @@ def plot_null_feature_importance_distributions(null_distributions: Mapping[str, 
     ax.set_title("Null Feature Importance Distribution")
     
 
-def local_thresholds(null_distributions: ImportanceDistributionMap, percentile: float) -> Mapping[str, float]:
+def local_thresholds(null_distributions: ImportanceDistributionMap, percentile: float) -> Mapping[int, float]:
     return {feature: np.percentile(null_distributions[feature], percentile) for feature in null_distributions}
 
 
-def global_thresholds(null_distributions: ImportanceDistributionMap, percentile: float) -> Mapping[str, float]:
+def global_thresholds(null_distributions: ImportanceDistributionMap, percentile: float) -> Mapping[int, float]:
     q_s = []
     df = pd.DataFrame(null_distributions)
     for row in df.iter_rows():
