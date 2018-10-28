@@ -1,10 +1,13 @@
+from copy import deepcopy
+
 from matplotlib import pyplot as plt
 import numpy as np
 from sklearn.feature_selection.base import SelectorMixin
 from sklearn.base import BaseEstimator
 
 from bartpy.diagnostics.features import null_feature_split_proportions_distribution, \
-    local_thresholds, global_thresholds, is_kept, feature_split_proportions_counter, plot_feature_proportions_against_thresholds, plot_null_feature_importance_distributions
+    local_thresholds, global_thresholds, is_kept, feature_split_proportions_counter, plot_feature_proportions_against_thresholds, plot_null_feature_importance_distributions, \
+    plot_feature_split_proportions
 from bartpy.sklearnmodel import SklearnModel
 
 
@@ -13,7 +16,7 @@ class SelectSplitProportionThreshold(BaseEstimator, SelectorMixin):
     def __init__(self,
                  model: SklearnModel,
                  percentile: float=0.2):
-        self.model = model
+        self.model = deepcopy(model)
         self.percentile = percentile
 
     def fit(self, X, y):
@@ -24,6 +27,10 @@ class SelectSplitProportionThreshold(BaseEstimator, SelectorMixin):
 
     def _get_support_mask(self):
         return np.array([proportion > self.percentile for proportion in self.feature_proportions.values()])
+
+
+    def plot(self):
+        plot_feature_split_proportions(self.model.model_samples)
 
 
 class SelectNullDistributionThreshold(BaseEstimator, SelectorMixin):
@@ -39,7 +46,7 @@ class SelectNullDistributionThreshold(BaseEstimator, SelectorMixin):
             self.method = global_thresholds
         else:
             raise NotImplementedError("Currently only local and global methods are supported, found {}".format(self.method))
-        self.model = model
+        self.model = deepcopy(model)
         self.percentile = percentile
         self.n_permutations = n_permutations
 
