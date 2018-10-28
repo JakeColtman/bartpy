@@ -107,10 +107,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         SklearnModel
             self with trained parameter values
         """
-        self.model = self._construct_model(X, y)
-        def sample_thread(sampler, model, n_samples, n_burn, thin, store_in_sample_predictions):
-            return Parallel(n_jobs=self.n_jobs)(delayed(sampler.samples)(model, n_samples, n_burn, thin, store_in_sample_predictions) for x in range(self.n_chains))
-        self.extract = sample_thread(self.sampler, self.model, self.n_samples, self.n_burn, thin=self.thin, store_in_sample_predictions=self.store_in_sample_predictions)
+        self.extract = Parallel(n_jobs=self.n_jobs)(self.delayed_chains(X, y))
         self._model_samples, self._prediction_samples = self._combine_chains(self.extract)
         return self
 
