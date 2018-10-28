@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import List, Mapping, Union, Tuple
+from typing import List, Tuple, Union
 
 from joblib import Parallel
 from matplotlib import pyplot as plt
@@ -14,7 +14,22 @@ def original_model_rmse(model: SklearnModel,
                         X: Union[pd.DataFrame, np.ndarray],
                         y: np.ndarray,
                         n_k_fold_splits: int) -> List[float]:
+    """
+    Calculate the RMSE of the original model
+    Used as a benchmark to compare against the null
 
+    Parameters
+    ----------
+    model: SklearnModel
+    X: np.ndarray
+    y: np.ndarray
+    n_k_fold_splits: int
+
+    Returns
+    -------
+    List[float]
+        List of the out of sample RMSEs for each fold of the covariate matrix
+    """
     kf = KFold(n_k_fold_splits, shuffle=True)
 
     base_line_rmses = []
@@ -38,6 +53,8 @@ def null_rmse_distribution(model: SklearnModel,
 
     Works by randomly permuting y to remove any true dependence of y on X and calculating feature importance
 
+    RMSEs are calculated on out of sample data
+
     Parameters
     ----------
     model: SklearnModel
@@ -47,14 +64,16 @@ def null_rmse_distribution(model: SklearnModel,
     y: np.ndarray
         Target data
     variable: int
-        Which column of the covariate matrix to scramble
+        Which column of the covariate matrix to permute
+    n_k_fold_splits: int
+        How many K-fold splits to make of the data
     n_permutations: int
         How many permutations to run
         The higher the number of permutations, the more accurate the null distribution, but the longer it will take to run
     Returns
     -------
-    Mapping[int, List[float]]
-        A list of inclusion proportions for each variable in X
+    List[float]
+        A list of predict set RMSEs - one entry for each fold of each permutation
     """
 
     kf = KFold(n_k_fold_splits, shuffle=True)
@@ -83,6 +102,32 @@ def feature_importance(model: SklearnModel,
                        variable: int,
                        n_k_fold_splits: int=2,
                        n_permutations: int=10) -> Tuple[List[float], List[float]]:
+    """
+    Assess the importance to the RMSE of a single column of the covariate matrix
+
+    Parameters
+    ----------
+    model: SklearnModel
+        An instance of the model with the parameters to train with
+        The model instance itself doesn't have to be trained
+    X: np.ndarray
+        Covariate matrix
+    y: np.ndarray
+        Target array
+    variable: int
+        Which column of the covariate matrix to assess
+    n_k_fold_splits: int
+        How many folds to take of the covariate matrix
+    n_permutations: int
+        How many runs of the model to make when generating the null distribution
+        The more permutations, the better the approximation to the true null, but the more computation will be required
+
+    Returns
+    -------
+    Tuple[List[float], List[float]]
+        First entry is a List of the RMSEs of the original model
+        Second entry is a list of RMSEs of the null distribution
+    """
     original_model = original_model_rmse(model, X, y, n_k_fold_splits)
     null_distribution = null_rmse_distribution(model, X, y, variable, n_k_fold_splits, n_permutations)
 
