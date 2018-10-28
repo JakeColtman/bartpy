@@ -82,7 +82,14 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.n_jobs = n_jobs
         self.store_in_sample_predictions = store_in_sample_predictions
         self.columns = None
-        self.sigma, self.data, self.model, self.proposer, self.likihood_ratio, self.sampler, self._prediction_samples, self._model_samples, self.schedule = [None] * 9
+
+        self.proposer = UniformMutationProposer([self.p_grow, self.p_prune])
+        self.likihood_ratio = UniformTreeMutationLikihoodRatio([self.p_grow, self.p_prune])
+        self.tree_sampler = TreeMutationSampler(self.proposer, self.likihood_ratio)
+        self.schedule = SampleSchedule(self.tree_sampler, LeafNodeSampler(), SigmaSampler())
+        self.sampler = ModelSampler(self.schedule)
+
+        self.sigma, self.data, self.model, self._prediction_samples, self._model_samples, self.extract = [None] * 6
 
     def fit(self, X: Union[pd.DataFrame, np.ndarray], y: np.ndarray) -> 'SklearnModel':
         """
@@ -100,6 +107,22 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         SklearnModel
             self with trained parameter values
         """
+        self.model = self._construct_model(X, y)
+        def sample_thread(sampler, model, n_samples, n_burn, thin, store_in_sample_predictions):
+            return Parallel(n_jobs=self.n_jobs)(delayed(sampler.samples)(model, n_samples, n_burn, thin, store_in_sample_predictions) for x in range(self.n_chains))
+        self.extract = sample_thread(self.sampler, self.model, self.n_samples, self.n_burn, thin=self.thin, store_in_sample_predictions=self.store_in_sample_predictions)
+        self._model_samples, self._prediction_samples = self._combine_chains(self.extract)
+        return self
+
+    @staticmethod
+    def _combine_chains(extract):
+        model_samples, prediction_samples = extract[0]
+        for x in extract[1:]:
+            model_samples += x[0]
+            prediction_samples = np.concatenate([prediction_samples, x[1]], axis=0)
+        return model_samples, prediction_samples
+
+    def _convert_covariates_to_data(self, X: Union[np.ndarray, pd.DataFrame], y: np.ndarray) -> Data:
         from copy import deepcopy
         if type(X) == pd.DataFrame:
             self.columns = X.columns
@@ -107,24 +130,21 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         else:
             self.columns = list(map(str, range(X.shape[1])))
 
-        self.data = Data(deepcopy(X), deepcopy(y), normalize=True)
+        return Data(deepcopy(X), deepcopy(y), normalize=True)
+
+    def _construct_model(self, X: Union[np.ndarray, pd.DataFrame], y: np.ndarray) -> Model:
+        self.data = self._convert_covariates_to_data(X, y)
         self.sigma = Sigma(self.sigma_a, self.sigma_b, self.data.normalizing_scale)
         self.model = Model(self.data, self.sigma, n_trees=self.n_trees, alpha=self.alpha, beta=self.beta)
-        self.proposer = UniformMutationProposer([self.p_grow, self.p_prune])
-        self.likihood_ratio = UniformTreeMutationLikihoodRatio([self.p_grow, self.p_prune])
-        self.tree_sampler = TreeMutationSampler(self.proposer, self.likihood_ratio)
-        self.schedule = SampleSchedule(self.tree_sampler, LeafNodeSampler(), SigmaSampler())
-        self.sampler = ModelSampler(self.schedule)
+        return self.model
 
-        def sample_thread(sampler, model, n_samples, n_burn, thin, store_in_sample_predictions):
-            return Parallel(n_jobs=self.n_jobs)(delayed(sampler.samples)(model, n_samples, n_burn, thin, store_in_sample_predictions) for x in range(self.n_chains))
-        self.extract = sample_thread(self.sampler, self.model, self.n_samples, self.n_burn, thin = self.thin, store_in_sample_predictions = self.store_in_sample_predictions)
-
-        self._model_samples, self._prediction_samples = self.extract[0]
-        for x in self.extract[1:]:
-            self._model_samples += x[0]
-            self._prediction_samples = np.concatenate([self._prediction_samples, x[1]], axis=0)
-        return self
+    def delayed_chains(self, X: Union[np.ndarray, pd.DataFrame], y: np.ndarray):
+        self.model = self._construct_model(X, y)
+        return [delayed(self.sampler.samples)(self.model,
+                                              self.n_samples,
+                                              self.n_burn,
+                                              self.thin,
+                                              self.store_in_sample_predictions) for x in range(self.n_chains)]
 
     def predict(self, X: np.ndarray=None):
         """

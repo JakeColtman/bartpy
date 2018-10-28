@@ -1,6 +1,9 @@
 from collections import Counter
-from typing import List, Mapping, Tuple, Union
+import itertools
+from copy import deepcopy
+from typing import List, Mapping, Union
 
+from joblib import Parallel
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
@@ -66,11 +69,21 @@ def null_feature_split_proportions_distribution(model: SklearnModel,
 
     inclusion_dict = {x: [] for x in range(X.shape[1])}
 
+    delayed_chains = []
     for _ in range(n_permutations):
+        permuted_model = deepcopy(model)
         y_perm = np.random.permutation(y)
-        model.fit(X, y_perm)
-        splits_perm = feature_split_proportions_counter(model.model_samples)
-        for key, value in splits_perm.items():
+        delayed_chains += permuted_model.delayed_chains(X, y_perm)
+
+    n_jobs = model.n_jobs
+    combined_samples = Parallel(n_jobs)(delayed_chains)
+    combined_model_samples = [x[0] for x in combined_samples]
+    flattened_model_samples = list(itertools.chain.from_iterable(combined_model_samples))
+    by_run_model_samples = np.array_split(flattened_model_samples, n_permutations)
+
+    for run_samples in by_run_model_samples:
+        splits_run = feature_split_proportions_counter(run_samples)
+        for key, value in splits_run.items():
             inclusion_dict[key].append(value)
 
     return inclusion_dict
