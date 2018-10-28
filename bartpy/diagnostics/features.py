@@ -100,10 +100,55 @@ def plot_null_feature_importance_distributions(null_distributions: Mapping[str, 
     
 
 def local_thresholds(null_distributions: ImportanceDistributionMap, percentile: float) -> Mapping[int, float]:
+    """
+    Calculate the required proportion of splits to be selected by variable
+
+    Creates a null distribution for each variable based on the % of splits including that variable in each of the permuted models
+
+    Each variable has its own threshold that is independent of the other variables
+
+    Note - this is significantly less stringent than the global threshold
+
+    Parameters
+    ----------
+    null_distributions: ImportanceDistributionMap
+        A mapping from variable to distribution of split inclusion proportions under the null
+    percentile: float
+        The percentile of the null distribution to use as a cutoff.
+        The closer to 1.0, the more stringent the threshold
+
+    Returns
+    -------
+    Mapping[int, float]
+        A lookup from column to % inclusion threshold
+    """
     return {feature: np.percentile(null_distributions[feature], percentile) for feature in null_distributions}
 
 
 def global_thresholds(null_distributions: ImportanceDistributionMap, percentile: float) -> Mapping[int, float]:
+    """
+    Calculate the required proportion of splits to be selected by variable
+
+    Creates a distribution of the _highest_ inclusion percentage of any variable in each of the permuted models
+    Threshold is set as a percentile of this distribution
+
+    All variables have the same threshold
+
+    Note that this is significantly more stringent than the local threshold
+
+    Parameters
+    ----------
+    null_distributions: ImportanceDistributionMap
+        A mapping from variable to distribution of split inclusion proportions under the null
+    percentile: float
+        The percentile of the null distribution to use as a cutoff.
+        The closer to 1.0, the more stringent the threshold
+
+    Returns
+    -------
+    Mapping[int, float]
+        A lookup from column to % inclusion threshold
+    """
     q_s = []
     df = pd.DataFrame(null_distributions)
     for row in df.iter_rows():
@@ -112,15 +157,42 @@ def global_thresholds(null_distributions: ImportanceDistributionMap, percentile:
     return {feature: threshold for feature in null_distributions}
 
 
-def kept_features(feature_proportions, thresholds):
-    kept_features = []
-    for feature in feature_proportions:
-        if feature_proportions[feature] > thresholds[feature]:
-            kept_features.append(feature)
-    return kept_features
+def kept_features(feature_proportions: Mapping[int, float], thresholds: Mapping[int, float])  -> List[int]:
+    """
+    Extract the features to keep
+
+    Parameters
+    ----------
+    feature_proportions: Mapping[int, float]
+        Lookup from variable to % of splits in the model that use that variable
+    thresholds:  Mapping[int, float]
+        Lookup from variable to required % of splits in the model to be kept
+
+    Returns
+    -------
+    List[int]
+        Variable selected for inclusion in the final model
+    """
+    return [x[0] for x in zip(feature_proportions.keys(), is_kept(feature_proportions, thresholds)) if x[1]]
 
 
-def is_kept(feature_proportions, thresholds):
+def is_kept(feature_proportions: Mapping[int, float], thresholds: Mapping[int, float]) -> List[bool]:
+    """
+    Determine whether each variable should be kept after selection
+
+    Parameters
+    ----------
+    feature_proportions: Mapping[int, float]
+        Lookup from variable to % of splits in the model that use that variable
+    thresholds:  Mapping[int, float]
+        Lookup from variable to required % of splits in the model to be kept
+
+    Returns
+    -------
+    List[bool]
+        An array of length equal to the width of the covariate matrix
+        True if the variable should be kept, False otherwise
+    """
     return [feature_proportions[feature] > thresholds[feature] for feature in feature_proportions]
 
 
