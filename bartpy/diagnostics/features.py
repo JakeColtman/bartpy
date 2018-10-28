@@ -89,11 +89,13 @@ def null_feature_split_proportions_distribution(model: SklearnModel,
     return inclusion_dict
 
 
-def plot_null_feature_importance_distributions(null_distributions: Mapping[str, List[float]]) -> None:
+def plot_null_feature_importance_distributions(null_distributions: Mapping[str, List[float]], ax=None) -> None:
+    if ax is None:
+        fig, ax = plt.subplots(1, 1)
     df = pd.DataFrame(null_distributions)
     df = pd.DataFrame(df.unstack()).reset_index().drop("level_1", axis=1)
     df.columns = ["variable", "p"]
-    ax = sns.boxplot(x="variable", y="p", data=df)
+    sns.boxplot(x="variable", y="p", data=df, ax=ax)
     ax.set_title("Null Feature Importance Distribution")
     
 
@@ -129,16 +131,14 @@ def partition_into_passed_and_failed_features(feature_proportions, thresholds):
     return passed_features, failed_features
 
 
-def plot_feature_proportions_against_thresholds(feature_proportions, thresholds):
+def plot_feature_proportions_against_thresholds(feature_proportions, thresholds, ax=None):
+    if ax is None:
+        fig, ax = plt.subplots(1, 1)
     passed_features, failed_features = partition_into_passed_and_failed_features(feature_proportions, thresholds)
 
-    plt.bar(thresholds.keys(), [x * 100 for x in thresholds.values()], width=0.01, color="black", alpha=0.5)
-    plt.scatter(passed_features.keys(), [x * 100 for x in passed_features.values()], c="g")
-    plt.scatter(failed_features.keys(), [x * 100 for x in failed_features.values()], c="r")
-    plt.title("Feature Importance Compared to Threshold")
-    plt.xlabel("Feature")
-    plt.ylabel("% Splits")
-
-
-
-
+    ax.bar(thresholds.keys(), [x * 100 for x in thresholds.values()], width=0.01, color="black", alpha=0.5)
+    ax.scatter(passed_features.keys(), [x * 100 for x in passed_features.values()], c="g")
+    ax.scatter(failed_features.keys(), [x * 100 for x in failed_features.values()], c="r")
+    ax.set_title("Feature Importance Compared to Threshold")
+    ax.set_xlabel("Feature")
+    ax.set_ylabel("% Splits")

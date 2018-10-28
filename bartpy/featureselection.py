@@ -1,9 +1,10 @@
+from matplotlib import pyplot as plt
 import numpy as np
 from sklearn.feature_selection.base import SelectorMixin
 from sklearn.base import BaseEstimator
 
 from bartpy.diagnostics.features import null_feature_split_proportions_distribution, \
-    local_thresholds, global_thresholds, is_kept, feature_split_proportions_counter
+    local_thresholds, global_thresholds, is_kept, feature_split_proportions_counter, plot_feature_proportions_against_thresholds, plot_null_feature_importance_distributions
 from bartpy.sklearnmodel import SklearnModel
 
 
@@ -52,3 +53,8 @@ class SelectNullDistributionThreshold(BaseEstimator, SelectorMixin):
 
     def _get_support_mask(self):
         return np.array(is_kept(self.feature_proportions, self.thresholds))
+
+    def plot(self):
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
+        plot_feature_proportions_against_thresholds(self.feature_proportions, self.thresholds, ax1)
+        plot_null_feature_importance_distributions(self.null_distribution, ax2)
