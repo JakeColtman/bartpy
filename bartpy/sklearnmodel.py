@@ -22,6 +22,10 @@ Extract = List[ChainExtract]
 
 
 def run_chain(model: 'SklearnModel', X: np.ndarray, y: np.ndarray):
+    """
+    Run a single chain for a model
+    Primarily used as a building block for constructing a parallel run of multiple chains
+    """
     model.model = model._construct_model(X, y)
     return model.sampler.samples(model.model,
                                  model.n_samples,
@@ -68,8 +72,13 @@ class SklearnModel(BaseEstimator, RegressorMixin):
     store_in_sample_predictions: bool
         whether to store full prediction samples
         set to False if you don't need in sample results - saves a lot of memory
+    store_acceptance_trace: bool
+        whether to store acceptance rates of the gibbs samples
+        unless you're very memory constrained, you wouldn't want to set this to false
+        useful for diagnostics
     n_jobs: int
         how many cores to use when computing MCMC samples
+        set to `-1` to use all cores
     """
 
     def __init__(self,
@@ -159,12 +168,28 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         return self.model
 
     def f_delayed_chains(self, X: np.ndarray, y: np.ndarray):
+        """
+        Access point for getting access to delayed methods for running chains
+        Useful for when you want to run multiple instances of the model in parallel
+        e.g. when calculating a null distribution for feature importance
+
+        Parameters
+        ----------
+        X: np.ndarray
+            Covariate matrix
+        y: np.ndarray
+            Target array
+
+        Returns
+        -------
+        List[Callable[None, ChainExtract]]
+        """
         return [delayed(x)(self, X, y) for x in self.f_chains()]
 
     def f_chains(self):
         return [delayed_run_chain() for _ in range(self.n_chains)]
 
-    def predict(self, X: np.ndarray=None):
+    def predict(self, X: np.ndarray=None) -> np.ndarray:
         """
         Predict the target corresponding to the provided covariate matrix
         If X is None, will predict based on training covariates
@@ -196,9 +221,39 @@ class SklearnModel(BaseEstimator, RegressorMixin):
             return y - self.predict(X)
 
     def l2_error(self, X=None, y=None) -> np.ndarray:
+        """
+        Calculate the squared errors for each row in the covariate matrix
+
+        Parameters
+        ----------
+        X: np.ndarray
+            Covariate matrix
+        y: np.ndarray
+            Target array
+        Returns
+        -------
+        np.ndarray
+            Squared error for each observation
+        """
         return np.square(self.residuals(X, y))
 
     def rmse(self, X, y) -> float:
+        """
+        The total RMSE error of the model
+        The sum of squared errors over all observations
+
+        Parameters
+        ----------
+        X: np.ndarray
+            Covariate matrix
+        y: np.ndarray
+            Target array
+
+        Returns
+        -------
+        float
+            The total summed L2 error for the model
+        """
         return np.sqrt(np.sum(self.l2_error(X, y)))
 
     def _out_of_sample_predict(self, X):
@@ -230,6 +285,15 @@ class SklearnModel(BaseEstimator, RegressorMixin):
 
     @property
     def acceptance_trace(self) -> List[Mapping[str, float]]:
+        """
+        List of Mappings from variable name to acceptance rates
+
+        Each entry is the acceptance rate of the variable in each iteration of the model
+
+        Returns
+        -------
+        List[Mapping[str, float]]
+        """
         return self._acceptance_trace
 
     @property
