@@ -12,7 +12,15 @@ from bartpy.split import Split
 
 class Model:
 
-    def __init__(self, data: Data, sigma: Sigma, trees=None, n_trees: int = 50, alpha: float=0.95, beta: int=2., k: int=2.):
+    def __init__(self,
+                 data: Data,
+                 sigma: Sigma,
+                 trees=None,
+                 n_trees: int = 50,
+                 alpha: float=0.95,
+                 beta: float=2.,
+                 k: int=2.):
+
         self.data = data
         self.alpha = float(alpha)
         self.beta = float(beta)

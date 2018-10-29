@@ -18,6 +18,10 @@ from bartpy.samplers.sigma import SigmaSampler
 from bartpy.samplers.leafnode import LeafNodeSampler
 
 
+ChainExtract = Tuple[List['Model'], np.ndarray]
+Extract = List[ChainExtract]
+
+
 class SklearnModel(BaseEstimator, RegressorMixin):
     """
     The main access point to building BART models in BartPy
@@ -108,12 +112,12 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         SklearnModel
             self with trained parameter values
         """
-        self.extract = Parallel(n_jobs=self.n_jobs)(self.delayed_chains(X, y))
+        self.extract = Parallel(n_jobs=self.n_jobs)(self.f_delayed_chains(X, y))
         self._model_samples, self._prediction_samples = self._combine_chains(self.extract)
         return self
 
     @staticmethod
-    def _combine_chains(extract):
+    def _combine_chains(extract: List[ChainExtract]) -> ChainExtract:
         model_samples, prediction_samples = extract[0]
         for x in extract[1:]:
             model_samples += x[0]
@@ -136,10 +140,10 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.model = Model(self.data, self.sigma, n_trees=self.n_trees, alpha=self.alpha, beta=self.beta)
         return self.model
 
-    def f_delayed_chains(self, X: Union[np.ndarray, pd.DataFrame], y: np.ndarray):
+    def f_delayed_chains(self, X: Union[np.ndarray, pd.DataFrame], y: np.ndarray) -> List[Callable[[np.ndarray, np.ndarray], ChainExtract]]:
         return [delayed(f)(X, y) for f in self.f_chains()]
 
-    def f_chains(self) -> List[Callable[[np.ndarray, np.ndarray], Tuple[List[Model], np.ndarray]]]:
+    def f_chains(self) -> List[Callable[[np.ndarray, np.ndarray], ChainExtract]]:
         def run_chain(X: np.ndarray, y: np.ndarray):
             self.model = self._construct_model(X, y)
             return self.sampler.samples(self.model,
@@ -214,7 +218,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         return self._model_samples
 
     @property
-    def prediction_samples(self):
+    def prediction_samples(self) -> np.ndarray:
         """
         Matrix of prediction samples at each point in sampling
         Useful for assessing convergence, calculating point estimates etc.
