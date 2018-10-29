@@ -1,16 +1,14 @@
-from typing import List
-
 from matplotlib import pyplot as plt
 import numpy as np
 
-from bartpy.model import Model
+from bartpy.sklearnmodel import SklearnModel
 
 
-def plot_tree_depth(model_samples: List[Model], ax=None):
+def plot_tree_depth(model: SklearnModel, ax=None):
     if ax is None:
         fig, ax = plt.subplots(1, 1)
     min_depth, mean_depth, max_depth = [], [], []
-    for sample in model_samples:
+    for sample in model.model_samples:
         model_depths = []
         for tree in sample.trees:
             model_depths += [x.depth for x in tree.nodes]
