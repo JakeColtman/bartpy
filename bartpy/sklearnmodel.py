@@ -27,7 +27,8 @@ def run_chain(model: 'SklearnModel', X: np.ndarray, y: np.ndarray):
                                  model.n_samples,
                                  model.n_burn,
                                  model.thin,
-                                 model.store_in_sample_predictions)
+                                 model.store_in_sample_predictions,
+                                 model.store_acceptance_trace)
 
 
 def delayed_run_chain():
@@ -83,8 +84,9 @@ class SklearnModel(BaseEstimator, RegressorMixin):
                  p_prune: float = 0.5,
                  alpha: float = 0.95,
                  beta: float = 2.,
-                 store_in_sample_predictions: bool = True,
-                 n_jobs=4):
+                 store_in_sample_predictions: bool=True,
+                 store_acceptance_trace: bool=True,
+                 n_jobs=-1):
         self.n_trees = n_trees
         self.n_chains = n_chains
         self.sigma_a = sigma_a
@@ -98,6 +100,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.thin = thin
         self.n_jobs = n_jobs
         self.store_in_sample_predictions = store_in_sample_predictions
+        self.store_acceptance_trace = store_acceptance_trace
         self.columns = None
 
         self.proposer = UniformMutationProposer([self.p_grow, self.p_prune])
