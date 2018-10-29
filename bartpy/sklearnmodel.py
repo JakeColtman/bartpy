@@ -17,9 +17,21 @@ from bartpy.samplers.treemutation.treemutation import TreeMutationSampler
 from bartpy.samplers.sigma import SigmaSampler
 from bartpy.samplers.leafnode import LeafNodeSampler
 
-
 ChainExtract = Tuple[List['Model'], np.ndarray]
 Extract = List[ChainExtract]
+
+
+def run_chain(model: 'SklearnModel', X: np.ndarray, y: np.ndarray):
+    model.model = model._construct_model(X, y)
+    return model.sampler.samples(model.model,
+                                 model.n_samples,
+                                 model.n_burn,
+                                 model.thin,
+                                 model.store_in_sample_predictions)
+
+
+def delayed_run_chain():
+    return run_chain
 
 
 class SklearnModel(BaseEstimator, RegressorMixin):
@@ -60,18 +72,18 @@ class SklearnModel(BaseEstimator, RegressorMixin):
     """
 
     def __init__(self,
-                 n_trees: int=50,
-                 n_chains: int=4,
-                 sigma_a: float=0.001,
-                 sigma_b: float=0.001,
-                 n_samples: int=200,
-                 n_burn: int=200,
-                 thin: float=0.1,
-                 p_grow: float=0.5,
-                 p_prune: float=0.5,
-                 alpha: float=0.95,
-                 beta: float=2.,
-                 store_in_sample_predictions: bool=True,
+                 n_trees: int = 50,
+                 n_chains: int = 4,
+                 sigma_a: float = 0.001,
+                 sigma_b: float = 0.001,
+                 n_samples: int = 200,
+                 n_burn: int = 200,
+                 thin: float = 0.1,
+                 p_grow: float = 0.5,
+                 p_prune: float = 0.5,
+                 alpha: float = 0.95,
+                 beta: float = 2.,
+                 store_in_sample_predictions: bool = True,
                  n_jobs=4):
         self.n_trees = n_trees
         self.n_chains = n_chains
@@ -96,7 +108,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
 
         self.sigma, self.data, self.model, self._prediction_samples, self._model_samples, self.extract = [None] * 6
 
-    def fit(self, X: Union[pd.DataFrame, np.ndarray], y: np.ndarray) -> 'SklearnModel':
+    def fit(self, X: np.ndarray, y: np.ndarray) -> 'SklearnModel':
         """
         Learn the model based on training data
 
@@ -112,19 +124,20 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         SklearnModel
             self with trained parameter values
         """
+        self.model = self._construct_model(X, y)
         self.extract = Parallel(n_jobs=self.n_jobs)(self.f_delayed_chains(X, y))
         self._model_samples, self._prediction_samples = self._combine_chains(self.extract)
         return self
 
     @staticmethod
-    def _combine_chains(extract: List[ChainExtract]) -> ChainExtract:
+    def _combine_chains(extract):
         model_samples, prediction_samples = extract[0]
         for x in extract[1:]:
             model_samples += x[0]
             prediction_samples = np.concatenate([prediction_samples, x[1]], axis=0)
         return model_samples, prediction_samples
 
-    def _convert_covariates_to_data(self, X: Union[np.ndarray, pd.DataFrame], y: np.ndarray) -> Data:
+    def _convert_covariates_to_data(self, X: np.ndarray, y: np.ndarray) -> Data:
         from copy import deepcopy
         if type(X) == pd.DataFrame:
             self.columns = X.columns
@@ -134,24 +147,17 @@ class SklearnModel(BaseEstimator, RegressorMixin):
 
         return Data(deepcopy(X), deepcopy(y), normalize=True)
 
-    def _construct_model(self, X: Union[np.ndarray, pd.DataFrame], y: np.ndarray) -> Model:
+    def _construct_model(self, X: np.ndarray, y: np.ndarray) -> Model:
         self.data = self._convert_covariates_to_data(X, y)
         self.sigma = Sigma(self.sigma_a, self.sigma_b, self.data.normalizing_scale)
         self.model = Model(self.data, self.sigma, n_trees=self.n_trees, alpha=self.alpha, beta=self.beta)
         return self.model
 
-    def f_delayed_chains(self, X: Union[np.ndarray, pd.DataFrame], y: np.ndarray) -> List[Callable[[np.ndarray, np.ndarray], ChainExtract]]:
-        return [delayed(f)(X, y) for f in self.f_chains()]
+    def f_delayed_chains(self, X: np.ndarray, y: np.ndarray):
+        return [delayed(x)(self, X, y) for x in self.f_chains()]
 
-    def f_chains(self) -> List[Callable[[np.ndarray, np.ndarray], ChainExtract]]:
-        def run_chain(X: np.ndarray, y: np.ndarray):
-            self.model = self._construct_model(X, y)
-            return self.sampler.samples(self.model,
-                                              self.n_samples,
-                                              self.n_burn,
-                                              self.thin,
-                                              self.store_in_sample_predictions)
-        return [run_chain for _ in range(self.n_chains)]
+    def f_chains(self):
+        return [delayed_run_chain() for _ in range(self.n_chains)]
 
     def predict(self, X: np.ndarray=None):
         """
@@ -230,13 +236,13 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         """
         return self.prediction_samples
 
-    def from_extract(self, extract, X, y) -> 'SklearnModel':
+    def from_extract(self, extract: Extract, X: np.ndarray, y: np.ndarray) -> 'SklearnModel':
         """
         Create a copy of the model using an extract
         Useful for doing operations on extracts created in external processes like feature selection
         Parameters
         ----------
-        extract
+        extract: Extract
             samples produced by delayed chain methods
         X: np.ndarray
             Covariate matrix

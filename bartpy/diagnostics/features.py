@@ -41,6 +41,7 @@ def plot_feature_split_proportions(model: SklearnModel, ax=None):
     plt.title('Proportion of Splits Made on Each Variable')
     return ax
 
+
 def null_feature_split_proportions_distribution(model: SklearnModel,
                                                 X: Union[pd.DataFrame, np.ndarray],
                                                 y: np.ndarray,
