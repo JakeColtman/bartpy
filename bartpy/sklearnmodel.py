@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Union, List
+from typing import Union, List, Callable, Tuple
 
 from joblib import Parallel, delayed
 import numpy as np
@@ -136,13 +136,18 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.model = Model(self.data, self.sigma, n_trees=self.n_trees, alpha=self.alpha, beta=self.beta)
         return self.model
 
-    def delayed_chains(self, X: Union[np.ndarray, pd.DataFrame], y: np.ndarray):
-        self.model = self._construct_model(X, y)
-        return [delayed(self.sampler.samples)(self.model,
+    def f_delayed_chains(self, X: Union[np.ndarray, pd.DataFrame], y: np.ndarray):
+        return [delayed(f)(X, y) for f in self.f_chains()]
+
+    def f_chains(self) -> List[Callable[[np.ndarray, np.ndarray], Tuple[List[Model], np.ndarray]]]:
+        def run_chain(X: np.ndarray, y: np.ndarray):
+            self.model = self._construct_model(X, y)
+            return self.sampler.samples(self.model,
                                               self.n_samples,
                                               self.n_burn,
                                               self.thin,
-                                              self.store_in_sample_predictions) for x in range(self.n_chains)]
+                                              self.store_in_sample_predictions)
+        return [run_chain for _ in range(self.n_chains)]
 
     def predict(self, X: np.ndarray=None):
         """
