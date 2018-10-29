@@ -86,7 +86,7 @@ def null_rmse_distribution(model: SklearnModel,
             permuted_model = deepcopy(model)
             permuted_X = deepcopy(X)
             permuted_X[:, variable] = np.random.permutation(permuted_X[:, variable])
-            delayed_chains += permuted_model.delayed_chains(permuted_X[train_index], y[train_index])
+            delayed_chains += permuted_model.f_delayed_chains(permuted_X[train_index], y[train_index])
 
             combined_extracts = Parallel(model.n_jobs)(delayed_chains)
             for extract in combined_extracts:

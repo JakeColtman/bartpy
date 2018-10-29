@@ -9,17 +9,16 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from bartpy.model import Model
 from bartpy.sklearnmodel import SklearnModel
 
-ImportanceMap = Mapping[str, float]
-ImportanceDistributionMap = Mapping[str, List[float]]
+ImportanceMap = Mapping[int, float]
+ImportanceDistributionMap = Mapping[int, List[float]]
 
 
-def feature_split_proportions_counter(model_samples: List[Model]) -> Mapping[int, float]:
+def feature_split_proportions(model: SklearnModel) -> Mapping[int, float]:
 
     split_variables = []
-    for sample in model_samples:
+    for sample in model.model_samples:
         for tree in sample.trees:
             for node in tree.nodes:
                 splitting_var = node.split.splitting_variable
@@ -27,8 +26,10 @@ def feature_split_proportions_counter(model_samples: List[Model]) -> Mapping[int
     return {x[0]: x[1] / len(split_variables) for x in Counter(split_variables).items() if x[0] is not None}
 
 
-def plot_feature_split_proportions(model_samples: List[Model]):
-    proportions = feature_split_proportions_counter(model_samples)
+def plot_feature_split_proportions(model: SklearnModel, ax=None):
+    if ax is None:
+        fig, ax = plt.subplots(1, 1)
+    proportions = feature_split_proportions(model)
 
     y_pos = np.arange(len(proportions))
     name, count = list(proportions.keys()), list(proportions.values())
@@ -38,8 +39,7 @@ def plot_feature_split_proportions(model_samples: List[Model]):
     plt.xlabel('Proportion of all splits')
     plt.ylabel('Feature')
     plt.title('Proportion of Splits Made on Each Variable')
-    plt.show()
-
+    return ax
 
 def null_feature_split_proportions_distribution(model: SklearnModel,
                                                 X: Union[pd.DataFrame, np.ndarray],
@@ -73,7 +73,7 @@ def null_feature_split_proportions_distribution(model: SklearnModel,
     for _ in range(n_permutations):
         permuted_model = deepcopy(model)
         y_perm = np.random.permutation(y)
-        delayed_chains += permuted_model.delayed_chains(X, y_perm)
+        delayed_chains += permuted_model.f_delayed_chains(X, y_perm)
 
     n_jobs = model.n_jobs
     combined_samples = Parallel(n_jobs)(delayed_chains)
@@ -82,14 +82,14 @@ def null_feature_split_proportions_distribution(model: SklearnModel,
     by_run_model_samples = np.array_split(flattened_model_samples, n_permutations)
 
     for run_samples in by_run_model_samples:
-        splits_run = feature_split_proportions_counter(run_samples)
+        splits_run = feature_split_proportions(run_samples)
         for key, value in splits_run.items():
             inclusion_dict[key].append(value)
 
     return inclusion_dict
 
 
-def plot_null_feature_importance_distributions(null_distributions: Mapping[str, List[float]], ax=None) -> None:
+def plot_null_feature_importance_distributions(null_distributions: Mapping[int, List[float]], ax=None) -> None:
     if ax is None:
         fig, ax = plt.subplots(1, 1)
     df = pd.DataFrame(null_distributions)
@@ -97,7 +97,8 @@ def plot_null_feature_importance_distributions(null_distributions: Mapping[str, 
     df.columns = ["variable", "p"]
     sns.boxplot(x="variable", y="p", data=df, ax=ax)
     ax.set_title("Null Feature Importance Distribution")
-    
+    return ax
+
 
 def local_thresholds(null_distributions: ImportanceDistributionMap, percentile: float) -> Mapping[int, float]:
     """
