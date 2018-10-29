@@ -7,5 +7,5 @@ from bartpy.tree import Tree
 class Sampler:
 
     @abstractmethod
-    def step(self, model: Model, tree: Tree):
+    def step(self, model: Model, tree: Tree) -> bool:
         raise NotImplementedError()

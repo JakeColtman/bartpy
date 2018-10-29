@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import List, Tuple
+from typing import List, Tuple, Mapping, Union, Any
 
 import numpy as np
 from tqdm import tqdm
@@ -15,23 +15,41 @@ class ModelSampler(Sampler):
         self.schedule = schedule
 
     def step(self, model: Model):
+        step_result = {}
         for step in self.schedule.steps(model):
-            step()
+            result = step()
+            if result is not None:
+                if result[0] not in step_result:
+                    step_result[result[0]] = []
+                step_result[result[0]].append(result[1])
+        return {x: np.mean([1 if y else 0 for y in step_result[x]]) for x in step_result}
 
-    def samples(self, model: Model, n_samples: int, n_burn: int, thin: float=0.1, store_in_sample_predictions: bool=True) -> Tuple[List[Model], np.ndarray]:
+    def samples(self, model: Model,
+                n_samples: int,
+                n_burn: int,
+                thin: float=0.1,
+                store_in_sample_predictions: bool=True,
+                store_acceptance: bool=True) -> Mapping[str, Union[List[Any], np.ndarray]]:
         print("Starting burn")
         for _ in tqdm(range(n_burn)):
             self.step(model)
         trace = []
         model_trace = []
+        acceptance_trace = []
         print("Starting sampling")
 
         thin_inverse = 1. / thin
 
         for ss in tqdm(range(n_samples)):
-            self.step(model)
+            acceptance_dict = self.step(model)
             if ss % thin_inverse == 0:
                 if store_in_sample_predictions:
                     trace.append(model.predict())
+                if store_acceptance:
+                    acceptance_trace.append(acceptance_dict)
                 model_trace.append(deep_copy_model(model))
-        return model_trace, np.array(trace)
+        return {
+            "model": model_trace,
+            "acceptance": acceptance_trace,
+            "in_sample_predictions": trace
+        }

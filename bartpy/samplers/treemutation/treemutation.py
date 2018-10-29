@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -38,7 +38,8 @@ class TreeMutationSampler(Sampler):
         else:
             return None
 
-    def step(self, model: Model, tree: Tree) -> None:
+    def step(self, model: Model, tree: Tree) -> Tuple[str, bool]:
         mutation = self.sample(model, tree)
         if mutation is not None:
             mutate(tree, mutation)
+        return "Tree", mutation is None

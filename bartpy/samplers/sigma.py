@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import numpy as np
 
 from bartpy.model import Model
@@ -7,8 +9,9 @@ from bartpy.samplers.sampler import Sampler
 
 class SigmaSampler(Sampler):
 
-    def step(self, model: Model, sigma: Sigma) -> None:
+    def step(self, model: Model, sigma: Sigma) -> Tuple[str, bool]:
         sigma.set_value(self.sample(model, sigma))
+        return "Sigma", True
 
     def sample(self, model: Model, sigma: Sigma) -> float:
         posterior_alpha = sigma.alpha + (model.data.n_obsv / 2.)

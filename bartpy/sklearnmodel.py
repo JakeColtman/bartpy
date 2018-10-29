@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Union, List, Callable, Tuple
+from typing import Union, List, Callable, Tuple, Mapping
 
 from joblib import Parallel, delayed
 import numpy as np
@@ -126,16 +126,18 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         """
         self.model = self._construct_model(X, y)
         self.extract = Parallel(n_jobs=self.n_jobs)(self.f_delayed_chains(X, y))
-        self._model_samples, self._prediction_samples = self._combine_chains(self.extract)
+        self.combined_chains = self._combine_chains(self.extract)
+        self._model_samples, self._prediction_samples = self.combined_chains["model"], self.combined_chains["in_sample_predictions"]
+        self._acceptance_trace = self.combined_chains["acceptance"]
         return self
 
     @staticmethod
     def _combine_chains(extract):
-        model_samples, prediction_samples = extract[0]
-        for x in extract[1:]:
-            model_samples += x[0]
-            prediction_samples = np.concatenate([prediction_samples, x[1]], axis=0)
-        return model_samples, prediction_samples
+        keys = list(extract[0].keys())
+        combined = {}
+        for key in keys:
+            combined[key] = np.concatenate([chain[key] for chain in extract], axis=0)
+        return combined
 
     def _convert_covariates_to_data(self, X: np.ndarray, y: np.ndarray) -> Data:
         from copy import deepcopy
@@ -224,6 +226,10 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         return self._model_samples
 
     @property
+    def acceptance_trace(self) -> List[Mapping[str, float]]:
+        return self._acceptance_trace
+
+    @property
     def prediction_samples(self) -> np.ndarray:
         """
         Matrix of prediction samples at each point in sampling
@@ -255,6 +261,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
             Copy of the current model with samples
         """
         new_model = deepcopy(self)
-        new_model._model_samples, new_model._prediction_samples = self._combine_chains(extract)
+        self._model_samples, self._prediction_samples = self.combined_chains["model"], self.combined_chains["in_sample_predictions"]
+        self._acceptance_trace = self.combined_chains["acceptance"]
         new_model.data = self._convert_covariates_to_data(X, y)
         return new_model

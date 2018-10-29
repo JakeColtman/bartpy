@@ -18,6 +18,7 @@ class LeafNodeSampler(Sampler):
 
     def step(self, model: Model, node: LeafNode):
         node.set_value(self.sample(model, node))
+        return None
 
     def get_next_rand(self):
         if len(self.random_samples) == 0:
