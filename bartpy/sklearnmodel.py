@@ -182,7 +182,17 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         """
         return [delayed(x)(self, X, y) for x in self.f_chains()]
 
-    def f_chains(self):
+    def f_chains(self) -> List[Callable[None, Extract]]:
+        """
+        List of methods to run MCMC chains
+        Useful for running multiple models in parallel
+
+        Returns
+        -------
+        List[Callable[None, Extract]]
+            List of method to run individual chains
+            Length of n_chains
+        """
         return [delayed_run_chain() for _ in range(self.n_chains)]
 
     def predict(self, X: np.ndarray=None) -> np.ndarray:
@@ -211,6 +221,21 @@ class SklearnModel(BaseEstimator, RegressorMixin):
             return self._out_of_sample_predict(X)
 
     def residuals(self, X=None, y=None) -> np.ndarray:
+        """
+        Array of error for each observation
+
+        Parameters
+        ----------
+        X: np.ndarray
+            Covariate matrix
+        y: np.ndarray
+            Target array
+
+        Returns
+        -------
+        np.ndarray
+            Error for each observation
+        """
         if y is None:
             return self.model.data.unnormalized_y - self.predict(X)
         else:
