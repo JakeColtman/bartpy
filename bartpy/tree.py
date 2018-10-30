@@ -158,4 +158,17 @@ def mutate(tree: Tree, mutation: TreeMutation) -> None:
 
 
 def deep_copy_tree(tree: Tree):
+    """
+    Efficiently create a copy of the tree for storage
+    Creates a memory-light version of the tree with access to important information
+    Parameters
+    ----------
+    tree: Tree
+        Tree to copy
+
+    Returns
+    -------
+    Tree
+        Version of the tree optimized to be low memory
+    """
     return Tree([deep_copy_node(x) for x in tree.nodes])
