@@ -155,6 +155,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
     def _convert_covariates_to_data(X: np.ndarray, y: np.ndarray) -> Data:
         from copy import deepcopy
         if type(X) == pd.DataFrame:
+            X: pd.DataFrame = X
             X = X.values
         return Data(deepcopy(X), deepcopy(y), normalize=True)
 

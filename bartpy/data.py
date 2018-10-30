@@ -52,6 +52,7 @@ class Data:
 
     def __init__(self, X: np.ndarray, y: np.ndarray, normalize=False, cache=True, unique_columns=None):
         if type(X) == pd.DataFrame:
+            X: pd.DataFrame = X
             X = X.values
         self._X = X
         self._unique_columns = unique_columns
