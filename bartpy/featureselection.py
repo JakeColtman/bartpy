@@ -22,7 +22,7 @@ class SelectSplitProportionThreshold(BaseEstimator, SelectorMixin):
     def fit(self, X, y):
         self.model.fit(X, y)
         self.X, self.y = X, y
-        self.feature_proportions = feature_split_proportions(self.model.model_samples)
+        self.feature_proportions = feature_split_proportions(self.model)
         return self
 
     def _get_support_mask(self):
