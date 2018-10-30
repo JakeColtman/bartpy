@@ -55,7 +55,7 @@ class SelectNullDistributionThreshold(BaseEstimator, SelectorMixin):
         self.X, self.y = X, y
         self.null_distribution = null_feature_split_proportions_distribution(self.model, X, y, self.n_permutations)
         self.thresholds = local_thresholds(self.null_distribution, self.percentile)
-        self.feature_proportions = feature_split_proportions(self.model.model_samples)
+        self.feature_proportions = feature_split_proportions(self.model)
         return self
 
     def _get_support_mask(self):
