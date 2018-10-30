@@ -1,10 +1,10 @@
 from copy import deepcopy
-from typing import List, Optional, Union
 from operator import le, gt
-
-from bartpy.data import Data
+from typing import List, Optional, Union
 
 import numpy as np
+
+from bartpy.data import Data
 
 
 class SplitCondition:

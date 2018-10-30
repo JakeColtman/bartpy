@@ -6,8 +6,8 @@ import pandas as pd
 
 from bartpy.data import Data
 from bartpy.sigma import Sigma
-from bartpy.tree import Tree, LeafNode, deep_copy_tree
 from bartpy.split import Split
+from bartpy.tree import Tree, LeafNode, deep_copy_tree
 
 
 class Model:

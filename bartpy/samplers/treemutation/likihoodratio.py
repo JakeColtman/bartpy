@@ -1,8 +1,8 @@
 from abc import abstractmethod
 
+from bartpy.model import Model
 from bartpy.mutation import TreeMutation
 from bartpy.tree import Tree
-from bartpy.model import Model
 
 
 class TreeMutationLikihoodRatio:

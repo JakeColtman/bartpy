@@ -1,5 +1,5 @@
-from typing import Callable, List, Mapping, Optional, Tuple
 from operator import le, gt
+from typing import Callable, List, Mapping, Optional, Tuple
 
 import numpy as np
 

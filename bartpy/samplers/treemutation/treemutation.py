@@ -4,10 +4,10 @@ import numpy as np
 
 from bartpy.model import Model
 from bartpy.mutation import TreeMutation
-from bartpy.samplers.treemutation.proposer import TreeMutationProposer
-from bartpy.samplers.treemutation.likihoodratio import TreeMutationLikihoodRatio
-from bartpy.tree import Tree, mutate
 from bartpy.samplers.sampler import Sampler
+from bartpy.samplers.treemutation.likihoodratio import TreeMutationLikihoodRatio
+from bartpy.samplers.treemutation.proposer import TreeMutationProposer
+from bartpy.tree import Tree, mutate
 
 
 class TreeMutationSampler(Sampler):

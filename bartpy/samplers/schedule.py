@@ -1,9 +1,10 @@
 from typing import Callable, Generator
+
 from bartpy.model import Model
-from bartpy.samplers.treemutation.treemutation import TreeMutationSampler
 from bartpy.samplers.leafnode import LeafNodeSampler
-from bartpy.samplers.sigma import SigmaSampler
 from bartpy.samplers.sampler import Sampler
+from bartpy.samplers.sigma import SigmaSampler
+from bartpy.samplers.treemutation.treemutation import TreeMutationSampler
 
 
 class SampleSchedule:

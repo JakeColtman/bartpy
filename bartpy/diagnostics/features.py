@@ -1,13 +1,13 @@
-from collections import Counter
 import itertools
+from collections import Counter
 from copy import deepcopy
 from typing import List, Mapping, Union
 
-from joblib import Parallel
-from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from joblib import Parallel
+from matplotlib import pyplot as plt
 
 from bartpy.sklearnmodel import SklearnModel
 

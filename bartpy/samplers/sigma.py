@@ -3,8 +3,8 @@ from typing import Tuple
 import numpy as np
 
 from bartpy.model import Model
-from bartpy.sigma import Sigma
 from bartpy.samplers.sampler import Sampler
+from bartpy.sigma import Sigma
 
 
 class SigmaSampler(Sampler):

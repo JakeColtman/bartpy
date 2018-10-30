@@ -1,9 +1,9 @@
 from copy import deepcopy
 
-from matplotlib import pyplot as plt
 import numpy as np
-from sklearn.feature_selection.base import SelectorMixin
+from matplotlib import pyplot as plt
 from sklearn.base import BaseEstimator
+from sklearn.feature_selection.base import SelectorMixin
 
 from bartpy.diagnostics.features import null_feature_split_proportions_distribution, \
     local_thresholds, global_thresholds, is_kept, feature_split_proportions, plot_feature_proportions_against_thresholds, plot_null_feature_importance_distributions, \
