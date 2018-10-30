@@ -1,7 +1,5 @@
 from typing import Union, Tuple
 
-import numpy as np
-
 from bartpy.data import Data
 from bartpy.split import Split, SplitCondition
 

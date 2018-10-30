@@ -83,6 +83,7 @@ def null_feature_split_proportions_distribution(model: SklearnModel,
     by_run_model_samples = np.array_split(flattened_model_samples, n_permutations)
 
     for run_samples in by_run_model_samples:
+        # TODO
         splits_run = feature_split_proportions(run_samples)
         for key, value in splits_run.items():
             inclusion_dict[key].append(value)
@@ -159,7 +160,7 @@ def global_thresholds(null_distributions: ImportanceDistributionMap, percentile:
     return {feature: threshold for feature in null_distributions}
 
 
-def kept_features(feature_proportions: Mapping[int, float], thresholds: Mapping[int, float])  -> List[int]:
+def kept_features(feature_proportions: Mapping[int, float], thresholds: Mapping[int, float]) -> List[int]:
     """
     Extract the features to keep
 

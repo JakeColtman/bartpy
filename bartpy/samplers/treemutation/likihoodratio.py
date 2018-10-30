@@ -18,6 +18,8 @@ class TreeMutationLikihoodRatio:
 
         Parameters
         ----------
+        model: Model
+            The overall model object the tree belongs to
         tree: Tree
             The tree being changed
         mutation: TreeMutation
@@ -26,7 +28,7 @@ class TreeMutationLikihoodRatio:
         Returns
         -------
         float
-            logged ratio of likihoods
+            logged ratio of likelihoods
         """
         return self.log_transition_ratio(tree, mutation) + self.log_likihood_ratio(model, tree, mutation) + self.log_tree_ratio(model, tree, mutation)
 

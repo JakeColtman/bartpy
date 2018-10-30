@@ -1,21 +1,21 @@
 from copy import deepcopy
-from typing import Union, List, Callable, Tuple, Mapping
+from typing import List, Callable, Tuple, Mapping
 
-from joblib import Parallel, delayed
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
 from sklearn.base import RegressorMixin, BaseEstimator
 
-from bartpy.model import Model
 from bartpy.data import Data
-from bartpy.samplers.schedule import SampleSchedule
+from bartpy.model import Model
+from bartpy.samplers.leafnode import LeafNodeSampler
 from bartpy.samplers.modelsampler import ModelSampler
-from bartpy.sigma import Sigma
+from bartpy.samplers.schedule import SampleSchedule
+from bartpy.samplers.sigma import SigmaSampler
+from bartpy.samplers.treemutation.treemutation import TreeMutationSampler
 from bartpy.samplers.treemutation.uniform.likihoodratio import UniformTreeMutationLikihoodRatio
 from bartpy.samplers.treemutation.uniform.proposer import UniformMutationProposer
-from bartpy.samplers.treemutation.treemutation import TreeMutationSampler
-from bartpy.samplers.sigma import SigmaSampler
-from bartpy.samplers.leafnode import LeafNodeSampler
+from bartpy.sigma import Sigma
 
 ChainExtract = Tuple[List['Model'], np.ndarray]
 Extract = List[ChainExtract]
@@ -151,7 +151,8 @@ class SklearnModel(BaseEstimator, RegressorMixin):
             combined[key] = np.concatenate([chain[key] for chain in extract], axis=0)
         return combined
 
-    def _convert_covariates_to_data(self, X: np.ndarray, y: np.ndarray) -> Data:
+    @staticmethod
+    def _convert_covariates_to_data(X: np.ndarray, y: np.ndarray) -> Data:
         from copy import deepcopy
         if type(X) == pd.DataFrame:
             X = X.values

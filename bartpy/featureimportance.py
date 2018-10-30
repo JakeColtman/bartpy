@@ -90,7 +90,7 @@ def null_rmse_distribution(model: SklearnModel,
 
             combined_extracts = Parallel(model.n_jobs)(delayed_chains)
             for extract in combined_extracts:
-                extracted_model = model.from_extract(extract)
+                extracted_model = model.from_extract(extract, permuted_X, y)
                 null_rmses.append(extracted_model.rmse(permuted_X[test_index], y[test_index]))
 
     return null_rmses

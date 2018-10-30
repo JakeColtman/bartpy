@@ -1,12 +1,11 @@
-from copy import deepcopy
-from typing import List, Tuple, Mapping, Union, Any
+from typing import List, Mapping, Union, Any
 
 import numpy as np
 from tqdm import tqdm
 
 from bartpy.model import Model, deep_copy_model
-from bartpy.samplers.schedule import SampleSchedule
 from bartpy.samplers.sampler import Sampler
+from bartpy.samplers.schedule import SampleSchedule
 
 
 class ModelSampler(Sampler):

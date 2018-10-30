@@ -5,6 +5,14 @@
       <option name="ignoredErrors">
         <list>
           <option value="N803" />
+          <option value="N806" />
+        </list>
+      </option>
+      <option name="ignoredBaseClasses">
+        <list>
+          <option value="unittest.TestCase" />
+          <option value="unittest.case.TestCase" />
+          <option value="bartpy.data.Data" />
         </list>
       </option>
     </inspection_tool>

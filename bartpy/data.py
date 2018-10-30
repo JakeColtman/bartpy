@@ -41,7 +41,7 @@ class Data:
     ----------
     X: np.ndarray
         The subset of the covariate matrix that falls into the split
-    y: np.ndarry
+    y: np.ndarray
         The subset of the target array that falls into the split
     normalize: bool
         Whether to map the target into -0.5, 0.5

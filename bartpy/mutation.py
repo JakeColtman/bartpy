@@ -18,6 +18,7 @@ class TreeMutation:
     def __str__(self):
         return "{} - {} => {}".format(self.kind, self.existing_node, self.updated_node)
 
+
 class PruneMutation(TreeMutation):
 
     def __init__(self, existing_node: DecisionNode, updated_node: LeafNode):

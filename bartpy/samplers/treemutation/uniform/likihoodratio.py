@@ -1,14 +1,13 @@
-from typing import Callable, List, Mapping
+from typing import List
 
 import numpy as np
 
 from bartpy.model import Model
 from bartpy.mutation import TreeMutation, GrowMutation, PruneMutation
-from bartpy.samplers.treemutation.likihoodratio import TreeMutationLikihoodRatio
-from bartpy.tree import Tree
-
 from bartpy.node import LeafNode, TreeNode
+from bartpy.samplers.treemutation.likihoodratio import TreeMutationLikihoodRatio
 from bartpy.sigma import Sigma
+from bartpy.tree import Tree
 
 
 def log_grow_ratio(combined_node: LeafNode, left_node: LeafNode, right_node: LeafNode, sigma: Sigma, sigma_mu: float):
@@ -59,10 +58,12 @@ class UniformTreeMutationLikihoodRatio(TreeMutationLikihoodRatio):
         else:
             raise NotImplementedError("Only prune and grow mutations supported")
 
-    def log_likihood_ratio_grow(self, model: Model, proposal: TreeMutation):
+    @staticmethod
+    def log_likihood_ratio_grow(model: Model, proposal: TreeMutation):
         return log_grow_ratio(proposal.existing_node, proposal.updated_node.left_child, proposal.updated_node.right_child, model.sigma, model.sigma_m)
 
-    def log_likihood_ratio_prune(self, model: Model, proposal: TreeMutation):
+    @staticmethod
+    def log_likihood_ratio_prune(model: Model, proposal: TreeMutation):
         return - log_grow_ratio(proposal.updated_node, proposal.existing_node.left_child, proposal.existing_node.right_child, model.sigma, model.sigma_m)
 
     def log_grow_transition_ratio(self, tree: Tree, mutation: GrowMutation):
@@ -89,7 +90,8 @@ class UniformTreeMutationLikihoodRatio(TreeMutationLikihoodRatio):
 
         return grow_prune_ratio + prob_selection_ratio
 
-    def log_tree_ratio_grow(self, model: Model, tree: Tree, proposal: GrowMutation):
+    @staticmethod
+    def log_tree_ratio_grow(model: Model, tree: Tree, proposal: GrowMutation):
         denominator = log_probability_node_not_split(model, proposal.existing_node)
 
         prob_left_not_split = log_probability_node_not_split(model, proposal.updated_node.left_child)
@@ -100,7 +102,8 @@ class UniformTreeMutationLikihoodRatio(TreeMutationLikihoodRatio):
 
         return numerator - denominator
 
-    def log_tree_ratio_prune(self, model: Model, proposal: PruneMutation):
+    @staticmethod
+    def log_tree_ratio_prune(model: Model, proposal: PruneMutation):
         numerator = log_probability_node_not_split(model, proposal.updated_node)
 
         prob_left_not_split = log_probability_node_not_split(model, proposal.existing_node.left_child)
