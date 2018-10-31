@@ -1,14 +1,13 @@
 import itertools
 from collections import Counter
-from copy import deepcopy
 from typing import List, Mapping, Union
 
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from joblib import Parallel
 from matplotlib import pyplot as plt
 
+from bartpy.runner import run_models
 from bartpy.sklearnmodel import SklearnModel
 
 ImportanceMap = Mapping[int, float]
@@ -70,21 +69,13 @@ def null_feature_split_proportions_distribution(model: SklearnModel,
 
     inclusion_dict = {x: [] for x in range(X.shape[1])}
 
-    delayed_chains = []
-    for _ in range(n_permutations):
-        permuted_model = deepcopy(model)
-        y_perm = np.random.permutation(y)
-        delayed_chains += permuted_model.f_delayed_chains(X, y_perm)
+    y_s = [np.random.permutation(y) for _ in range(n_permutations)]
+    X_s = [X for _ in y_s]
 
-    n_jobs = model.n_jobs
-    combined_samples = Parallel(n_jobs)(delayed_chains)
-    combined_model_samples = [x[0] for x in combined_samples]
-    flattened_model_samples = list(itertools.chain.from_iterable(combined_model_samples))
-    by_run_model_samples = np.array_split(flattened_model_samples, n_permutations)
+    fit_models = run_models(model, X_s, y_s)
 
-    for run_samples in by_run_model_samples:
-        # TODO
-        splits_run = feature_split_proportions(run_samples)
+    for model in fit_models:
+        splits_run = feature_split_proportions(model)
         for key, value in splits_run.items():
             inclusion_dict[key].append(value)
 

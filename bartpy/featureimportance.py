@@ -7,6 +7,7 @@ from joblib import Parallel
 from matplotlib import pyplot as plt
 from sklearn.model_selection import KFold
 
+from bartpy.runner import run_models
 from bartpy.sklearnmodel import SklearnModel
 
 
@@ -78,22 +79,26 @@ def null_rmse_distribution(model: SklearnModel,
 
     kf = KFold(n_k_fold_splits, shuffle=True)
 
-    null_rmses = []
+    permuted_train_X_s = []
+    permuted_test_X_s = []
+    train_y_s = []
+    test_y_s = []
 
     for train_index, test_index in kf.split(X):
-        delayed_chains = []
         for _ in range(n_permutations):
-            permuted_model = deepcopy(model)
             permuted_X = deepcopy(X)
             permuted_X[:, variable] = np.random.permutation(permuted_X[:, variable])
-            delayed_chains += permuted_model.f_delayed_chains(permuted_X[train_index], y[train_index])
+            permuted_train_X_s.append(permuted_X[train_index])
+            permuted_test_X_s.append(permuted_X[train_index])
+            train_y_s.append(y[train_index])
+            test_y_s.append(y[test_index])
 
-            combined_extracts = Parallel(model.n_jobs)(delayed_chains)
-            for extract in combined_extracts:
-                extracted_model = model.from_extract(extract, permuted_X, y)
-                null_rmses.append(extracted_model.rmse(permuted_X[test_index], y[test_index]))
+    fit_models = run_models(model, permuted_train_X_s, train_y_s)
 
-    return null_rmses
+    rmses = []
+    for i, m in enumerate(fit_models):
+        rmses.append(m.rmse(permuted_test_X_s[i], test_y_s[i]))
+    return rmses
 
 
 def feature_importance(model: SklearnModel,

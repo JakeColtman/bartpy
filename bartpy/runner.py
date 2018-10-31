@@ -10,7 +10,7 @@ from joblib import Parallel
 from bartpy.sklearnmodel import SklearnModel
 
 
-def run(model: SklearnModel, X_s: List[np.ndarray], y_s: List[np.ndarray]) -> List[SklearnModel]:
+def run_models(model: SklearnModel, X_s: List[np.ndarray], y_s: List[np.ndarray]) -> List[SklearnModel]:
     """
     Run an SklearnModel against a list of different data sets in parallel
     Useful coordination method when running permutation tests or cross validation
