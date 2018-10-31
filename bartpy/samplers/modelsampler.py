@@ -1,29 +1,33 @@
-from typing import List, Mapping, Union, Any
+from collections import defaultdict
+from typing import List, Mapping, Union, Any, Callable
 
 import numpy as np
 from tqdm import tqdm
 
 from bartpy.model import Model, deep_copy_model
+from bartpy.mutation import TreeMutation
 from bartpy.samplers.sampler import Sampler
 from bartpy.samplers.schedule import SampleSchedule
-
+from bartpy.trace import TraceLogger
 
 Chain = Mapping[str, Union[List[Any], np.ndarray]]
 
 
 class ModelSampler(Sampler):
 
-    def __init__(self, schedule: SampleSchedule):
+    def __init__(self,
+                 schedule: SampleSchedule,
+                 trace_logger: TraceLogger=TraceLogger()):
         self.schedule = schedule
+        self.trace_logger = trace_logger
 
     def step(self, model: Model):
-        step_result = {}
-        for step in self.schedule.steps(model):
+        step_result = defaultdict(list)
+        for step_kind, step in self.schedule.steps(model):
             result = step()
-            if result is not None:
-                if result[0] not in step_result:
-                    step_result[result[0]] = []
-                step_result[result[0]].append(result[1])
+            log_message = self.trace_logger[step_kind](result)
+            if log_message is not None:
+                step_result[step_kind].append(log_message)
         return {x: np.mean([1 if y else 0 for y in step_result[x]]) for x in step_result}
 
     def samples(self, model: Model,
@@ -43,13 +47,15 @@ class ModelSampler(Sampler):
         thin_inverse = 1. / thin
 
         for ss in tqdm(range(n_samples)):
-            acceptance_dict = self.step(model)
+            step_trace_dict = self.step(model)
             if ss % thin_inverse == 0:
-                if store_in_sample_predictions:
-                    trace.append(model.predict())
-                if store_acceptance:
-                    acceptance_trace.append(acceptance_dict)
-                model_trace.append(deep_copy_model(model))
+                in_sample_log = self.trace_logger["In Sample Prediction"](model.predict())
+                if in_sample_log is not None:
+                    trace.append(in_sample_log)
+                acceptance_trace.append(step_trace_dict)
+                model_log = self.trace_logger["Model"](model)
+                if model_log is not None:
+                    model_trace.append(model_log)
         return {
             "model": model_trace,
             "acceptance": acceptance_trace,

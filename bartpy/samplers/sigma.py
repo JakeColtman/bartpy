@@ -9,9 +9,10 @@ from bartpy.sigma import Sigma
 
 class SigmaSampler(Sampler):
 
-    def step(self, model: Model, sigma: Sigma) -> Tuple[str, bool]:
-        sigma.set_value(self.sample(model, sigma))
-        return "Sigma", True
+    def step(self, model: Model, sigma: Sigma) -> float:
+        sample_value = self.sample(model, sigma)
+        sigma.set_value(sample_value)
+        return sample_value
 
     @staticmethod
     def sample(model: Model, sigma: Sigma) -> float:

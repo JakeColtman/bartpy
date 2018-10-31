@@ -16,9 +16,10 @@ class LeafNodeSampler(Sampler):
     def __init__(self):
         self.random_samples = list(np.random.normal(size=50000))
 
-    def step(self, model: Model, node: LeafNode):
-        node.set_value(self.sample(model, node))
-        return None
+    def step(self, model: Model, node: LeafNode) -> float:
+        sampled_value = self.sample(model, node)
+        node.set_value(sampled_value)
+        return sampled_value
 
     def get_next_rand(self):
         if len(self.random_samples) == 0:
