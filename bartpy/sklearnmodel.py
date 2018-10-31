@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import List, Callable, Tuple, Mapping
+from typing import List, Callable, Mapping
 
 import numpy as np
 import pandas as pd
@@ -9,16 +9,13 @@ from sklearn.base import RegressorMixin, BaseEstimator
 from bartpy.data import Data
 from bartpy.model import Model
 from bartpy.samplers.leafnode import LeafNodeSampler
-from bartpy.samplers.modelsampler import ModelSampler
+from bartpy.samplers.modelsampler import ModelSampler, Chain
 from bartpy.samplers.schedule import SampleSchedule
 from bartpy.samplers.sigma import SigmaSampler
 from bartpy.samplers.treemutation.treemutation import TreeMutationSampler
 from bartpy.samplers.treemutation.uniform.likihoodratio import UniformTreeMutationLikihoodRatio
 from bartpy.samplers.treemutation.uniform.proposer import UniformMutationProposer
 from bartpy.sigma import Sigma
-
-ChainExtract = Tuple[List['Model'], np.ndarray]
-Extract = List[ChainExtract]
 
 
 def run_chain(model: 'SklearnModel', X: np.ndarray, y: np.ndarray):
@@ -144,7 +141,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         return self
 
     @staticmethod
-    def _combine_chains(extract):
+    def _combine_chains(extract: List[Chain]) -> Chain:
         keys = list(extract[0].keys())
         combined = {}
         for key in keys:
@@ -186,7 +183,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         """
         return [delayed(x)(self, X, y) for x in self.f_chains()]
 
-    def f_chains(self) -> List[Callable[[], Extract]]:
+    def f_chains(self) -> List[Callable[[], Chain]]:
         """
         List of methods to run MCMC chains
         Useful for running multiple models in parallel
@@ -334,7 +331,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         """
         return self.prediction_samples
 
-    def from_extract(self, extract: Extract, X: np.ndarray, y: np.ndarray) -> 'SklearnModel':
+    def from_extract(self, extract: List[Chain], X: np.ndarray, y: np.ndarray) -> 'SklearnModel':
         """
         Create a copy of the model using an extract
         Useful for doing operations on extracts created in external processes like feature selection
@@ -353,7 +350,8 @@ class SklearnModel(BaseEstimator, RegressorMixin):
             Copy of the current model with samples
         """
         new_model = deepcopy(self)
-        self._model_samples, self._prediction_samples = self.combined_chains["model"], self.combined_chains["in_sample_predictions"]
-        self._acceptance_trace = self.combined_chains["acceptance"]
+        combined_chain = self._combine_chains(extract)
+        self._model_samples, self._prediction_samples = combined_chain["model"], combined_chain["in_sample_predictions"]
+        self._acceptance_trace = combined_chain["acceptance"]
         new_model.data = self._convert_covariates_to_data(X, y)
         return new_model
