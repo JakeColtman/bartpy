@@ -208,3 +208,4 @@ def plot_feature_proportions_against_thresholds(feature_proportions, thresholds,
     ax.set_title("Feature Importance Compared to Threshold")
     ax.set_xlabel("Feature")
     ax.set_ylabel("% Splits")
+    return ax

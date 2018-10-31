@@ -23,3 +23,4 @@ def plot_tree_depth(model: SklearnModel, ax=None):
     ax.set_xlabel("Iteration")
     ax.legend()
     ax.set_title("Tree Depth by Iteration")
+    return ax

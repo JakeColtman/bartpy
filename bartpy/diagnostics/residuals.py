@@ -11,7 +11,7 @@ def plot_qq(model: SklearnModel, ax=None) -> None:
     residuals = model.residuals(model.data.X)
     sm.qqplot(residuals, fit=True, line="45", ax=ax)
     ax.set_title("QQ plot")
-
+    return ax
 
 def plot_homoskedasity_diagnostics(model: SklearnModel, ax=None):
     if ax is None:

@@ -160,6 +160,8 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         return Data(deepcopy(X), deepcopy(y), normalize=True)
 
     def _construct_model(self, X: np.ndarray, y: np.ndarray) -> Model:
+        if len(X) == 0 or X.shape[1] == 0:
+            raise ValueError("Empty covariate matrix passed")
         self.data = self._convert_covariates_to_data(X, y)
         self.sigma = Sigma(self.sigma_a, self.sigma_b, self.data.normalizing_scale)
         self.model = Model(self.data, self.sigma, n_trees=self.n_trees, alpha=self.alpha, beta=self.beta)
@@ -180,18 +182,18 @@ class SklearnModel(BaseEstimator, RegressorMixin):
 
         Returns
         -------
-        List[Callable[None, ChainExtract]]
+        List[Callable[[], ChainExtract]]
         """
         return [delayed(x)(self, X, y) for x in self.f_chains()]
 
-    def f_chains(self) -> List[Callable[None, Extract]]:
+    def f_chains(self) -> List[Callable[[], Extract]]:
         """
         List of methods to run MCMC chains
         Useful for running multiple models in parallel
 
         Returns
         -------
-        List[Callable[None, Extract]]
+        List[Callable[[], Extract]]
             List of method to run individual chains
             Length of n_chains
         """
