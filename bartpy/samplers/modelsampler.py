@@ -8,6 +8,9 @@ from bartpy.samplers.sampler import Sampler
 from bartpy.samplers.schedule import SampleSchedule
 
 
+Chain = Mapping[str, Union[List[Any], np.ndarray]]
+
+
 class ModelSampler(Sampler):
 
     def __init__(self, schedule: SampleSchedule):
@@ -28,7 +31,7 @@ class ModelSampler(Sampler):
                 n_burn: int,
                 thin: float=0.1,
                 store_in_sample_predictions: bool=True,
-                store_acceptance: bool=True) -> Mapping[str, Union[List[Any], np.ndarray]]:
+                store_acceptance: bool=True) -> Chain:
         print("Starting burn")
         for _ in tqdm(range(n_burn)):
             self.step(model)
