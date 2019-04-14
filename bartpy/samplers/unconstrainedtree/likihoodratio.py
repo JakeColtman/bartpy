@@ -5,7 +5,7 @@ import numpy as np
 from bartpy.model import Model
 from bartpy.mutation import TreeMutation, GrowMutation, PruneMutation
 from bartpy.node import LeafNode, TreeNode
-from bartpy.samplers.treemutation.likihoodratio import TreeMutationLikihoodRatio
+from bartpy.samplers.treemutation import TreeMutationLikihoodRatio
 from bartpy.sigma import Sigma
 from bartpy.tree import Tree
 
@@ -31,7 +31,8 @@ def log_grow_ratio(combined_node: LeafNode, left_node: LeafNode, right_node: Lea
 
 class UniformTreeMutationLikihoodRatio(TreeMutationLikihoodRatio):
 
-    def __init__(self, prob_method: List[float]=None):
+    def __init__(self,
+                 prob_method: List[float]=None):
         if prob_method is None:
             prob_method = [0.5, 0.5]
         self.prob_method = prob_method

@@ -3,6 +3,7 @@ import numpy as np
 from bartpy.model import Model
 from bartpy.node import LeafNode
 from bartpy.samplers.sampler import Sampler
+from bartpy.samplers.scalar import NormalScalarSampler
 
 
 class LeafNodeSampler(Sampler):
@@ -13,18 +14,14 @@ class LeafNodeSampler(Sampler):
     Uses a cache of draws from a normal(0, 1) distribution to improve sampling performance
     """
 
-    def __init__(self):
-        self.random_samples = list(np.random.normal(size=50000))
+    def __init__(self,
+                 scalar_sampler=NormalScalarSampler(50000)):
+        self._scalar_sampler = scalar_sampler
 
     def step(self, model: Model, node: LeafNode) -> float:
         sampled_value = self.sample(model, node)
         node.set_value(sampled_value)
         return sampled_value
-
-    def get_next_rand(self):
-        if len(self.random_samples) == 0:
-            self.random_samples = list(np.random.normal(size=50000))
-        return self.random_samples.pop()
 
     def sample(self, model: Model, node: LeafNode) -> float:
         prior_var = model.sigma_m ** 2
@@ -33,4 +30,4 @@ class LeafNodeSampler(Sampler):
         likihood_mean = np.mean(node.data.y)
         posterior_variance = 1. / (1. / prior_var + 1. / likihood_var)
         posterior_mean = likihood_mean * (prior_var / (likihood_var + prior_var))
-        return posterior_mean + (self.get_next_rand() * np.power(posterior_variance / model.n_trees, 0.5))
+        return posterior_mean + (self._scalar_sampler.sample() * np.power(posterior_variance / model.n_trees, 0.5))

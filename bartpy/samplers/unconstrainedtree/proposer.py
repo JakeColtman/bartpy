@@ -6,7 +6,7 @@ import numpy as np
 from bartpy.errors import NoSplittableVariableException, NoPrunableNodeException
 from bartpy.mutation import TreeMutation, GrowMutation, PruneMutation
 from bartpy.node import LeafNode, DecisionNode, split_node
-from bartpy.samplers.treemutation.proposer import TreeMutationProposer
+from bartpy.samplers.treemutation import TreeMutationProposer
 from bartpy.split import SplitCondition
 from bartpy.tree import Tree
 
@@ -25,7 +25,9 @@ def uniformly_sample_prune_mutation(tree: Tree) -> TreeMutation:
 
 class UniformMutationProposer(TreeMutationProposer):
 
-    def __init__(self, prob_method: List[float]=None, prob_method_lookup: Mapping[Callable[[Tree], TreeMutation], float]=None, n_proposals=250):
+    def __init__(self,
+                 prob_method: List[float]=None,
+                 prob_method_lookup: Mapping[Callable[[Tree], TreeMutation], float]=None):
         if prob_method_lookup is not None:
             self.prob_method_lookup = prob_method_lookup
         else:
