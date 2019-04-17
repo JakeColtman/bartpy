@@ -78,7 +78,7 @@ class DecisionNode(TreeNode):
     def is_prunable(self) -> bool:
         return type(self.left_child) == LeafNode and type(self.right_child) == LeafNode
 
-    def variable_split_on(self) -> SplitCondition:
+    def most_recent_split_condition(self) -> SplitCondition:
         return self.left_child.split.most_recent_split_condition()
 
 

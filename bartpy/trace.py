@@ -11,7 +11,7 @@ class TraceLogger():
     def __init__(self,
                  f_tree_mutation_log: Callable[[TreeMutation], Any]=lambda x: x is not None,
                  f_model_log: Callable[[Model], Any]=lambda x: deep_copy_model(x),
-                 f_in_sample_prediction_log: Callable[[np.ndarray], Any]=lambda x: None):
+                 f_in_sample_prediction_log: Callable[[np.ndarray], Any]=lambda x: x):
         self.f_tree_mutation_log = f_tree_mutation_log
         self.f_model_log = f_model_log
         self.f_in_sample_prediction_log = f_in_sample_prediction_log

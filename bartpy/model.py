@@ -1,4 +1,4 @@
-from copy import deepcopy
+from copy import deepcopy, copy
 from typing import List, Generator
 
 import numpy as np
@@ -37,9 +37,9 @@ class Model:
         self._prediction = None
 
     def initialize_trees(self) -> List[Tree]:
-        tree_data = deepcopy(self.data)
-        tree_data._y = tree_data.y / self.n_trees
-        trees = [Tree([LeafNode(Split(self.data))]) for _ in range(self.n_trees)]
+        tree_data = copy(self.data)
+        tree_data.update_y(tree_data.y / self.n_trees)
+        trees = [Tree([LeafNode(Split(tree_data))]) for _ in range(self.n_trees)]
         return trees
 
     def residuals(self) -> np.ndarray:

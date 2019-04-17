@@ -6,6 +6,7 @@ import numpy as np
 from bartpy.errors import NoSplittableVariableException, NoPrunableNodeException
 from bartpy.mutation import TreeMutation, GrowMutation, PruneMutation
 from bartpy.node import LeafNode, DecisionNode, split_node
+from bartpy.samplers.scalar import DiscreteSampler
 from bartpy.samplers.treemutation import TreeMutationProposer
 from bartpy.split import SplitCondition
 from bartpy.tree import Tree
@@ -35,20 +36,12 @@ class UniformMutationProposer(TreeMutationProposer):
                 prob_method = [0.5, 0.5]
             self.prob_method_lookup = {x[0]: x[1] for x in zip([uniformly_sample_grow_mutation, uniformly_sample_prune_mutation], prob_method)}
         self.methods = list(self.prob_method_lookup.keys())
-        self.proposals = None
-        self.refresh_proposal_cache()
-
-    def refresh_proposal_cache(self):
-        self.proposals = list(np.random.choice(list(self.prob_method_lookup.keys()), p=list(self.prob_method_lookup.values()), size=250))
-
-    def sample_mutation_method(self) -> Callable[[Tree], TreeMutation]:
-        prop = self.proposals.pop()
-        if len(self.proposals) == 0:
-            self.refresh_proposal_cache()
-        return prop
+        self.method_sampler = DiscreteSampler(list(self.prob_method_lookup.keys()),
+                                              list(self.prob_method_lookup.values()),
+                                              cache_size=1000)
 
     def propose(self, tree: Tree) -> TreeMutation:
-        method = self.sample_mutation_method()
+        method = self.method_sampler.sample()
         try:
             return method(tree)
         except NoSplittableVariableException:
@@ -63,10 +56,10 @@ def random_splittable_leaf_node(tree: Tree) -> LeafNode:
     i.e. a random draw from the set of leaf nodes that have at least two distinct values in their covariate matrix
     """
     splittable_nodes = tree.splittable_leaf_nodes
-    if len(splittable_nodes) > 0:
-        return np.random.choice(splittable_nodes)
-    else:
+    if len(splittable_nodes) == 0:
         raise NoSplittableVariableException()
+    else:
+        return np.random.choice(splittable_nodes)
 
 
 def random_prunable_decision_node(tree: Tree) -> DecisionNode:

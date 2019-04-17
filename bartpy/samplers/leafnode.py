@@ -15,7 +15,7 @@ class LeafNodeSampler(Sampler):
     """
 
     def __init__(self,
-                 scalar_sampler=NormalScalarSampler(50000)):
+                 scalar_sampler=NormalScalarSampler(60000)):
         self._scalar_sampler = scalar_sampler
 
     def step(self, model: Model, node: LeafNode) -> float:
@@ -26,8 +26,11 @@ class LeafNodeSampler(Sampler):
     def sample(self, model: Model, node: LeafNode) -> float:
         prior_var = model.sigma_m ** 2
         n = node.data.n_obsv
-        likihood_var = (model.sigma.current_value() ** 2) / n
-        likihood_mean = np.mean(node.data.y)
-        posterior_variance = 1. / (1. / prior_var + 1. / likihood_var)
-        posterior_mean = likihood_mean * (prior_var / (likihood_var + prior_var))
-        return posterior_mean + (self._scalar_sampler.sample() * np.power(posterior_variance / model.n_trees, 0.5))
+        if n > 0:
+            likihood_var = (model.sigma.current_value() ** 2) / n
+            likihood_mean = node.data.summed_y() / node.data.n_obsv
+            posterior_variance = 1. / (1. / prior_var + 1. / likihood_var)
+            posterior_mean = likihood_mean * (prior_var / (likihood_var + prior_var))
+            return posterior_mean + (self._scalar_sampler.sample() * np.power(posterior_variance / model.n_trees, 0.5))
+        else:
+            return 0

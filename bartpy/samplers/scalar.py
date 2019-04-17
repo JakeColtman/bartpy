@@ -54,4 +54,4 @@ class DiscreteSampler():
         return self._cache.pop()
 
     def refresh_cache(self):
-        self._cache = list(np.random.choice(self._values, p=list(self._probas), size=self._cache_size))
+        self._cache = list(np.random.choice(self._values, p=self._probas, size=self._cache_size))

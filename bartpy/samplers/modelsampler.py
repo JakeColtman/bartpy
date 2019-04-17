@@ -49,10 +49,12 @@ class ModelSampler(Sampler):
         for ss in tqdm(range(n_samples)):
             step_trace_dict = self.step(model)
             if ss % thin_inverse == 0:
-                in_sample_log = self.trace_logger["In Sample Prediction"](model.predict())
+                if store_in_sample_predictions:
+                    in_sample_log = self.trace_logger["In Sample Prediction"](model.predict())
                 if in_sample_log is not None:
                     trace.append(in_sample_log)
-                acceptance_trace.append(step_trace_dict)
+                if store_acceptance:
+                    acceptance_trace.append(step_trace_dict)
                 model_log = self.trace_logger["Model"](model)
                 if model_log is not None:
                     model_trace.append(model_log)

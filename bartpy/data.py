@@ -1,15 +1,16 @@
 from collections import namedtuple
+from copy import deepcopy
+from operator import le, gt
 from typing import Any, List
 
 import numpy as np
 import pandas as pd
 
 from bartpy.errors import NoSplittableVariableException
+from bartpy.splitcondition import SplitCondition
 
-SplitData = namedtuple("SplitData", ["left_data", "right_data"])
 
-
-def is_not_constant(series: np.ndarray) -> bool:
+def is_not_constant(series: np.ma.masked_array) -> bool:
     """
     Quickly identify whether a series contains more than 1 distinct value
     Parameters
@@ -22,12 +23,15 @@ def is_not_constant(series: np.ndarray) -> bool:
     bool
         True if more than one distinct value found
     """
-    if len(series) == 1:
+    if len(series) <= 1:
         return False
-    start_value = series[0]
-    for val in series[1:]:
-        if val != start_value:
-            return True
+    first_value = None
+    for i in range(1, len(series)):
+        if not series.mask[i] and series.data[i] != first_value:
+            if first_value is None:
+                first_value = series.data[i]
+            else:
+                return True
     return False
 
 
@@ -49,11 +53,20 @@ class Data:
         You really only want to turn this off if you're not going to the resulting object for anything (e.g. when testing)
     """
 
-    def __init__(self, X: np.ndarray, y: np.ndarray, normalize=False, cache=True, unique_columns=None):
+    def __init__(self,
+                 X: np.ndarray,
+                 y: np.ndarray,
+                 mask: np.ndarray,
+                 normalize=False,
+                 cache=True,
+                 unique_columns=None):
         if type(X) == pd.DataFrame:
             X: pd.DataFrame = X
             X = X.values
+        self._mask = mask
         self._X = X
+        self._masked_X = self._X.view(np.ma.MaskedArray)
+        self._masked_X[self._mask] = np.ma.masked
         self._unique_columns = unique_columns
 
         if normalize:
@@ -62,10 +75,35 @@ class Data:
         else:
             self._y = y
 
+        self._masked_y = np.ma.masked_array(self._y, self._mask[:,0])
+        self.y_cache_up_to_date = True
+        self.y_sum_cache_up_to_date = True
+        self._summed_y = np.sum(self.y)
+
         if cache:
-            self._max_values_cache = self._X.max(axis=0)
-            self._splittable_variables = [x for x in range(0, self._X.shape[1]) if is_not_constant(self._X[:, x])]
-            self._n_unique_values_cache = [None] * self._X.shape[1]
+            self._max_values_cache = self.maxables(self.X)
+            self._splittable_variables = self.splittables(self.X)
+            self._n_obsv = self.nables(self.y)
+
+    def summed_y(self):
+        if self.y_sum_cache_up_to_date:
+            return self._summed_y
+        else:
+            self._summed_y = np.sum(self.y)
+            self.y_sum_cache_up_to_date = True
+            return self.summed_y()
+
+    @staticmethod
+    def nables(y):
+        return int(np.sum(~y.mask))
+
+    @staticmethod
+    def maxables(X):
+        return X.filled(-np.inf).max(axis=0)
+
+    @staticmethod
+    def splittables(X):
+        return [x for x in range(0, X.shape[1]) if is_not_constant(X[:, x])]
 
     @property
     def unique_columns(self):
@@ -78,12 +116,21 @@ class Data:
         return self._unique_columns
 
     @property
-    def y(self) -> np.ndarray:
-        return self._y
+    def y(self) -> np.ma.masked_array:
+        if self.y_cache_up_to_date:
+            return self._masked_y
+        else:
+            self._masked_y = np.ma.masked_array(self._y, mask=self.mask[:,0])
+            self.y_cache_up_to_date = True
+            return self._masked_y
 
     @property
-    def X(self) -> np.ndarray:
-        return self._X
+    def X(self) -> np.ma.masked_array:
+        return self._masked_X
+
+    @property
+    def mask(self) -> np.ndarray:
+        return self._mask
 
     def splittable_variables(self) -> List[int]:
         """
@@ -148,7 +195,7 @@ class Data:
 
     @property
     def n_obsv(self) -> int:
-        return len(self.X)
+        return self._n_obsv
 
     @property
     def n_splittable_variables(self) -> int:
@@ -156,9 +203,12 @@ class Data:
 
     def proportion_of_value_in_variable(self, variable: int, value: float) -> float:
         if variable in self.unique_columns:
-            return 1. / self.n_obsv
+            n_obsv = self.n_obsv
+            if n_obsv == 0.:
+                return 0.
+            return 1. / n_obsv
         else:
-            return np.mean(self._X[:, variable] == value)
+            return float(np.mean(self._X[:, variable] == value))
 
     @staticmethod
     def normalize_y(y: np.ndarray) -> np.ndarray:
@@ -194,3 +244,29 @@ class Data:
     @property
     def normalizing_scale(self) -> float:
         return self.original_y_max - self.original_y_min
+
+    def update_y(self, y):
+        self._y = y
+        self.y_cache_up_to_date = False
+        self.y_sum_cache_up_to_date = False
+
+    def _update_mask(self, other: SplitCondition):
+        if other.operator == gt:
+            column_mask = self._X[:, other.splitting_variable] > other.splitting_value
+        elif other.operator == le:
+            column_mask = self._X[:, other.splitting_variable] <= other.splitting_value
+        else:
+            raise TypeError("Operator type not matched, only {} and {} supported".format(gt, le))
+
+        return self.mask | np.tile(column_mask, (self.mask.shape[1], 1)).T
+
+    def __add__(self, other: SplitCondition):
+        updated_mask = self._update_mask(other)
+
+        return Data(self._X,
+                    self._y,
+                    updated_mask,
+                    normalize=False,
+                    cache=True,
+                    unique_columns=None
+                    )
