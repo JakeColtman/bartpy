@@ -5,7 +5,7 @@ from operator import le, gt
 import pandas as pd
 import numpy as np
 
-from bartpy.data import Data
+from bartpy.data import Data, format_covariate_matrix
 from bartpy.mutation import TreeMutation, PruneMutation
 from bartpy.node import split_node, LeafNode, DecisionNode
 from bartpy.tree import mutate, Tree
@@ -15,8 +15,9 @@ from bartpy.split import Split, SplitCondition
 class TestTreeStructureNodeRetrieval(TestCase):
 
     def setUp(self):
-        data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 2, 3]}).values, np.array([1, 2, 3]))
-        split = Split(data, [])
+        X = format_covariate_matrix(pd.DataFrame({"a": [1, 2, 3], "b": [1, 2, 3]}))
+        data = Data(X, np.array([1, 2, 3]).astype(float))
+        split = Split(data)
         node = LeafNode(split)
         self.a = split_node(node, (SplitCondition(0, 1, le), SplitCondition(0, 1, gt)))
         self.tree = Tree([self.a, self.a.left_child, self.a.right_child])
@@ -63,7 +64,8 @@ class TestTreeStructureNodeRetrieval(TestCase):
 class TestTreeStructureDataUpdate(TestCase):
 
     def setUp(self):
-        self.data = Data(pd.DataFrame({"a": [1, 2, 3], "b": [1, 2, 3]}).values, np.array([1, 2, 3]))
+        X = format_covariate_matrix(pd.DataFrame({"a": [1, 2, 3], "b": [1, 2, 3]}))
+        self.data = Data(X, np.array([1, 2, 3]).astype(float))
 
         self.a = split_node(LeafNode(Split(self.data)), (SplitCondition(0, 1, le), SplitCondition(0, 1, gt)))
         self.b = self.a.left_child
@@ -81,16 +83,16 @@ class TestTreeStructureDataUpdate(TestCase):
         self.tree.update_y(updated_y)
         # Left child keeps LTE condition
         self.assertListEqual([5, 6, 7], list(self.a.data.y))
-        self.assertListEqual([5], list(self.b.data.y))
-        self.assertListEqual([6, 7], list(self.c.data.y))
-        self.assertListEqual([6], list(self.d.data.y))
-        self.assertListEqual([7], list(self.e.data.y))
+        self.assertListEqual([5], list(self.b.data.y.compressed()))
+        self.assertListEqual([6, 7], list(self.c.data.y.compressed()))
+        self.assertListEqual([6], list(self.d.data.y.compressed()))
+        self.assertListEqual([7], list(self.e.data.y.compressed()))
 
 
 class TestTreeStructureMutation(TestCase):
 
     def setUp(self):
-        self.data = Data(pd.DataFrame({"a": [1]}).values, np.array([1]))
+        self.data = Data(format_covariate_matrix(pd.DataFrame({"a": [1]})), np.array([1]).astype(float))
         self.d = LeafNode(Split(self.data), None)
         self.e = LeafNode(Split(self.data), None)
         self.c = DecisionNode(Split(self.data), self.d, self.e)

@@ -3,16 +3,17 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from bartpy.data import Data
-
+from bartpy.data import Data, format_covariate_matrix
 from bartpy.mutation import GrowMutation, PruneMutation
 from bartpy.node import DecisionNode, LeafNode
 from bartpy.split import Split
 
+
 class TestNode(unittest.TestCase):
 
     def setUp(self):
-        self.data = Data(pd.DataFrame({"a": [1]}).values, np.array([1]))
+        self.X = format_covariate_matrix(pd.DataFrame({"a": [1]}))
+        self.data = Data(format_covariate_matrix(self.X), np.array([1.0]))
 
     def test_pruning_leaf(self):
         with self.assertRaises(TypeError):

@@ -1,7 +1,5 @@
-from collections import namedtuple
-from copy import deepcopy
 from operator import le, gt
-from typing import Any, List
+from typing import Any, List, Union
 
 import numpy as np
 import pandas as pd
@@ -35,6 +33,30 @@ def is_not_constant(series: np.ma.masked_array) -> bool:
     return False
 
 
+def ensure_numpy_array(X: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
+    if isinstance(X, pd.DataFrame):
+        return X.values
+    else:
+        return X
+
+
+def ensure_float_array(X: np.ndarray) -> np.ndarray:
+    return X.astype(float)
+
+
+def format_covariate_matrix(X: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
+    X = ensure_float_array(X)
+    return ensure_float_array(X)
+
+
+def make_bartpy_data(X: Union[np.ndarray, pd.DataFrame],
+                     y: np.ndarray,
+                     normalize: bool=True) -> 'Data':
+    X = format_covariate_matrix(X)
+    y = y.astype(float)
+    return Data(X, y, np.zeros_like(X).astype(bool), normalize)
+
+
 class Data:
     """
     Encapsulates the data within a split of feature space.
@@ -56,13 +78,14 @@ class Data:
     def __init__(self,
                  X: np.ndarray,
                  y: np.ndarray,
-                 mask: np.ndarray,
+                 mask: np.ndarray=None,
                  normalize=False,
-                 cache=True,
                  unique_columns=None):
         if type(X) == pd.DataFrame:
             X: pd.DataFrame = X
             X = X.values
+        if mask is None:
+            mask = np.zeros_like(X).astype(bool)
         self._mask = mask
         self._X = X
         self._masked_X = self._X.view(np.ma.MaskedArray)
@@ -79,11 +102,9 @@ class Data:
         self.y_cache_up_to_date = True
         self.y_sum_cache_up_to_date = True
         self._summed_y = np.sum(self.y)
-
-        if cache:
-            self._max_values_cache = self.maxables(self.X)
-            self._splittable_variables = self.splittables(self.X)
-            self._n_obsv = self.nables(self.y)
+        self._max_values_cache = self.X.filled(-np.inf).max(axis=0)
+        self._splittable_variables = [x for x in range(0, self.X.shape[1]) if is_not_constant(self.X[:, x])]
+        self._n_obsv = int(np.sum(~self.y.mask))
 
     def summed_y(self):
         if self.y_sum_cache_up_to_date:
@@ -92,18 +113,6 @@ class Data:
             self._summed_y = np.sum(self.y)
             self.y_sum_cache_up_to_date = True
             return self.summed_y()
-
-    @staticmethod
-    def nables(y):
-        return int(np.sum(~y.mask))
-
-    @staticmethod
-    def maxables(X):
-        return X.filled(-np.inf).max(axis=0)
-
-    @staticmethod
-    def splittables(X):
-        return [x for x in range(0, X.shape[1]) if is_not_constant(X[:, x])]
 
     @property
     def unique_columns(self):
@@ -252,9 +261,9 @@ class Data:
 
     def _update_mask(self, other: SplitCondition):
         if other.operator == gt:
-            column_mask = self._X[:, other.splitting_variable] > other.splitting_value
-        elif other.operator == le:
             column_mask = self._X[:, other.splitting_variable] <= other.splitting_value
+        elif other.operator == le:
+            column_mask = self._X[:, other.splitting_variable] > other.splitting_value
         else:
             raise TypeError("Operator type not matched, only {} and {} supported".format(gt, le))
 
@@ -267,6 +276,4 @@ class Data:
                     self._y,
                     updated_mask,
                     normalize=False,
-                    cache=True,
-                    unique_columns=None
-                    )
+                    unique_columns=None)

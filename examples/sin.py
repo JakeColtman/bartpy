@@ -8,13 +8,13 @@ from bartpy.diagnostics.features import plot_feature_split_proportions
 from bartpy.diagnostics.residuals import plot_qq
 
 
-def run(alpha, beta, n_trees):
+def run(alpha, beta, n_trees, size=100):
     import warnings
 
     warnings.simplefilter("error", UserWarning)
-    x = np.linspace(0, 5, 100000)
+    x = np.linspace(0, 5, size)
     X = pd.DataFrame(x)
-    y = np.random.normal(0, 0.1, size=100000) + np.sin(x)
+    y = np.random.normal(0, 0.1, size=size) + np.sin(x)
 
     model = SklearnModel(n_samples=500, n_burn=100, n_trees=n_trees, alpha=alpha, beta=beta, n_jobs=1, n_chains=1)
     model.fit(X, y)
