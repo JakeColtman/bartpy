@@ -45,7 +45,7 @@ def ensure_float_array(X: np.ndarray) -> np.ndarray:
 
 
 def format_covariate_matrix(X: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
-    X = ensure_float_array(X)
+    X = ensure_numpy_array(X)
     return ensure_float_array(X)
 
 
