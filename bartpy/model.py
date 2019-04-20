@@ -35,7 +35,7 @@ class Model:
         if trees is None:
             self.n_trees = n_trees
             self._trees = self.initialize_trees()
-            self.initialize_tree_structure()
+            self.initialize_tree_values()
         else:
             self.n_trees = len(trees)
             self._trees = trees
@@ -84,7 +84,17 @@ class Model:
     def sigma(self):
         return self._sigma
 
-    def initialize_tree_structure(self):
+    def initialize_tree_values(self) -> None:
+        """
+        Generate a set of initial values to start sampling from.  Helpful for speeding up convergence
+
+        Works by using sklearn's GBT package to generate a single estimator for each tree.
+
+        Returns
+        -------
+        None
+        """
+
         from sklearn.ensemble import GradientBoostingRegressor
         for tree in self.refreshed_trees():
             params = {'n_estimators': 1, 'max_depth': 4, 'min_samples_split': 2,
@@ -95,33 +105,52 @@ class Model:
             map_sklearn_tree_into_bartpy(tree, sklearn_tree)
 
 
-def map_sklearn_split_into_bartpy_split_conditons(tree, index):
-    return [SplitCondition(tree.feature[index], tree.threshold[index], le), SplitCondition(tree.feature[index], tree.threshold[index], gt)]
+def map_sklearn_split_into_bartpy_split_conditions(sklearn_tree, index: int) -> List[SplitCondition]:
+    """
+    Convert how a split is stored in sklearn's gradient boosted trees library to the bartpy representation
+
+    Parameters
+    ----------
+    sklearn_tree: The full tree object
+    index: The index of the node in the tree object
+
+    Returns
+    -------
+
+    """
+    return [
+        SplitCondition(sklearn_tree.feature[index], sklearn_tree.threshold[index], le),
+        SplitCondition(sklearn_tree.feature[index], sklearn_tree.threshold[index], gt)
+    ]
 
 
-def map_sklearn_tree_into_bartpy(bartpy_tree, sklearn_tree):
+def map_sklearn_tree_into_bartpy(bartpy_tree: Tree, sklearn_tree):
     nodes = [None for x in sklearn_tree.children_left]
     nodes[0] = bartpy_tree.nodes[0]
 
-    def search(bartpy_tree, sklearn_tree, parent_index=0, index=0):
-        if sklearn_tree.children_left[index] == -1:
+    def search(index: int=0):
+
+        left_child_index, right_child_index = sklearn_tree.children_left[index], sklearn_tree.children_right[index]
+
+        if left_child_index == -1: # Trees are binary splits, so only need to check left tree
             return
 
-        split_conditions = map_sklearn_split_into_bartpy_split_conditons(sklearn_tree, index)
+        split_conditions = map_sklearn_split_into_bartpy_split_conditions(sklearn_tree, index)
         decision_node = split_node(nodes[index], split_conditions)
-        decision_node.left_child.set_value(sklearn_tree.value[sklearn_tree.children_left[index]][0][0])
-        decision_node.right_child.set_value(sklearn_tree.value[sklearn_tree.children_right[index]][0][0])
+        decision_node.left_child.set_value(sklearn_tree.value[left_child_index][0][0])
+        decision_node.right_child.set_value(sklearn_tree.value[right_child_index][0][0])
 
         mutation = GrowMutation(nodes[index], decision_node)
         mutate(bartpy_tree, mutation)
+
         nodes[index] = decision_node
-        nodes[sklearn_tree.children_left[index]] = decision_node.left_child
-        nodes[sklearn_tree.children_right[index]] = decision_node.right_child
+        nodes[left_child_index] = decision_node.left_child
+        nodes[right_child_index] = decision_node.right_child
 
-        search(bartpy_tree, sklearn_tree, index, sklearn_tree.children_left[index])
-        search(bartpy_tree, sklearn_tree, index, sklearn_tree.children_right[index])
+        search(left_child_index)
+        search(right_child_index)
 
-    search(bartpy_tree, sklearn_tree)
+    search()
 
 
 def deep_copy_model(model: Model) -> Model:

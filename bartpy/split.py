@@ -30,14 +30,14 @@ class Split:
     def combined_condition(self):
         return self._combined_condition
 
-    def condition(self, data: Data=None) -> np.array:
-        if data is None:
+    def condition(self, X: np.ndarray=None) -> np.array:
+        if X is None:
             return ~self._data.mask[:,0]
         else:
-            return self.out_of_sample_condition(data.X)
+            return self.out_of_sample_condition(X)
 
-    def out_of_sample_condition(self, X: np.ndarray):
-        self._combined_condition.condition(X)
+    def out_of_sample_condition(self, X: np.ndarray) -> np.ndarray:
+        return self._combined_condition.condition(X)
 
     def out_of_sample_conditioner(self) -> CombinedCondition:
         return self._combined_condition
