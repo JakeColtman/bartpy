@@ -7,7 +7,7 @@ class Sigma:
         y ~ Normal(sum_of_trees, sigma)
 
     The default prior is an inverse gamma distribution on the variance
-    The parameterization is slightly different to the numpy gamma version, with the scale parameter inverted
+    The parametrization is slightly different to the numpy gamma version, with the scale parameter inverted
 
     Parameters
     ----------

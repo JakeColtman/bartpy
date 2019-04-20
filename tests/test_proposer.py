@@ -1,7 +1,7 @@
 import unittest
 
-from bartpy.data import Data
-from bartpy.samplers.treemutation.uniform.proposer import uniformly_sample_grow_mutation, uniformly_sample_prune_mutation
+from bartpy.data import make_bartpy_data
+from bartpy.samplers.unconstrainedtree.proposer import uniformly_sample_grow_mutation, uniformly_sample_prune_mutation
 from bartpy.split import Split
 from bartpy.tree import LeafNode, Tree, DecisionNode
 
@@ -12,7 +12,7 @@ import numpy as np
 class TestPruneTreeMutationProposer(unittest.TestCase):
 
     def setUp(self):
-        self.data = Data(pd.DataFrame({"a": [1, 2]}).values, np.array([1, 1]))
+        self.data = make_bartpy_data(pd.DataFrame({"a": [1, 2]}), np.array([1, 2]), normalize=False)
         self.d = LeafNode(Split(self.data))
         self.e = LeafNode(Split(self.data))
         self.c = DecisionNode(Split(self.data), self.d, self.e)
@@ -34,7 +34,7 @@ class TestPruneTreeMutationProposer(unittest.TestCase):
 class TestGrowTreeMutationProposer(unittest.TestCase):
 
     def setUp(self):
-        self.data = Data(pd.DataFrame({"a": [1, 2]}).values, np.array([1, 1]))
+        self.data = make_bartpy_data(pd.DataFrame({"a": np.random.normal(size=1000)}), np.array(np.random.normal(size=1000)))
         self.d = LeafNode(Split(self.data))
         self.e = LeafNode(Split(self.data))
         self.c = DecisionNode(Split(self.data), self.d, self.e)

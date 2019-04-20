@@ -1,8 +1,52 @@
 from abc import abstractmethod
+from typing import Optional
 
 from bartpy.model import Model
 from bartpy.mutation import TreeMutation
+from bartpy.samplers.sampler import Sampler
 from bartpy.tree import Tree
+
+
+class TreeMutationSampler(Sampler):
+    """
+    A sampler for tree mutation space.
+    Responsible for producing samples of ways to mutate a tree within a model
+
+    A general schema of implementation is to combine a proposer and likihood evaluator to:
+     - propose a mutation
+     - assess likihood
+     - accept if likihood higher than a uniform(0, 1) draw
+    """
+
+    def sample(self, model: Model, tree: Tree) -> Optional[TreeMutation]:
+        raise NotImplementedError()
+
+    def step(self, model: Model, tree: Tree) -> Optional[TreeMutation]:
+        raise NotImplementedError()
+
+
+class TreeMutationProposer:
+    """
+    A TreeMutationProposer is responsible for generating samples from tree space
+    It is capable of generating proposed TreeMutations
+    """
+
+    @abstractmethod
+    def propose(self, tree: Tree) -> TreeMutation:
+        """
+        Propose a mutation to make to the given tree
+
+        Parameters
+        ----------
+        tree: Tree
+            The tree to be mutate
+
+        Returns
+        -------
+        TreeMutation
+            A way to update the input tree
+        """
+        raise NotImplementedError()
 
 
 class TreeMutationLikihoodRatio:
@@ -30,6 +74,9 @@ class TreeMutationLikihoodRatio:
         float
             logged ratio of likelihoods
         """
+        #print(self.log_transition_ratio(tree, mutation))
+        #print(self.log_likihood_ratio(model, tree, mutation))
+        #print(self.log_tree_ratio(model, tree, mutation))
         return self.log_transition_ratio(tree, mutation) + self.log_likihood_ratio(model, tree, mutation) + self.log_tree_ratio(model, tree, mutation)
 
     @abstractmethod

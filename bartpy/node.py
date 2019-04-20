@@ -1,7 +1,5 @@
 from typing import Union, Tuple
 
-import numpy as np
-
 from bartpy.data import Data
 from bartpy.split import Split, SplitCondition
 
@@ -80,7 +78,7 @@ class DecisionNode(TreeNode):
     def is_prunable(self) -> bool:
         return type(self.left_child) == LeafNode and type(self.right_child) == LeafNode
 
-    def variable_split_on(self) -> SplitCondition:
+    def most_recent_split_condition(self) -> SplitCondition:
         return self.left_child.split.most_recent_split_condition()
 
 
@@ -100,8 +98,10 @@ def split_node(node: LeafNode, split_conditions: Tuple[SplitCondition, SplitCond
 
 def deep_copy_node(node: TreeNode):
     if type(node) == LeafNode:
+        node: LeafNode = node
         return LeafNode(node.split.out_of_sample_conditioner(), value=node.current_value, depth=node.depth)
     elif type(node) == DecisionNode:
+        node: DecisionNode = node
         return DecisionNode(node.split.out_of_sample_conditioner(), node.left_child, node.right_child, depth=node.depth)
     else:
         raise TypeError("Unsupported node type")

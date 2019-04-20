@@ -1,12 +1,12 @@
 from copy import deepcopy
 
-from matplotlib import pyplot as plt
 import numpy as np
-from sklearn.feature_selection.base import SelectorMixin
+from matplotlib import pyplot as plt
 from sklearn.base import BaseEstimator
+from sklearn.feature_selection.base import SelectorMixin
 
 from bartpy.diagnostics.features import null_feature_split_proportions_distribution, \
-    local_thresholds, global_thresholds, is_kept, feature_split_proportions_counter, plot_feature_proportions_against_thresholds, plot_null_feature_importance_distributions, \
+    local_thresholds, global_thresholds, is_kept, feature_split_proportions, plot_feature_proportions_against_thresholds, plot_null_feature_importance_distributions, \
     plot_feature_split_proportions
 from bartpy.sklearnmodel import SklearnModel
 
@@ -22,15 +22,15 @@ class SelectSplitProportionThreshold(BaseEstimator, SelectorMixin):
     def fit(self, X, y):
         self.model.fit(X, y)
         self.X, self.y = X, y
-        self.feature_proportions = feature_split_proportions_counter(self.model.model_samples)
+        self.feature_proportions = feature_split_proportions(self.model)
         return self
 
     def _get_support_mask(self):
         return np.array([proportion > self.percentile for proportion in self.feature_proportions.values()])
 
-
     def plot(self):
-        plot_feature_split_proportions(self.model.model_samples)
+        plot_feature_split_proportions(self.model)
+        plt.show()
 
 
 class SelectNullDistributionThreshold(BaseEstimator, SelectorMixin):
@@ -55,7 +55,7 @@ class SelectNullDistributionThreshold(BaseEstimator, SelectorMixin):
         self.X, self.y = X, y
         self.null_distribution = null_feature_split_proportions_distribution(self.model, X, y, self.n_permutations)
         self.thresholds = local_thresholds(self.null_distribution, self.percentile)
-        self.feature_proportions = feature_split_proportions_counter(self.model.model_samples)
+        self.feature_proportions = feature_split_proportions(self.model)
         return self
 
     def _get_support_mask(self):
@@ -65,3 +65,4 @@ class SelectNullDistributionThreshold(BaseEstimator, SelectorMixin):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
         plot_feature_proportions_against_thresholds(self.feature_proportions, self.thresholds, ax1)
         plot_null_feature_importance_distributions(self.null_distribution, ax2)
+        plt.show()

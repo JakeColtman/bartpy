@@ -1,25 +1,23 @@
-from collections import Counter
 import itertools
-from copy import deepcopy
+from collections import Counter
 from typing import List, Mapping, Union
 
-from joblib import Parallel
-from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib import pyplot as plt
 
-from bartpy.model import Model
+from bartpy.runner import run_models
 from bartpy.sklearnmodel import SklearnModel
 
-ImportanceMap = Mapping[str, float]
-ImportanceDistributionMap = Mapping[str, List[float]]
+ImportanceMap = Mapping[int, float]
+ImportanceDistributionMap = Mapping[int, List[float]]
 
 
-def feature_split_proportions_counter(model_samples: List[Model]) -> Mapping[int, float]:
+def feature_split_proportions(model: SklearnModel) -> Mapping[int, float]:
 
     split_variables = []
-    for sample in model_samples:
+    for sample in model.model_samples:
         for tree in sample.trees:
             for node in tree.nodes:
                 splitting_var = node.split.splitting_variable
@@ -27,8 +25,10 @@ def feature_split_proportions_counter(model_samples: List[Model]) -> Mapping[int
     return {x[0]: x[1] / len(split_variables) for x in Counter(split_variables).items() if x[0] is not None}
 
 
-def plot_feature_split_proportions(model_samples: List[Model]):
-    proportions = feature_split_proportions_counter(model_samples)
+def plot_feature_split_proportions(model: SklearnModel, ax=None):
+    if ax is None:
+        fig, ax = plt.subplots(1, 1)
+    proportions = feature_split_proportions(model)
 
     y_pos = np.arange(len(proportions))
     name, count = list(proportions.keys()), list(proportions.values())
@@ -38,7 +38,7 @@ def plot_feature_split_proportions(model_samples: List[Model]):
     plt.xlabel('Proportion of all splits')
     plt.ylabel('Feature')
     plt.title('Proportion of Splits Made on Each Variable')
-    plt.show()
+    return ax
 
 
 def null_feature_split_proportions_distribution(model: SklearnModel,
@@ -69,27 +69,20 @@ def null_feature_split_proportions_distribution(model: SklearnModel,
 
     inclusion_dict = {x: [] for x in range(X.shape[1])}
 
-    delayed_chains = []
-    for _ in range(n_permutations):
-        permuted_model = deepcopy(model)
-        y_perm = np.random.permutation(y)
-        delayed_chains += permuted_model.delayed_chains(X, y_perm)
+    y_s = [np.random.permutation(y) for _ in range(n_permutations)]
+    X_s = [X for _ in y_s]
 
-    n_jobs = model.n_jobs
-    combined_samples = Parallel(n_jobs)(delayed_chains)
-    combined_model_samples = [x[0] for x in combined_samples]
-    flattened_model_samples = list(itertools.chain.from_iterable(combined_model_samples))
-    by_run_model_samples = np.array_split(flattened_model_samples, n_permutations)
+    fit_models = run_models(model, X_s, y_s)
 
-    for run_samples in by_run_model_samples:
-        splits_run = feature_split_proportions_counter(run_samples)
+    for model in fit_models:
+        splits_run = feature_split_proportions(model)
         for key, value in splits_run.items():
             inclusion_dict[key].append(value)
 
     return inclusion_dict
 
 
-def plot_null_feature_importance_distributions(null_distributions: Mapping[str, List[float]], ax=None) -> None:
+def plot_null_feature_importance_distributions(null_distributions: Mapping[int, List[float]], ax=None) -> None:
     if ax is None:
         fig, ax = plt.subplots(1, 1)
     df = pd.DataFrame(null_distributions)
@@ -97,13 +90,59 @@ def plot_null_feature_importance_distributions(null_distributions: Mapping[str, 
     df.columns = ["variable", "p"]
     sns.boxplot(x="variable", y="p", data=df, ax=ax)
     ax.set_title("Null Feature Importance Distribution")
-    
+    return ax
 
-def local_thresholds(null_distributions: ImportanceDistributionMap, percentile: float) -> Mapping[str, float]:
+
+def local_thresholds(null_distributions: ImportanceDistributionMap, percentile: float) -> Mapping[int, float]:
+    """
+    Calculate the required proportion of splits to be selected by variable
+
+    Creates a null distribution for each variable based on the % of splits including that variable in each of the permuted models
+
+    Each variable has its own threshold that is independent of the other variables
+
+    Note - this is significantly less stringent than the global threshold
+
+    Parameters
+    ----------
+    null_distributions: ImportanceDistributionMap
+        A mapping from variable to distribution of split inclusion proportions under the null
+    percentile: float
+        The percentile of the null distribution to use as a cutoff.
+        The closer to 1.0, the more stringent the threshold
+
+    Returns
+    -------
+    Mapping[int, float]
+        A lookup from column to % inclusion threshold
+    """
     return {feature: np.percentile(null_distributions[feature], percentile) for feature in null_distributions}
 
 
-def global_thresholds(null_distributions: ImportanceDistributionMap, percentile: float) -> Mapping[str, float]:
+def global_thresholds(null_distributions: ImportanceDistributionMap, percentile: float) -> Mapping[int, float]:
+    """
+    Calculate the required proportion of splits to be selected by variable
+
+    Creates a distribution of the _highest_ inclusion percentage of any variable in each of the permuted models
+    Threshold is set as a percentile of this distribution
+
+    All variables have the same threshold
+
+    Note that this is significantly more stringent than the local threshold
+
+    Parameters
+    ----------
+    null_distributions: ImportanceDistributionMap
+        A mapping from variable to distribution of split inclusion proportions under the null
+    percentile: float
+        The percentile of the null distribution to use as a cutoff.
+        The closer to 1.0, the more stringent the threshold
+
+    Returns
+    -------
+    Mapping[int, float]
+        A lookup from column to % inclusion threshold
+    """
     q_s = []
     df = pd.DataFrame(null_distributions)
     for row in df.iter_rows():
@@ -112,15 +151,42 @@ def global_thresholds(null_distributions: ImportanceDistributionMap, percentile:
     return {feature: threshold for feature in null_distributions}
 
 
-def kept_features(feature_proportions, thresholds):
-    kept_features = []
-    for feature in feature_proportions:
-        if feature_proportions[feature] > thresholds[feature]:
-            kept_features.append(feature)
-    return kept_features
+def kept_features(feature_proportions: Mapping[int, float], thresholds: Mapping[int, float]) -> List[int]:
+    """
+    Extract the features to keep
+
+    Parameters
+    ----------
+    feature_proportions: Mapping[int, float]
+        Lookup from variable to % of splits in the model that use that variable
+    thresholds:  Mapping[int, float]
+        Lookup from variable to required % of splits in the model to be kept
+
+    Returns
+    -------
+    List[int]
+        Variable selected for inclusion in the final model
+    """
+    return [x[0] for x in zip(feature_proportions.keys(), is_kept(feature_proportions, thresholds)) if x[1]]
 
 
-def is_kept(feature_proportions, thresholds):
+def is_kept(feature_proportions: Mapping[int, float], thresholds: Mapping[int, float]) -> List[bool]:
+    """
+    Determine whether each variable should be kept after selection
+
+    Parameters
+    ----------
+    feature_proportions: Mapping[int, float]
+        Lookup from variable to % of splits in the model that use that variable
+    thresholds:  Mapping[int, float]
+        Lookup from variable to required % of splits in the model to be kept
+
+    Returns
+    -------
+    List[bool]
+        An array of length equal to the width of the covariate matrix
+        True if the variable should be kept, False otherwise
+    """
     return [feature_proportions[feature] > thresholds[feature] for feature in feature_proportions]
 
 
@@ -142,3 +208,4 @@ def plot_feature_proportions_against_thresholds(feature_proportions, thresholds,
     ax.set_title("Feature Importance Compared to Threshold")
     ax.set_xlabel("Feature")
     ax.set_ylabel("% Splits")
+    return ax

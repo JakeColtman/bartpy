@@ -1,4 +1,4 @@
-from copy import deepcopy
+from copy import deepcopy, copy
 from typing import List, Generator
 
 import numpy as np
@@ -6,13 +6,21 @@ import pandas as pd
 
 from bartpy.data import Data
 from bartpy.sigma import Sigma
-from bartpy.tree import Tree, LeafNode, deep_copy_tree
 from bartpy.split import Split
+from bartpy.tree import Tree, LeafNode, deep_copy_tree
 
 
 class Model:
 
-    def __init__(self, data: Data, sigma: Sigma, trees=None, n_trees: int = 50, alpha: float=0.95, beta: int=2., k: int=2.):
+    def __init__(self,
+                 data: Data,
+                 sigma: Sigma,
+                 trees=None,
+                 n_trees: int = 50,
+                 alpha: float=0.95,
+                 beta: float=2.,
+                 k: int=2.):
+
         self.data = data
         self.alpha = float(alpha)
         self.beta = float(beta)
@@ -29,9 +37,9 @@ class Model:
         self._prediction = None
 
     def initialize_trees(self) -> List[Tree]:
-        tree_data = deepcopy(self.data)
-        tree_data._y = tree_data.y / self.n_trees
-        trees = [Tree([LeafNode(Split(self.data))]) for _ in range(self.n_trees)]
+        tree_data = copy(self.data)
+        tree_data.update_y(tree_data.y / self.n_trees)
+        trees = [Tree([LeafNode(Split(tree_data))]) for _ in range(self.n_trees)]
         return trees
 
     def residuals(self) -> np.ndarray:
@@ -47,6 +55,7 @@ class Model:
 
     def _out_of_sample_predict(self, X: np.ndarray):
         if type(X) == pd.DataFrame:
+            X: pd.DataFrame = X
             X = X.values
         return np.sum([tree.predict(X) for tree in self.trees], axis=0)
 
