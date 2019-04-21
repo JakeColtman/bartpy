@@ -1,5 +1,5 @@
 from os import path
-from setuptools import setup
+from setuptools import setup, find_packages
 
 here = path.abspath(path.dirname(__file__))
 
@@ -10,7 +10,7 @@ setup(
     url='https://github.com/JakeColtman/bartpy',
     author='Jake Coltman',
     author_email='jakecoltman@sky.com',
-    packages=['bartpy'],
+    packages=find_packages(),
     install_requires=[
         'joblib',
         'matplotlib',
@@ -23,5 +23,3 @@ setup(
         'tqdm',
     ]
 )
-
-
