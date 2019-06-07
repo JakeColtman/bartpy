@@ -1,5 +1,5 @@
 from operator import le, gt
-from typing import List, Union
+from typing import Callable, List, Optional, Union
 
 import numpy as np
 
@@ -15,7 +15,7 @@ class SplitCondition(object):
 
     """
 
-    def __init__(self, splitting_variable: int, splitting_value: float, operator: Union[gt, le], condition=None):
+    def __init__(self, splitting_variable: int, splitting_value: float, operator: Callable[[float, float], bool], condition=None):
         self.splitting_variable = splitting_variable
         self.splitting_value = splitting_value
         self._condition = condition
@@ -57,7 +57,7 @@ class CombinedCondition(object):
         else:
             self.splitting_variable = None
 
-    def condition(self, X: np.ndarray):
+    def condition(self, X: np.ndarray) -> np.ndarray:
         c = np.array([True] * len(X))
         for variable in self.variables.keys():
             c = c & (X[:, variable] > self.variables[variable].min_value) & (X[:, variable] <= self.variables[variable].max_value)

@@ -4,7 +4,7 @@ from bartpy.data import Data
 from bartpy.split import Split, SplitCondition
 
 
-class TreeNode*(object):
+class TreeNode(object):
     """
     A representation of a node in the Tree
     Contains two main types of information:
@@ -72,7 +72,7 @@ class DecisionNode(TreeNode):
     Unlike a `LeafNode`, it contains very little actual logic beyond tying the tree together
     """
 
-    def __init__(self, split: Split, left_child_node: Union[LeafNode, 'DecisionNode'], right_child_node: Union[LeafNode, 'DecisionNode'], depth=0):
+    def __init__(self, split: Split, left_child_node: TreeNode, right_child_node: TreeNode, depth=0):
         super().__init__(split, depth, left_child_node, right_child_node)
 
     def is_prunable(self) -> bool:
