@@ -4,7 +4,7 @@ from typing import List, Union
 import numpy as np
 
 
-class SplitCondition:
+class SplitCondition(object):
     """
     A representation of a split in feature space.
     The two main components are:
@@ -28,7 +28,7 @@ class SplitCondition:
         return self.splitting_variable == other.splitting_variable and self.splitting_value == other.splitting_value and self.operator == other.operator
 
 
-class CombinedVariableCondition:
+class CombinedVariableCondition(object):
 
     def __init__(self, splitting_variable: int, min_value: float, max_value: float):
         self.splitting_variable = splitting_variable
@@ -45,7 +45,7 @@ class CombinedVariableCondition:
             return self
 
 
-class CombinedCondition:
+class CombinedCondition(object):
 
     def __init__(self, variables: List[int], conditions: List[SplitCondition]):
         self.variables = {v: CombinedVariableCondition(v, -np.inf, np.inf) for v in variables}

@@ -39,22 +39,28 @@ class UniformTreeMutationLikihoodRatio(TreeMutationLikihoodRatio):
 
     def log_transition_ratio(self, tree: Tree, mutation: TreeMutation):
         if mutation.kind == "prune":
+            mutation: PruneMutation = mutation
             return self.log_prune_transition_ratio(tree, mutation)
         if mutation.kind == "grow":
+            mutation: GrowMutation = mutation
             return self.log_grow_transition_ratio(tree, mutation)
         else:
             raise NotImplementedError("kind {} not supported".format(mutation.kind))
 
     def log_tree_ratio(self, model: Model, tree: Tree, mutation: TreeMutation):
         if mutation.kind == "grow":
+            mutation: GrowMutation = mutation
             return self.log_tree_ratio_grow(model, tree, mutation)
         if mutation.kind == "prune":
+            mutation: PruneMutation = mutation
             return self.log_tree_ratio_prune(model, mutation)
 
     def log_likihood_ratio(self, model: Model, tree: Tree, proposal: TreeMutation):
         if proposal.kind == "grow":
+            proposal: GrowMutation = proposal
             log_lik = self.log_likihood_ratio_grow(model, proposal)
         elif proposal.kind == "prune":
+            proposal: PruneMutation = proposal
             log_lik = self.log_likihood_ratio_prune(model, proposal)
         #else:
         #    raise NotImplementedError("Only prune and grow mutations supported")

@@ -4,7 +4,7 @@ from bartpy.data import Data
 from bartpy.split import Split, SplitCondition
 
 
-class TreeNode:
+class TreeNode*(object):
     """
     A representation of a node in the Tree
     Contains two main types of information:

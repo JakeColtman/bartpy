@@ -1,7 +1,7 @@
 from bartpy.node import TreeNode, DecisionNode, LeafNode
 
 
-class TreeMutation:
+class TreeMutation(object):
     """
     An encapsulation of a change to be made to the tree.
     Constructed of three components
