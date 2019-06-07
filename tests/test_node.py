@@ -38,3 +38,6 @@ class TestNode(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             PruneMutation(e, a)
+
+if __name__ == '__main__':
+    unittest.main()
