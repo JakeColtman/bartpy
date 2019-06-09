@@ -1,10 +1,10 @@
 from operator import le, gt
-from typing import List, Union
+from typing import Callable, List, Optional, Union
 
 import numpy as np
 
 
-class SplitCondition:
+class SplitCondition(object):
     """
     A representation of a split in feature space.
     The two main components are:
@@ -15,7 +15,7 @@ class SplitCondition:
 
     """
 
-    def __init__(self, splitting_variable: int, splitting_value: float, operator: Union[gt, le], condition=None):
+    def __init__(self, splitting_variable: int, splitting_value: float, operator: Callable[[float, float], bool], condition=None):
         self.splitting_variable = splitting_variable
         self.splitting_value = splitting_value
         self._condition = condition
@@ -28,7 +28,7 @@ class SplitCondition:
         return self.splitting_variable == other.splitting_variable and self.splitting_value == other.splitting_value and self.operator == other.operator
 
 
-class CombinedVariableCondition:
+class CombinedVariableCondition(object):
 
     def __init__(self, splitting_variable: int, min_value: float, max_value: float):
         self.splitting_variable = splitting_variable
@@ -45,7 +45,7 @@ class CombinedVariableCondition:
             return self
 
 
-class CombinedCondition:
+class CombinedCondition(object):
 
     def __init__(self, variables: List[int], conditions: List[SplitCondition]):
         self.variables = {v: CombinedVariableCondition(v, -np.inf, np.inf) for v in variables}
@@ -57,7 +57,7 @@ class CombinedCondition:
         else:
             self.splitting_variable = None
 
-    def condition(self, X: np.ndarray):
+    def condition(self, X: np.ndarray) -> np.ndarray:
         c = np.array([True] * len(X))
         for variable in self.variables.keys():
             c = c & (X[:, variable] > self.variables[variable].min_value) & (X[:, variable] <= self.variables[variable].max_value)

@@ -24,7 +24,9 @@ class ResidualBART(SklearnModel):
         else:
             base_estimator = LinearRegression()
         self.base_estimator = base_estimator
-        super().__init__(n_trees, sigma_a, sigma_b, n_samples, n_burn, p_grow, p_prune, alpha, beta)
+        super().__init__(n_trees=n_trees, sigma_a=sigma_a, sigma_b=sigma_b,
+                         n_samples=n_samples, n_burn=n_burn, p_grow=p_grow,
+                         p_prune=p_prune, alpha=alpha, beta=beta)
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> 'ResidualBART':
         self.base_estimator.fit(X, y)

@@ -30,7 +30,7 @@ class Split:
     def combined_condition(self):
         return self._combined_condition
 
-    def condition(self, data: Data=None) -> np.array:
+    def condition(self, data: Data=None) -> np.ndarray:
         if data is None:
             return ~self._data.mask[:,0]
         else:

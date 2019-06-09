@@ -1,5 +1,5 @@
 from copy import deepcopy, copy
-from typing import List, Generator
+from typing import List, Generator, Optional
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,7 @@ from bartpy.tree import Tree, LeafNode, deep_copy_tree
 class Model:
 
     def __init__(self,
-                 data: Data,
+                 data: Optional[Data],
                  sigma: Sigma,
                  trees=None,
                  n_trees: int = 50,

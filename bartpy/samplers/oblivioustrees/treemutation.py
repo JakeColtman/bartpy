@@ -45,7 +45,7 @@ class UnconstrainedTreeMutationSampler(Sampler):
         else:
             return None
 
-    def step(self, model: Model, tree: Tree) -> Optional[TreeMutation]:
+    def step(self, model: Model, tree: Tree) -> Optional[List[TreeMutation]]:
         mutations = self.sample(model, tree)
         if mutations is not None:
             for mutation in mutations:
