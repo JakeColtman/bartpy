@@ -13,6 +13,8 @@ from bartpy.tree import Tree, mutate
 class SklearnTreeInitializer(Initializer):
     """
     Initialize tree structure and leaf node values by fitting a single Sklearn GBR tree
+
+    Both tree structure and leaf node parameters are copied across
     """
 
     def __init__(self,
@@ -67,7 +69,7 @@ def map_sklearn_tree_into_bartpy(bartpy_tree: Tree, sklearn_tree):
 
         left_child_index, right_child_index = sklearn_tree.children_left[index], sklearn_tree.children_right[index]
 
-        if left_child_index == -1: # Trees are binary splits, so only need to check left tree
+        if left_child_index == -1:  # Trees are binary splits, so only need to check left tree
             return
 
         searched_node: LeafNode = nodes[index]
