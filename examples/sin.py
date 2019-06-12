@@ -2,10 +2,13 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 
+from bartpy.initializers.initializer import Initializer
 from bartpy.sklearnmodel import SklearnModel
 from bartpy.diagnostics.trees import plot_tree_depth
 from bartpy.diagnostics.features import plot_feature_split_proportions
 from bartpy.diagnostics.residuals import plot_qq
+
+from bartpy.samplers.oblivioustrees.treemutation import get_tree_sampler
 
 
 def run(alpha, beta, n_trees, size=100):
@@ -16,7 +19,15 @@ def run(alpha, beta, n_trees, size=100):
     X = pd.DataFrame(x)
     y = np.random.normal(0, 0.1, size=size) + np.sin(x)
 
-    model = SklearnModel(n_samples=500, n_burn=100, n_trees=n_trees, alpha=alpha, beta=beta, n_jobs=1, n_chains=1)
+    model = SklearnModel(n_samples=10,
+                         n_burn=10,
+                         n_trees=n_trees,
+                         alpha=alpha,
+                         beta=beta,
+                         n_jobs=1,
+                         n_chains=1,
+                         f_tree_sampler=get_tree_sampler
+                         )
     model.fit(X, y)
     plt.plot(model.data.unnormalized_y)
     plt.plot(model.predict())

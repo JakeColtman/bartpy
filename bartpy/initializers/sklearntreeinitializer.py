@@ -22,12 +22,11 @@ class SklearnTreeInitializer(Initializer):
                  min_samples_split: int=2,
                  loss: str='ls'):
         self.max_depth = max_depth
-        self.min_samples_split = min_samples_split,
+        self.min_samples_split = min_samples_split
         self.loss = loss
 
     def initialize_tree(self,
                         tree: Tree) -> None:
-
         params = {
             'n_estimators': 1,
             'max_depth': self.max_depth,

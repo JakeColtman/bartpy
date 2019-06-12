@@ -7,13 +7,15 @@ from joblib import Parallel, delayed
 from sklearn.base import RegressorMixin, BaseEstimator
 
 from bartpy.data import Data
+from bartpy.initializers.initializer import Initializer
+from bartpy.initializers.sklearntreeinitializer import SklearnTreeInitializer
 from bartpy.model import Model
 from bartpy.samplers.leafnode import LeafNodeSampler
 from bartpy.samplers.modelsampler import ModelSampler, Chain
 from bartpy.samplers.schedule import SampleSchedule
 from bartpy.samplers.sigma import SigmaSampler
 from bartpy.samplers.treemutation import TreeMutationSampler
-from bartpy.samplers.unconstrainedtree.treemutation import get_unconstrained_tree_sampler
+from bartpy.samplers.unconstrainedtree.treemutation import get_tree_sampler
 from bartpy.sigma import Sigma
 
 
@@ -72,6 +74,9 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         whether to store acceptance rates of the gibbs samples
         unless you're very memory constrained, you wouldn't want to set this to false
         useful for diagnostics
+    tree_sampler: Optional[TreeMutationSampler]
+        method used to perform sampling
+        defaults to unconstrained
     n_jobs: int
         how many cores to use when computing MCMC samples
         set to `-1` to use all cores
@@ -91,6 +96,8 @@ class SklearnModel(BaseEstimator, RegressorMixin):
                  beta: float = 2.,
                  store_in_sample_predictions: bool=True,
                  store_acceptance_trace: bool=True,
+                 f_tree_sampler: Callable[[float, float], TreeMutationSampler]=get_tree_sampler,
+                 initializer: Initializer=SklearnTreeInitializer(),
                  n_jobs=-1):
         self.n_trees = n_trees
         self.n_chains = n_chains
@@ -107,8 +114,8 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.store_in_sample_predictions = store_in_sample_predictions
         self.store_acceptance_trace = store_acceptance_trace
         self.columns = None
-
-        self.tree_sampler: TreeMutationSampler = get_unconstrained_tree_sampler(p_grow, p_prune)
+        self.tree_sampler = f_tree_sampler(self.p_grow, self.p_prune)
+        self.initializer = initializer
         self.schedule = SampleSchedule(self.tree_sampler, LeafNodeSampler(), SigmaSampler())
         self.sampler = ModelSampler(self.schedule)
 
@@ -158,7 +165,12 @@ class SklearnModel(BaseEstimator, RegressorMixin):
             raise ValueError("Empty covariate matrix passed")
         self.data = self._convert_covariates_to_data(X, y)
         self.sigma = Sigma(self.sigma_a, self.sigma_b, self.data.normalizing_scale)
-        self.model = Model(self.data, self.sigma, n_trees=self.n_trees, alpha=self.alpha, beta=self.beta)
+        self.model = Model(self.data,
+                           self.sigma,
+                           n_trees=self.n_trees,
+                           alpha=self.alpha,
+                           beta=self.beta,
+                           initializer=self.initializer)
         return self.model
 
     def f_delayed_chains(self, X: np.ndarray, y: np.ndarray):

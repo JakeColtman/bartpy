@@ -18,7 +18,7 @@ class Model:
                  data: Optional[Data],
                  sigma: Sigma,
                  trees=None,
-                 n_trees: int = 50,
+                 n_trees: int=50,
                  alpha: float=0.95,
                  beta: float=2.,
                  k: int=2.,
