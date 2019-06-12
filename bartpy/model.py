@@ -5,12 +5,11 @@ import numpy as np
 import pandas as pd
 
 from bartpy.data import Data
-from bartpy.mutation import GrowMutation
-from bartpy.node import split_node
+from bartpy.initializers.initializer import Initializer
+from bartpy.initializers.sklearntreeinitializer import SklearnTreeInitializer
 from bartpy.sigma import Sigma
 from bartpy.split import Split
-from bartpy.splitcondition import SplitCondition
-from bartpy.tree import Tree, LeafNode, deep_copy_tree, mutate
+from bartpy.tree import Tree, LeafNode, deep_copy_tree
 
 
 class Model:
@@ -22,7 +21,8 @@ class Model:
                  n_trees: int = 50,
                  alpha: float=0.95,
                  beta: float=2.,
-                 k: int=2.):
+                 k: int=2.,
+                 initializer: Initializer=SklearnTreeInitializer()):
 
         self.data = data
         self.alpha = float(alpha)
@@ -30,11 +30,12 @@ class Model:
         self.k = k
         self._sigma = sigma
         self._prediction = None
+        self._initializer=initializer
 
         if trees is None:
             self.n_trees = n_trees
             self._trees = self.initialize_trees()
-            self.initialize_tree_values()
+            self._initializer.initialize_trees(self.refreshed_trees())
         else:
             self.n_trees = len(trees)
             self._trees = trees
@@ -82,74 +83,6 @@ class Model:
     @property
     def sigma(self):
         return self._sigma
-
-    def initialize_tree_values(self) -> None:
-        """
-        Generate a set of initial values to start sampling from.  Helpful for speeding up convergence
-
-        Works by using sklearn's GBT package to generate a single estimator for each tree.
-
-        Returns
-        -------
-        None
-        """
-
-        from sklearn.ensemble import GradientBoostingRegressor
-        for tree in self.refreshed_trees():
-            params = {'n_estimators': 1, 'max_depth': 4, 'min_samples_split': 2,
-                      'learning_rate': 0.8, 'loss': 'ls'}
-            clf = GradientBoostingRegressor(**params)
-            fit = clf.fit(tree.nodes[0].data.X.data, tree.nodes[0].data.y.data)
-            sklearn_tree = fit.estimators_[0][0].tree_
-            map_sklearn_tree_into_bartpy(tree, sklearn_tree)
-
-
-def map_sklearn_split_into_bartpy_split_conditions(sklearn_tree, index: int) -> List[SplitCondition]:
-    """
-    Convert how a split is stored in sklearn's gradient boosted trees library to the bartpy representation
-
-    Parameters
-    ----------
-    sklearn_tree: The full tree object
-    index: The index of the node in the tree object
-
-    Returns
-    -------
-
-    """
-    return [
-        SplitCondition(sklearn_tree.feature[index], sklearn_tree.threshold[index], le),
-        SplitCondition(sklearn_tree.feature[index], sklearn_tree.threshold[index], gt)
-    ]
-
-
-def map_sklearn_tree_into_bartpy(bartpy_tree: Tree, sklearn_tree):
-    nodes = [None for x in sklearn_tree.children_left]
-    nodes[0] = bartpy_tree.nodes[0]
-
-    def search(index: int=0):
-
-        left_child_index, right_child_index = sklearn_tree.children_left[index], sklearn_tree.children_right[index]
-
-        if left_child_index == -1: # Trees are binary splits, so only need to check left tree
-            return
-
-        split_conditions = map_sklearn_split_into_bartpy_split_conditions(sklearn_tree, index)
-        decision_node = split_node(nodes[index], split_conditions)
-        decision_node.left_child.set_value(sklearn_tree.value[left_child_index][0][0])
-        decision_node.right_child.set_value(sklearn_tree.value[right_child_index][0][0])
-
-        mutation = GrowMutation(nodes[index], decision_node)
-        mutate(bartpy_tree, mutation)
-
-        nodes[index] = decision_node
-        nodes[left_child_index] = decision_node.left_child
-        nodes[right_child_index] = decision_node.right_child
-
-        search(left_child_index)
-        search(right_child_index)
-
-    search()
 
 
 def deep_copy_model(model: Model) -> Model:
