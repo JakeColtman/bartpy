@@ -1,6 +1,5 @@
-import itertools
 from collections import Counter
-from typing import List, Mapping, Union
+from typing import List, Mapping, Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -14,7 +13,7 @@ ImportanceMap = Mapping[int, float]
 ImportanceDistributionMap = Mapping[int, List[float]]
 
 
-def feature_split_proportions(model: SklearnModel) -> Mapping[int, float]:
+def feature_split_proportions(model: SklearnModel, columns: Optional[List[int]]=None) -> Mapping[int, float]:
 
     split_variables = []
     for sample in model.model_samples:
@@ -22,7 +21,13 @@ def feature_split_proportions(model: SklearnModel) -> Mapping[int, float]:
             for node in tree.nodes:
                 splitting_var = node.split.splitting_variable
                 split_variables.append(splitting_var)
-    return {x[0]: x[1] / len(split_variables) for x in Counter(split_variables).items() if x[0] is not None}
+    proportions = {x[0]: x[1] / len(split_variables) for x in Counter(split_variables).items() if x[0] is not None}
+
+    if columns is not None:
+        for column in columns:
+            if column not in proportions:
+                proportions[column] = 0.0
+    return proportions
 
 
 def plot_feature_split_proportions(model: SklearnModel, ax=None):
@@ -75,7 +80,7 @@ def null_feature_split_proportions_distribution(model: SklearnModel,
     fit_models = run_models(model, X_s, y_s)
 
     for model in fit_models:
-        splits_run = feature_split_proportions(model)
+        splits_run = feature_split_proportions(model, list(range(X.shape[1])))
         for key, value in splits_run.items():
             inclusion_dict[key].append(value)
 
