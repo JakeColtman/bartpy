@@ -21,12 +21,17 @@ def feature_split_proportions(model: SklearnModel, columns: Optional[List[int]]=
             for node in tree.nodes:
                 splitting_var = node.split.splitting_variable
                 split_variables.append(splitting_var)
-    proportions = {x[0]: x[1] / len(split_variables) for x in Counter(split_variables).items() if x[0] is not None}
+    counter = Counter(split_variables)
+    if columns is None:
+        columns = sorted(list([x for x in counter.keys() if x is not None]))
 
-    if columns is not None:
-        for column in columns:
-            if column not in proportions:
-                proportions[column] = 0.0
+    proportions = {}
+    for column in columns:
+        if column in counter.keys():
+            proportions[column] = counter[column] / len(split_variables)
+        else:
+            proportions[column] = 0.0
+
     return proportions
 
 
@@ -37,9 +42,9 @@ def plot_feature_split_proportions(model: SklearnModel, ax=None):
 
     y_pos = np.arange(len(proportions))
     name, count = list(proportions.keys()), list(proportions.values())
-
-    plt.barh(y_pos, count, align='center', alpha=0.5)
-    plt.yticks(y_pos, name)
+    props = pd.DataFrame({"name": name, "counts": count}).sort_values("name", ascending=True)
+    plt.barh(y_pos, props.counts, align='center', alpha=0.5)
+    plt.yticks(y_pos, props.name)
     plt.xlabel('Proportion of all splits')
     plt.ylabel('Feature')
     plt.title('Proportion of Splits Made on Each Variable')
@@ -172,7 +177,7 @@ def kept_features(feature_proportions: Mapping[int, float], thresholds: Mapping[
     List[int]
         Variable selected for inclusion in the final model
     """
-    return [x[0] for x in zip(feature_proportions.keys(), is_kept(feature_proportions, thresholds)) if x[1]]
+    return [x[0] for x in zip(sorted(feature_proportions.keys()), is_kept(feature_proportions, thresholds)) if x[1]]
 
 
 def is_kept(feature_proportions: Mapping[int, float], thresholds: Mapping[int, float]) -> List[bool]:
@@ -192,7 +197,8 @@ def is_kept(feature_proportions: Mapping[int, float], thresholds: Mapping[int, f
         An array of length equal to the width of the covariate matrix
         True if the variable should be kept, False otherwise
     """
-    return [feature_proportions[feature] > thresholds[feature] for feature in feature_proportions]
+    print(sorted(list(feature_proportions.keys())))
+    return [feature_proportions[feature] > thresholds[feature] for feature in sorted(list(feature_proportions.keys()))]
 
 
 def partition_into_passed_and_failed_features(feature_proportions, thresholds):
