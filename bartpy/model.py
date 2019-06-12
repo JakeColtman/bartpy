@@ -30,7 +30,7 @@ class Model:
         self.k = k
         self._sigma = sigma
         self._prediction = None
-        self._initializer=initializer
+        self._initializer = initializer
 
         if trees is None:
             self.n_trees = n_trees

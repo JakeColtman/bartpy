@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 from bartpy.data import Data, format_covariate_matrix, make_bartpy_data
-from bartpy.model import map_sklearn_tree_into_bartpy
+from bartpy.initializers.sklearntreeinitializer import map_sklearn_tree_into_bartpy
 from bartpy.mutation import TreeMutation, PruneMutation
 from bartpy.node import split_node, LeafNode, DecisionNode
 from bartpy.tree import mutate, Tree
@@ -167,9 +167,7 @@ class TestSklearnToBartPyTreeMapping(unittest.TestCase):
         bartpy_tree_predictions = bartpy_tree.predict(self.data.X.data)
         bartpy_tree_predictions = [round(x, 2) for x in bartpy_tree_predictions]
 
-
         self.assertListEqual(sklearn_predictions, bartpy_tree_predictions)
-
 
 
 if __name__ == '__main__':
