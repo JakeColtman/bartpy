@@ -74,9 +74,11 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         whether to store acceptance rates of the gibbs samples
         unless you're very memory constrained, you wouldn't want to set this to false
         useful for diagnostics
-    tree_sampler: Optional[TreeMutationSampler]
-        method used to perform sampling
-        defaults to unconstrained
+    tree_sampler: TreeMutationSampler
+        Method of sampling used on trees
+        defaults to `bartpy.samplers.unconstrainedtree`
+    initializer: Initializer
+        Class that handles the initialization of tree structure and leaf values
     n_jobs: int
         how many cores to use when computing MCMC samples
         set to `-1` to use all cores
@@ -90,13 +92,11 @@ class SklearnModel(BaseEstimator, RegressorMixin):
                  n_samples: int = 200,
                  n_burn: int = 200,
                  thin: float = 0.1,
-                 p_grow: float = 0.5,
-                 p_prune: float = 0.5,
                  alpha: float = 0.95,
                  beta: float = 2.,
                  store_in_sample_predictions: bool=True,
                  store_acceptance_trace: bool=True,
-                 f_tree_sampler: Callable[[float, float], TreeMutationSampler]=get_tree_sampler,
+                 tree_sampler: TreeMutationSampler=get_tree_sampler(0.5, 0.5),
                  initializer: Initializer=SklearnTreeInitializer(),
                  n_jobs=-1):
         self.n_trees = n_trees
@@ -105,8 +105,8 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.sigma_b = sigma_b
         self.n_burn = n_burn
         self.n_samples = n_samples
-        self.p_grow = p_grow
-        self.p_prune = p_prune
+        self.p_grow = 0.5
+        self.p_prune = 0.5
         self.alpha = alpha
         self.beta = beta
         self.thin = thin
@@ -114,7 +114,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.store_in_sample_predictions = store_in_sample_predictions
         self.store_acceptance_trace = store_acceptance_trace
         self.columns = None
-        self.tree_sampler = f_tree_sampler(self.p_grow, self.p_prune)
+        self.tree_sampler = tree_sampler
         self.initializer = initializer
         self.schedule = SampleSchedule(self.tree_sampler, LeafNodeSampler(), SigmaSampler())
         self.sampler = ModelSampler(self.schedule)
