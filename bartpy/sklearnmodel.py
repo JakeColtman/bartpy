@@ -211,7 +211,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
             predictions for the X covariates
         """
         if X is None and self.store_in_sample_predictions:
-            return self.data.unnormalize_y(self._prediction_samples.mean(axis=0))
+            return self.data.unnormalize_y(np.mean(self._prediction_samples, axis=0))
         elif X is None and not self.store_in_sample_predictions:
             raise ValueError(
                 "In sample predictions only possible if model.store_in_sample_predictions is `True`.  Either set the parameter to True or pass a non-None X parameter")

@@ -1,4 +1,4 @@
-from typing import Callable, Generator
+from typing import Callable, Generator, Text, Tuple
 
 from bartpy.model import Model
 from bartpy.samplers.leafnode import LeafNodeSampler
@@ -30,7 +30,7 @@ class SampleSchedule:
         self.sigma_sampler = sigma_sampler
         self.tree_sampler = tree_sampler
 
-    def steps(self, model: Model) -> Generator[Callable[[Model], Sampler], None, None]:
+    def steps(self, model: Model) -> Generator[Tuple[Text, Callable[[], float]], None, None]:
         """
         Create a generator of the steps that need to be called to complete a full Gibbs sample
 

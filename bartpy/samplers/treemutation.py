@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from typing import Optional
 
 from bartpy.model import Model
@@ -25,7 +25,7 @@ class TreeMutationSampler(Sampler):
         raise NotImplementedError()
 
 
-class TreeMutationProposer:
+class TreeMutationProposer(ABC):
     """
     A TreeMutationProposer is responsible for generating samples from tree space
     It is capable of generating proposed TreeMutations
@@ -49,7 +49,7 @@ class TreeMutationProposer:
         raise NotImplementedError()
 
 
-class TreeMutationLikihoodRatio:
+class TreeMutationLikihoodRatio(ABC):
     """
     Responsible for evaluating the ratio of mutations to the reverse movement
     """

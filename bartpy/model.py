@@ -1,6 +1,5 @@
 from copy import deepcopy, copy
-from operator import gt, le
-from typing import List, Generator
+from typing import List, Generator, Optional
 
 import numpy as np
 import pandas as pd
@@ -17,7 +16,7 @@ from bartpy.tree import Tree, LeafNode, deep_copy_tree, mutate
 class Model:
 
     def __init__(self,
-                 data: Data,
+                 data: Optional[Data],
                  sigma: Sigma,
                  trees=None,
                  n_trees: int = 50,
@@ -156,4 +155,3 @@ def map_sklearn_tree_into_bartpy(bartpy_tree: Tree, sklearn_tree):
 def deep_copy_model(model: Model) -> Model:
     copied_model = Model(None, deepcopy(model.sigma), [deep_copy_tree(tree) for tree in model.trees])
     return copied_model
-

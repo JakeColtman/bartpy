@@ -57,7 +57,7 @@ def make_bartpy_data(X: Union[np.ndarray, pd.DataFrame],
     return Data(X, y, np.zeros_like(X).astype(bool), normalize)
 
 
-class Data:
+class Data(object):
     """
     Encapsulates the data within a split of feature space.
     Primarily used to cache computations on the data for better performance
