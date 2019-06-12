@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import List, Callable, Mapping
+from typing import List, Callable, Mapping, Union
 
 import numpy as np
 import pandas as pd
@@ -121,7 +121,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
 
         self.sigma, self.data, self.model, self._prediction_samples, self._model_samples, self.extract = [None] * 6
 
-    def fit(self, X: np.ndarray, y: np.ndarray) -> 'SklearnModel':
+    def fit(self, X: Union[np.ndarray, pd.DataFrame], y: np.ndarray) -> 'SklearnModel':
         """
         Learn the model based on training data
 
