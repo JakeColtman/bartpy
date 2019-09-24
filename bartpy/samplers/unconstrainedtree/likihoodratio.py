@@ -66,7 +66,7 @@ class UniformTreeMutationLikihoodRatio(TreeMutationLikihoodRatio):
 
     def log_likihood_ratio(self, model: Model, tree: Tree, proposal: TreeMutation):
         if proposal.kind == "grow":
-            mutation: GrowMutation = mutation
+            mutation: GrowMutation = proposal
             return self.log_likihood_ratio_grow(model, proposal)
         if proposal.kind == "prune":
             proposal: PruneMutation = proposal

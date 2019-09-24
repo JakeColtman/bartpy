@@ -6,3 +6,4 @@ scipy
 sklearn
 statsmodels
 tqdm
+# catboost # for the example
