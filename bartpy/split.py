@@ -49,6 +49,3 @@ class Split:
 
     def most_recent_split_condition(self) -> Optional[SplitCondition]:
         return self._combined_condition.most_recent_split_condition()
-
-    def update_y(self, y):
-        self._data.update_y(y)

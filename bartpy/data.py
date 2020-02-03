@@ -8,7 +8,7 @@ from bartpy.errors import NoSplittableVariableException
 from bartpy.splitcondition import SplitCondition
 
 
-def is_not_constant(series: np.ma.masked_array) -> bool:
+def is_not_constant(series: np.ndarray) -> bool:
     """
     Quickly identify whether a series contains more than 1 distinct value
     Parameters
@@ -25,7 +25,8 @@ def is_not_constant(series: np.ma.masked_array) -> bool:
         return False
     first_value = None
     for i in range(1, len(series)):
-        if not series.mask[i] and series.data[i] != first_value:
+        # if not series.mask[i] and series.data[i] != first_value:
+        if series[i] != first_value:
             if first_value is None:
                 first_value = series.data[i]
             else:
@@ -87,6 +88,7 @@ class CovariateMatrix(object):
         self._max_values = [None] * self._n_features
         self._X_column_cache = [None] * self._n_features
         self._max_value_cache = [None] * self._n_features
+        self._X_cache = None
 
     @property
     def mask(self) -> np.ndarray:
@@ -96,11 +98,10 @@ class CovariateMatrix(object):
     def values(self) -> np.ndarray:
         return self._X
 
-    def get_column(self, i: int) -> np.ma.MaskedArray:
-        if self._X_column_cache[i] is None:
-            self._X_column_cache[i] = self._X[:, i].view(np.ma.MaskedArray)            
-            self._X_column_cache[i][self.mask] = np.ma.masked
-        return self._X_column_cache[i]
+    def get_column(self, i: int) -> np.ndarray:
+        if self._X_cache is None:
+            self._X_cache = self.values[~self.mask, :]
+        return self._X_cache[:, i]
 
     def splittable_variables(self) -> List[int]:
         """
@@ -122,8 +123,11 @@ class CovariateMatrix(object):
         return len(self.splittable_variables())
 
     def is_at_least_one_splittable_variable(self) -> bool:
-        return len(self.splittable_variables()) > 0
-
+        if any(self._splittable_variables):
+            return True
+        else:
+            return len(self.splittable_variables()) > 0
+    
     def random_splittable_variable(self) -> str:
         """
         Choose a variable at random from the set of splittable variables
@@ -151,7 +155,7 @@ class CovariateMatrix(object):
 
     def max_value_of_column(self, i: int):
         if self._max_value_cache[i] is None:
-            self._max_value_cache[i] = self.get_column(i).filled(-np.inf).max()
+            self._max_value_cache[i] = self.get_column(i).max()
         return self._max_value_cache[i]
 
     def random_splittable_value(self, variable: int) -> Any:
@@ -182,18 +186,15 @@ class CovariateMatrix(object):
 
     def proportion_of_value_in_variable(self, variable: int, value: float) -> float:
         if self.is_column_unique(variable):
-            n_obsv = self._n_obsv
-            if n_obsv == 0.:
-                return 0.
-            return 1. / n_obsv
+            return 1. / self.n_obsv
         else:
             return float(np.mean(self.get_column(variable) == value))
 
     def update_mask(self, other: SplitCondition) -> np.ndarray:
         if other.operator == gt:
-            column_mask = self._X[:, other.splitting_variable] <= other.splitting_value
+            column_mask = self.values[:, other.splitting_variable] <= other.splitting_value
         elif other.operator == le:
-            column_mask = self._X[:, other.splitting_variable] > other.splitting_value
+            column_mask = self.values[:, other.splitting_variable] > other.splitting_value
         else:
             raise TypeError("Operator type not matched, only {} and {} supported".format(gt, le))
 
@@ -219,8 +220,7 @@ class Target(object):
             self._y = y
 
         self._mask = mask
-        self._masked_y = np.ma.masked_array(self._y, mask=mask)
-        self.y_cache_up_to_date = True
+        self._inverse_mask_int = (~self._mask).astype(int)
         self._n_obsv = n_obsv
 
         if y_sum is None:
@@ -259,7 +259,7 @@ class Target(object):
 
     @property
     def unnormalized_y(self) -> np.ndarray:
-        return self.unnormalize_y(self.y)
+        return self.unnormalize_y(self.values)
 
     @property
     def normalizing_scale(self) -> float:
@@ -269,23 +269,13 @@ class Target(object):
         if self.y_sum_cache_up_to_date:
             return self._summed_y
         else:
-            self._summed_y = np.sum(self._y * (~self._mask).astype(int))
+            self._summed_y = np.sum(self._y * self._inverse_mask_int)
             self.y_sum_cache_up_to_date = True
             return self._summed_y
 
     def update_y(self, y) -> None:
         self._y = y
-        self.y_cache_up_to_date = False
         self.y_sum_cache_up_to_date = False
-
-    @property
-    def y(self) -> np.ma.masked_array:
-        if self.y_cache_up_to_date:
-            return self._masked_y
-        else:
-            self._masked_y = np.ma.masked_array(self._y, mask=self._mask)
-            self.y_cache_up_to_date = True
-            return self._masked_y
 
     @property
     def values(self):
@@ -342,10 +332,6 @@ class Data(object):
     @property
     def mask(self) -> np.ndarray:
         return self._mask
-
-    @property
-    def n_obsv(self) -> int:
-        return self._n_obsv
 
     def update_y(self, y: np.ndarray) -> None:
         self._y.update_y(y)

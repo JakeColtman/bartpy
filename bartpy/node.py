@@ -34,7 +34,7 @@ class TreeNode(object):
         return self._split
 
     def update_y(self, y):
-        self._split.update_y(y)
+        self.data.update_y(y)
         if self.left_child is not None:
             self.left_child.update_y(y)
             self.right_child.update_y(y)
@@ -63,7 +63,7 @@ class LeafNode(TreeNode):
         return self.current_value
 
     def is_splittable(self) -> bool:
-        return self._split.data.X.is_at_least_one_splittable_variable()
+        return self.data.X.is_at_least_one_splittable_variable()
 
 
 class DecisionNode(TreeNode):
@@ -88,8 +88,8 @@ def split_node(node: LeafNode, split_conditions: Tuple[SplitCondition, SplitCond
     The left node contains all values for the splitting variable less than the splitting value
     """
     left_split = node.split + split_conditions[0]
-    split_conditions[1].carry_n_obsv = node._split.data.n_obsv - left_split.data.n_obsv
-    split_conditions[1].carry_y_sum = node._split.data.y.summed_y() - left_split.data.y.summed_y()
+    split_conditions[1].carry_n_obsv = node.data.X.n_obsv - left_split.data.X.n_obsv
+    split_conditions[1].carry_y_sum = node.data.y.summed_y() - left_split.data.y.summed_y()
 
     right_split = node.split + split_conditions[1]
 

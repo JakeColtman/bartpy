@@ -51,10 +51,10 @@ class TestTargetCaching(unittest.TestCase):
         self.assertEqual(self.y.summed_y(), np.sum(self.y_raw) * 2)
 
     def test_y(self):
-        self.assertListEqual(list(self.y.y), list(self.y_raw))
+        self.assertListEqual(list(self.y.values), list(self.y_raw))
         updated_y = np.array(self.y_raw * 2)
         self.y.update_y(updated_y)
-        self.assertListEqual(list(self.y.y), list(updated_y))
+        self.assertListEqual(list(self.y.values), list(updated_y))
 
 
 class TestMasking(unittest.TestCase):
@@ -74,7 +74,7 @@ class TestMasking(unittest.TestCase):
         self.assertEqual(self.data.y.summed_y(), 24)
 
     def test_n_obsv(self):
-        self.assertEqual(self.data.n_obsv, 3)
+        self.assertEqual(self.data.X.n_obsv, 3)
 
     def test_updating_mask(self):
         from bartpy.splitcondition import SplitCondition
@@ -85,7 +85,7 @@ class TestMasking(unittest.TestCase):
         self.assertListEqual(list(updated_data.mask), [True, True, False, False, True])
         self.assertListEqual(list(updated_data.X.mask), [True, True, False, False, True])
         self.assertListEqual(list(updated_data.y._mask), [True, True, False, False, True])
-        self.assertEqual(updated_data.n_obsv, 2)
+        self.assertEqual(updated_data.X.n_obsv, 2)
         self.assertEqual(updated_data.X._n_obsv, 2)
         self.assertEqual(updated_data.y.summed_y(), 7)
 

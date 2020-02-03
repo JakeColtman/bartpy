@@ -13,16 +13,16 @@ from bartpy.tree import Tree
 def log_grow_ratio(combined_node: LeafNode, left_node: LeafNode, right_node: LeafNode, sigma: Sigma, sigma_mu: float):
     var = np.power(sigma.current_value(), 2)
     var_mu = np.power(sigma_mu, 2)
-    n = combined_node.data.n_obsv
-    n_l = left_node.data.n_obsv
-    n_r = right_node.data.n_obsv
+    n = combined_node.data.X.n_obsv
+    n_l = left_node.data.X.n_obsv
+    n_r = right_node.data.X.n_obsv
 
     first_term = (var * (var + n * sigma_mu)) / ((var + n_l * var_mu) * (var + n_r * var_mu))
     first_term = np.log(np.sqrt(first_term))
 
-    left_resp_contribution = np.square(left_node.data.summed_y()) / (var + n_l * sigma_mu)
-    right_resp_contribution = np.square(right_node.data.summed_y()) / (var + n_r * sigma_mu)
-    combined_resp_contribution = np.square(combined_node.data.summed_y()) / (var + n * sigma_mu)
+    left_resp_contribution = np.square(left_node.data.y.summed_y()) / (var + n_l * sigma_mu)
+    right_resp_contribution = np.square(right_node.data.y.summed_y()) / (var + n_r * sigma_mu)
+    combined_resp_contribution = np.square(combined_node.data.y.summed_y()) / (var + n * sigma_mu)
 
     resp_contribution = left_resp_contribution + right_resp_contribution - combined_resp_contribution
 
@@ -136,7 +136,7 @@ def log_probability_split_within_node(mutation: GrowMutation) -> float:
     """
     splitting_variable = mutation.updated_node.most_recent_split_condition().splitting_variable
     splitting_value = mutation.updated_node.most_recent_split_condition().splitting_value
-    prob_value_selected_within_variable = np.log(mutation.existing_node.data.proportion_of_value_in_variable(splitting_variable, splitting_value))
+    prob_value_selected_within_variable = np.log(mutation.existing_node.data.X.proportion_of_value_in_variable(splitting_variable, splitting_value))
     return prob_value_selected_within_variable
 
 

@@ -13,9 +13,9 @@ from bartpy.tree import Tree
 def log_grow_ratio(combined_node: LeafNode, left_node: LeafNode, right_node: LeafNode, sigma: Sigma, sigma_mu: float):
     var = np.power(sigma.current_value(), 2)
     var_mu = np.power(sigma_mu, 2)
-    n = combined_node.data.n_obsv
-    n_l = left_node.data.n_obsv
-    n_r = right_node.data.n_obsv
+    n = combined_node.data.X.n_obsv
+    n_l = left_node.data.X.n_obsv
+    n_r = right_node.data.X.n_obsv
 
     first_term = (var * (var + n * sigma_mu)) / ((var + n_l * var_mu) * (var + n_r * var_mu))
     first_term = np.log(np.sqrt(first_term))

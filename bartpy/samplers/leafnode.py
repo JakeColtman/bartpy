@@ -25,12 +25,25 @@ class LeafNodeSampler(Sampler):
 
     def sample(self, model: Model, node: LeafNode) -> float:
         prior_var = model.sigma_m ** 2
-        n = node.data.n_obsv
-        if n > 0:
-            likihood_var = (model.sigma.current_value() ** 2) / n
-            likihood_mean = node.data.y.summed_y() / node.data.n_obsv
-            posterior_variance = 1. / (1. / prior_var + 1. / likihood_var)
-            posterior_mean = likihood_mean * (prior_var / (likihood_var + prior_var))
-            return posterior_mean + (self._scalar_sampler.sample() * np.power(posterior_variance / model.n_trees, 0.5))
-        else:
-            return 0
+        n = node.data.X.n_obsv
+        likihood_var = (model.sigma.current_value() ** 2) / n
+        likihood_mean = node.data.y.summed_y() / n
+        posterior_variance = 1. / (1. / prior_var + 1. / likihood_var)
+        posterior_mean = likihood_mean * (prior_var / (likihood_var + prior_var))
+        return posterior_mean + (self._scalar_sampler.sample() * np.power(posterior_variance / model.n_trees, 0.5))
+
+
+# class VectorizedLeafNodeSampler(Sampler):
+
+#     def step(self, model: Model, nodes: List[LeafNode]) -> float:
+#         sampled_values = self.sample(model, nodes)
+#         for (node, sample) in zip(nodes, sampled_values):
+#             node.set_value(sample)
+#         return sampled_values[0]
+
+#     def sample(self, model: Model, nodes: List[LeafNode]) -> List[float]:
+#         prior_var = model.sigma_m ** 2
+#         n_s = []
+#         sum_s = []
+        
+

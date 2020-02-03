@@ -71,7 +71,7 @@ class Tree:
         """
         self.cache_up_to_date = False
         for node in self.nodes:
-            node.split.update_y(y)
+            node.update_y(y)
 
     def predict(self, X: np.ndarray=None) -> np.ndarray:
         """
@@ -85,7 +85,7 @@ class Tree:
             return self._prediction
         for leaf in self.leaf_nodes:
             if self._prediction is None:
-                self._prediction = np.zeros(self.nodes[0].data.n_obsv)
+                self._prediction = np.zeros(self.nodes[0].data.X.n_obsv)
             self._prediction[leaf.split.condition()] = leaf.predict()
         self.cache_up_to_date = True
         return self._prediction

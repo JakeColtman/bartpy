@@ -14,7 +14,7 @@ class SigmaSampler(Sampler):
 
     @staticmethod
     def sample(model: Model, sigma: Sigma) -> float:
-        posterior_alpha = sigma.alpha + (model.data.n_obsv / 2.)
+        posterior_alpha = sigma.alpha + (model.data.X.n_obsv / 2.)
         posterior_beta = sigma.beta + (0.5 * (np.sum(np.square(model.residuals()))))
         draw = np.power(np.random.gamma(posterior_alpha, 1./posterior_beta), -0.5)
         return draw
