@@ -62,9 +62,9 @@ class TestSplitNode(unittest.TestCase):
         self.assertEqual(updated_node.left_child.data.y.summed_y(), 6)
         self.assertEqual(updated_node.right_child.data.y.summed_y(), 9)
 
-        self.assertEqual(updated_node.data.n_obsv, 5)
-        self.assertEqual(updated_node.left_child.data.n_obsv, 3)
-        self.assertEqual(updated_node.right_child.data.n_obsv, 2)
+        self.assertEqual(updated_node.data.X.n_obsv, 5)
+        self.assertEqual(updated_node.left_child.data.X.n_obsv, 3)
+        self.assertEqual(updated_node.right_child.data.X.n_obsv, 2)
 
         updated_node.update_y([2.0, 4.0, 6.0, 8.0, 10.0])
 

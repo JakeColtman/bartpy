@@ -28,15 +28,15 @@ class TestDataNormalization(unittest.TestCase):
 
     def setUp(self):
         self.y_raw = [1, 2, 3, 4, 5]
-        self.y = Target(np.array(self.y_raw), mask=np.zeros(5), n_obsv=5, normalize=True)
+        self.y = Target(np.array(self.y_raw), mask=np.zeros(5).astype(bool), n_obsv=5, normalize=True)
 
     def test_unnormalization(self):
         self.assertListEqual(list(self.y.unnormalized_y), self.y_raw)
         self.assertListEqual(list(self.y.unnormalize_y(np.array([0, 0.25, 0.5, 0.75]))), [3, 4, 5, 6])
 
     def test_normalization(self):
-        self.assertEqual(-0.5, self.y.y.min())
-        self.assertEqual(0.5, self.y.y.max())
+        self.assertEqual(-0.5, self.y.values.min())
+        self.assertEqual(0.5, self.y.values.max())
 
 
 class TestTargetCaching(unittest.TestCase):
