@@ -20,14 +20,9 @@ def log_grow_ratio(combined_node: LeafNode, left_node: LeafNode, right_node: Lea
     first_term = (var * (var + n * sigma_mu)) / ((var + n_l * var_mu) * (var + n_r * var_mu))
     first_term = np.log(np.sqrt(first_term))
 
-    if combined_node.data.y_sum_cache_up_to_date and left_node.data.y_sum_cache_up_to_date:
-        combined_y_sum = combined_node.data.summed_y()
-        left_y_sum = left_node.data.summed_y()
-        right_y_sum = right_node.data.summed_y()
-    else:
-        combined_y_sum = combined_node.data.summed_y()
-        left_y_sum = left_node.data.summed_y()
-        right_y_sum = combined_y_sum - left_y_sum
+    combined_y_sum = combined_node.data.y.summed_y()
+    left_y_sum = left_node.data.y.summed_y()
+    right_y_sum = right_node.data.y.summed_y()
 
     left_resp_contribution = np.square(left_y_sum) / (var + n_l * sigma_mu)
     right_resp_contribution = np.square(right_y_sum) / (var + n_r * sigma_mu)
@@ -167,10 +162,10 @@ def log_probability_split_within_node(mutation: GrowMutation) -> float:
     log(P(splitting_value | splitting_variable, node, grow) * P(splitting_variable | node, grow))
     """
 
-    prob_splitting_variable_selected = - np.log(mutation.existing_node.data.n_splittable_variables)
+    prob_splitting_variable_selected = - np.log(mutation.existing_node.data.X.n_splittable_variables)
     splitting_variable = mutation.updated_node.most_recent_split_condition().splitting_variable
     splitting_value = mutation.updated_node.most_recent_split_condition().splitting_value
-    prob_value_selected_within_variable = np.log(mutation.existing_node.data.proportion_of_value_in_variable(splitting_variable, splitting_value))
+    prob_value_selected_within_variable = np.log(mutation.existing_node.data.X.proportion_of_value_in_variable(splitting_variable, splitting_value))
     return prob_splitting_variable_selected + prob_value_selected_within_variable
 
 

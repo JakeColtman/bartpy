@@ -37,7 +37,7 @@ def feature_split_proportions(model: SklearnModel, columns: Optional[List[int]]=
 
 def plot_feature_split_proportions(model: SklearnModel, ax=None):
     if ax is None:
-        fig, ax = plt.subplots(1, 1)
+        _, ax = plt.subplots(1, 1)
     proportions = feature_split_proportions(model)
 
     y_pos = np.arange(len(proportions))
@@ -94,7 +94,7 @@ def null_feature_split_proportions_distribution(model: SklearnModel,
 
 def plot_null_feature_importance_distributions(null_distributions: Mapping[int, List[float]], ax=None) -> None:
     if ax is None:
-        fig, ax = plt.subplots(1, 1)
+        _, ax = plt.subplots(1, 1)
     df = pd.DataFrame(null_distributions)
     df = pd.DataFrame(df.unstack()).reset_index().drop("level_1", axis=1)
     df.columns = ["variable", "p"]
@@ -210,7 +210,7 @@ def partition_into_passed_and_failed_features(feature_proportions, thresholds):
 
 def plot_feature_proportions_against_thresholds(feature_proportions, thresholds, ax=None):
     if ax is None:
-        fig, ax = plt.subplots(1, 1)
+        _, ax = plt.subplots(1, 1)
     passed_features, failed_features = partition_into_passed_and_failed_features(feature_proportions, thresholds)
 
     ax.bar(thresholds.keys(), [x * 100 for x in thresholds.values()], width=0.01, color="black", alpha=0.5)

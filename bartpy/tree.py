@@ -85,7 +85,7 @@ class Tree:
             return self._prediction
         for leaf in self.leaf_nodes:
             if self._prediction is None:
-                self._prediction = np.zeros_like(self._nodes[0]._split._data._y)
+                self._prediction = np.zeros(self.nodes[0].data.n_obsv)
             self._prediction[leaf.split.condition()] = leaf.predict()
         self.cache_up_to_date = True
         return self._prediction

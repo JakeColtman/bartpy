@@ -28,7 +28,7 @@ class LeafNodeSampler(Sampler):
         n = node.data.n_obsv
         if n > 0:
             likihood_var = (model.sigma.current_value() ** 2) / n
-            likihood_mean = node.data.summed_y() / node.data.n_obsv
+            likihood_mean = node.data.y.summed_y() / node.data.n_obsv
             posterior_variance = 1. / (1. / prior_var + 1. / likihood_var)
             posterior_mean = likihood_mean * (prior_var / (likihood_var + prior_var))
             return posterior_mean + (self._scalar_sampler.sample() * np.power(posterior_variance / model.n_trees, 0.5))

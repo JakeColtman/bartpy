@@ -6,7 +6,7 @@ from bartpy.sklearnmodel import SklearnModel
 
 def plot_tree_depth(model: SklearnModel, ax=None):
     if ax is None:
-        fig, ax = plt.subplots(1, 1)
+        _, ax = plt.subplots(1, 1)
     min_depth, mean_depth, max_depth = [], [], []
     for sample in model.model_samples:
         model_depths = []

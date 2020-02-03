@@ -1,5 +1,5 @@
-from operator import le, gt
-from typing import Any, List, Union
+from operator import gt, le
+from typing import Any, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -54,92 +54,53 @@ def make_bartpy_data(X: Union[np.ndarray, pd.DataFrame],
                      normalize: bool=True) -> 'Data':
     X = format_covariate_matrix(X)
     y = y.astype(float)
-    return Data(X, y, np.zeros_like(X).astype(bool), normalize)
+    return Data(X, y, np.zeros_like(y).astype(bool), normalize)
 
 
-class Data(object):
-    """
-    Encapsulates the data within a split of feature space.
-    Primarily used to cache computations on the data for better performance
-
-    Parameters
-    ----------
-    X: np.ndarray
-        The subset of the covariate matrix that falls into the split
-    y: np.ndarray
-        The subset of the target array that falls into the split
-    normalize: bool
-        Whether to map the target into -0.5, 0.5
-    cache: bool
-        Whether to cache common values.
-        You really only want to turn this off if you're not going to the resulting object for anything (e.g. when testing)
-    """
+class CovariateMatrix(object):
 
     def __init__(self,
                  X: np.ndarray,
-                 y: np.ndarray,
-                 mask: np.ndarray=None,
-                 normalize=False,
-                 unique_columns=None):
+                 mask: np.ndarray,
+                 n_obsv: int,
+                 unique_columns: List[int],
+                 splittable_variables: List[int]):
+
         if type(X) == pd.DataFrame:
             X: pd.DataFrame = X
             X = X.values
-        if mask is None:
-            mask = np.zeros_like(X).astype(bool)
-        self._mask = mask
+
         self._X = X
-        self._masked_X = self._X.view(np.ma.MaskedArray)
-        self._masked_X[self._mask] = np.ma.masked
-        self._unique_columns = unique_columns
+        self._n_obsv = n_obsv
+        self._n_features = X.shape[1]
+        self._mask = mask
 
-        if normalize:
-            self.original_y_min, self.original_y_max = y.min(), y.max()
-            self._y = self.normalize_y(y)
+        # Cache iniialization
+        if unique_columns is not None:
+            self._unique_columns = [x if x is True else None for x in unique_columns]
         else:
-            self._y = y
-
-        self._masked_y = np.ma.masked_array(self._y, self._mask[:,0])
-        self.y_cache_up_to_date = True
-        self.y_sum_cache_up_to_date = True
-        self._summed_y = np.sum(self.y)
-        self._max_values_cache = self.X.filled(-np.inf).max(axis=0)
-        self._splittable_variables = [x for x in range(0, self.X.shape[1]) if is_not_constant(self.X[:, x])]
-        self._n_obsv = int(np.sum(~self.y.mask))
-
-    def summed_y(self):
-        if self.y_sum_cache_up_to_date:
-            return self._summed_y
+            self._unique_columns = [None for _ in range(self._n_features)]
+        if splittable_variables is not None:
+            self._splittable_variables = [x if x is False else None for x in splittable_variables]
         else:
-            self._summed_y = np.sum(self.y)
-            self.y_sum_cache_up_to_date = True
-            return self.summed_y()
-
-    @property
-    def unique_columns(self):
-        if self._unique_columns is None:
-            unique_columns = []
-            for i in range(self._X.shape[1]):
-                if len(np.unique(self._X[:, i])) == len(self._X):
-                    unique_columns.append(i)
-            self._unique_columns = unique_columns
-        return self._unique_columns
-
-    @property
-    def y(self) -> np.ma.masked_array:
-        if self.y_cache_up_to_date:
-            return self._masked_y
-        else:
-            self._masked_y = np.ma.masked_array(self._y, mask=self.mask[:,0])
-            self.y_cache_up_to_date = True
-            return self._masked_y
-
-    @property
-    def X(self) -> np.ma.masked_array:
-        return self._masked_X
+            self._splittable_variables = [None for _ in range(self._n_features)]
+        self._max_values = [None] * self._n_features
+        self._X_column_cache = [None] * self._n_features
+        self._max_value_cache = [None] * self._n_features
 
     @property
     def mask(self) -> np.ndarray:
         return self._mask
+
+    @property
+    def values(self) -> np.ndarray:
+        return self._X
+
+    def get_column(self, i: int) -> np.ma.MaskedArray:
+        if self._X_column_cache[i] is None:
+            self._X_column_cache[i] = self._X[:, i].view(np.ma.MaskedArray)            
+            self._X_column_cache[i][self.mask] = np.ma.masked
+        return self._X_column_cache[i]
 
     def splittable_variables(self) -> List[int]:
         """
@@ -150,19 +111,18 @@ class Data(object):
         List[int]
             List of column numbers that can be split on
         """
-        return self._splittable_variables
+        for i in range(0, self._n_features):
+            if self._splittable_variables[i] is None:
+                self._splittable_variables[i] = is_not_constant(self.get_column(i))
+        
+        return [i for (i, x) in enumerate(self._splittable_variables) if x is True]        
 
     @property
-    def variables(self) -> List[int]:
-        """
-        The set of variable names the data contains.
-        Of dimensionality p
+    def n_splittable_variables(self) -> int:
+        return len(self.splittable_variables())
 
-        Returns
-        -------
-        List[int]
-        """
-        return list(range(0, self._X.shape[1]))
+    def is_at_least_one_splittable_variable(self) -> bool:
+        return len(self.splittable_variables()) > 0
 
     def random_splittable_variable(self) -> str:
         """
@@ -171,10 +131,28 @@ class Data(object):
         -------
             str - a variable name that can be split on
         """
-        splittable_variables = list(self.splittable_variables())
-        if len(splittable_variables) == 0:
+        if self.is_at_least_one_splittable_variable():
+            return np.random.choice(np.array(self.splittable_variables()), 1)[0]
+        else:
             raise NoSplittableVariableException()
-        return np.random.choice(np.array(list(splittable_variables)), 1)[0]
+
+    def is_column_unique(self, i: int) -> bool:
+        """
+        Identify whether feature contains only unique values, i.e. it has no duplicated values
+        Useful to provide a faster way to calculate the probability of a value being selected in a variable
+
+        Returns
+        -------
+        List[int]
+        """
+        if self._unique_columns[i] is None:
+            self._unique_columns[i] = len(np.unique(self.get_column(i))) == self._n_obsv
+        return self._unique_columns[i]
+
+    def max_value_of_column(self, i: int):
+        if self._max_value_cache[i] is None:
+            self._max_value_cache[i] = self.get_column(i).filled(-np.inf).max()
+        return self._max_value_cache[i]
 
     def random_splittable_value(self, variable: int) -> Any:
         """
@@ -194,30 +172,63 @@ class Data(object):
         -----
           - Won't create degenerate splits, all splits will have at least one row on both sides of the split
         """
-        if variable not in self._splittable_variables:
-            return None
-        max_value = self._max_values_cache[variable]
-        candidate = np.random.choice(self.X[:, variable])
+        if variable not in self.splittable_variables():
+            raise NoSplittableVariableException()
+        max_value = self.max_value_of_column(variable)
+        candidate = np.random.choice(self.get_column(variable))
         while candidate == max_value:
-            candidate = np.random.choice(self.X[:, variable])
+            candidate = np.random.choice(self.get_column(variable))
         return candidate
+
+    def proportion_of_value_in_variable(self, variable: int, value: float) -> float:
+        if self.is_column_unique(variable):
+            n_obsv = self._n_obsv
+            if n_obsv == 0.:
+                return 0.
+            return 1. / n_obsv
+        else:
+            return float(np.mean(self.get_column(variable) == value))
+
+    def update_mask(self, other: SplitCondition) -> np.ndarray:
+        if other.operator == gt:
+            column_mask = self._X[:, other.splitting_variable] <= other.splitting_value
+        elif other.operator == le:
+            column_mask = self._X[:, other.splitting_variable] > other.splitting_value
+        else:
+            raise TypeError("Operator type not matched, only {} and {} supported".format(gt, le))
+
+        return self.mask | column_mask
+
+    @property
+    def variables(self) -> List[int]:
+        return list(range(self._n_features))
 
     @property
     def n_obsv(self) -> int:
         return self._n_obsv
 
-    @property
-    def n_splittable_variables(self) -> int:
-        return len(self.splittable_variables())
 
-    def proportion_of_value_in_variable(self, variable: int, value: float) -> float:
-        if variable in self.unique_columns:
-            n_obsv = self.n_obsv
-            if n_obsv == 0.:
-                return 0.
-            return 1. / n_obsv
+class Target(object):
+
+    def __init__(self, y, mask, n_obsv, normalize, y_sum=None):
+
+        if normalize:
+            self.original_y_min, self.original_y_max = y.min(), y.max()
+            self._y = self.normalize_y(y)
         else:
-            return float(np.mean(self._X[:, variable] == value))
+            self._y = y
+
+        self._mask = mask
+        self._masked_y = np.ma.masked_array(self._y, mask=mask)
+        self.y_cache_up_to_date = True
+        self._n_obsv = n_obsv
+
+        if y_sum is None:
+            self.y_sum_cache_up_to_date = False
+            self._summed_y = None
+        else:
+            self.y_sum_cache_up_to_date = True
+            self._summed_y = y_sum
 
     @staticmethod
     def normalize_y(y: np.ndarray) -> np.ndarray:
@@ -254,26 +265,99 @@ class Data(object):
     def normalizing_scale(self) -> float:
         return self.original_y_max - self.original_y_min
 
-    def update_y(self, y):
+    def summed_y(self) -> float:
+        if self.y_sum_cache_up_to_date:
+            return self._summed_y
+        else:
+            self._summed_y = np.sum(self._y * (~self._mask).astype(int))
+            self.y_sum_cache_up_to_date = True
+            return self._summed_y
+
+    def update_y(self, y) -> None:
         self._y = y
         self.y_cache_up_to_date = False
         self.y_sum_cache_up_to_date = False
 
-    def _update_mask(self, other: SplitCondition):
-        if other.operator == gt:
-            column_mask = self._X[:, other.splitting_variable] <= other.splitting_value
-        elif other.operator == le:
-            column_mask = self._X[:, other.splitting_variable] > other.splitting_value
+    @property
+    def y(self) -> np.ma.masked_array:
+        if self.y_cache_up_to_date:
+            return self._masked_y
         else:
-            raise TypeError("Operator type not matched, only {} and {} supported".format(gt, le))
+            self._masked_y = np.ma.masked_array(self._y, mask=self._mask)
+            self.y_cache_up_to_date = True
+            return self._masked_y
 
-        return self.mask | np.tile(column_mask, (self.mask.shape[1], 1)).T
+    @property
+    def values(self):
+        return self._y
 
-    def __add__(self, other: SplitCondition):
-        updated_mask = self._update_mask(other)
+class Data(object):
+    """
+    Encapsulates the data within a split of feature space.
+    Primarily used to cache computations on the data for better performance
 
-        return Data(self._X,
-                    self._y,
+    Parameters
+    ----------
+    X: np.ndarray
+        The subset of the covariate matrix that falls into the split
+    y: np.ndarray
+        The subset of the target array that falls into the split
+    normalize: bool
+        Whether to map the target into -0.5, 0.5
+    cache: bool
+        Whether to cache common values.
+        You really only want to turn this off if you're not going to the resulting object for anything (e.g. when testing)
+    """
+
+    def __init__(self,
+                 X: np.ndarray,
+                 y: np.ndarray,
+                 mask: Optional[np.ndarray]=None,
+                 normalize: bool=False,
+                 unique_columns: List[int]=None,
+                 splittable_variables: Optional[List[Optional[bool]]]=None,
+                 y_sum: float=None,
+                 n_obsv: int=None):
+
+        if mask is None:
+            mask = np.zeros_like(y).astype(bool)
+        self._mask: np.ndarray = mask
+
+        if n_obsv is None:
+            n_obsv = (~self.mask).astype(int).sum()
+
+        self._n_obsv = n_obsv
+
+        self._X = CovariateMatrix(X, mask, n_obsv, unique_columns, splittable_variables)
+        self._y = Target(y, mask, n_obsv, normalize, y_sum)
+
+    @property
+    def y(self) -> Target:
+        return self._y
+
+    @property
+    def X(self) -> CovariateMatrix:
+        return self._X
+
+    @property
+    def mask(self) -> np.ndarray:
+        return self._mask
+
+    @property
+    def n_obsv(self) -> int:
+        return self._n_obsv
+
+    def update_y(self, y: np.ndarray) -> None:
+        self._y.update_y(y)
+
+    def __add__(self, other: SplitCondition) -> 'Data':
+        updated_mask = self.X.update_mask(other)
+
+        return Data(self.X.values,
+                    self.y.values,
                     updated_mask,
                     normalize=False,
-                    unique_columns=None)
+                    unique_columns=self._X._unique_columns,
+                    splittable_variables=self._X._splittable_variables,
+                    y_sum=other.carry_y_sum,
+                    n_obsv=other.carry_n_obsv)

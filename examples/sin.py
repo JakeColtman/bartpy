@@ -22,8 +22,8 @@ def run(alpha, beta, n_trees, size=100):
     X = pd.DataFrame(x)
     y = np.random.normal(0, 0.1, size=size) + np.sin(x)
 
-    model = OLS(stat_model=sm.OLS,
-                n_samples=500,
+    model = SklearnModel(
+                n_samples=50,
                 n_burn=50,
                 n_trees=n_trees,
                 alpha=alpha,
@@ -34,9 +34,9 @@ def run(alpha, beta, n_trees, size=100):
     plt.plot(y)
     plt.plot(model.predict())
     plt.show()
-    plot_tree_depth(model)
-    plot_feature_split_proportions(model)
-    plot_qq(model)
+    # plot_tree_depth(model)
+    # plot_feature_split_proportions(model)
+    # plot_qq(model)
     #null_distr = null_feature_split_proportions_distribution(model, X, y)
     #print(null_distr)
     return model, x, y
@@ -47,6 +47,6 @@ if __name__ == "__main__":
     from datetime import datetime as dt
     print(dt.now())
 
-    run(0.95, 2., 50)
-    #cProfile.run("run(0.95, 2., 50)")
+    run(0.95, 2., 200, size=500)
+    #cProfile.run("run(0.95, 2., 200, size=500)", "restats")
     print(dt.now())

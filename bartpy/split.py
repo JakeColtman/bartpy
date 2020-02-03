@@ -20,7 +20,7 @@ class Split:
     def __init__(self, data: Data, combined_condition: Optional[CombinedCondition]=None):
         self._data = data
         if combined_condition is None:
-            combined_condition = CombinedCondition(self._data.variables, [])
+            combined_condition = CombinedCondition(self._data.X.variables, [])
         self._combined_condition = combined_condition
 
     @property
@@ -32,7 +32,7 @@ class Split:
 
     def condition(self, X: np.ndarray=None) -> np.array:
         if X is None:
-            return ~self._data.mask[:,0]
+            return ~self._data.mask
         else:
             return self.out_of_sample_condition(X)
 

@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import List, Callable, Mapping, Union
+from typing import List, Callable, Mapping, Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -97,7 +97,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
                  store_in_sample_predictions: bool=True,
                  store_acceptance_trace: bool=True,
                  tree_sampler: TreeMutationSampler=get_tree_sampler(0.5, 0.5),
-                 initializer: Initializer=SklearnTreeInitializer(),
+                 initializer: Optional[Initializer]=None,
                  n_jobs=-1):
         self.n_trees = n_trees
         self.n_chains = n_chains
@@ -158,13 +158,13 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         if type(X) == pd.DataFrame:
             X: pd.DataFrame = X
             X = X.values
-        return Data(deepcopy(X), deepcopy(y), mask=np.zeros_like(X).astype(bool), normalize=True)
+        return Data(deepcopy(X), deepcopy(y), mask=np.zeros_like(y).astype(bool), normalize=True)
 
     def _construct_model(self, X: np.ndarray, y: np.ndarray) -> Model:
         if len(X) == 0 or X.shape[1] == 0:
             raise ValueError("Empty covariate matrix passed")
         self.data = self._convert_covariates_to_data(X, y)
-        self.sigma = Sigma(self.sigma_a, self.sigma_b, self.data.normalizing_scale)
+        self.sigma = Sigma(self.sigma_a, self.sigma_b, self.data.y.normalizing_scale)
         self.model = Model(self.data,
                            self.sigma,
                            n_trees=self.n_trees,
@@ -223,7 +223,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
             predictions for the X covariates
         """
         if X is None and self.store_in_sample_predictions:
-            return self.data.unnormalize_y(np.mean(self._prediction_samples, axis=0))
+            return self.data.y.unnormalize_y(np.mean(self._prediction_samples, axis=0))
         elif X is None and not self.store_in_sample_predictions:
             raise ValueError(
                 "In sample predictions only possible if model.store_in_sample_predictions is `True`.  Either set the parameter to True or pass a non-None X parameter")
@@ -288,7 +288,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         return np.sqrt(np.sum(self.l2_error(X, y)))
 
     def _out_of_sample_predict(self, X):
-        return self.data.unnormalize_y(np.mean([x.predict(X) for x in self._model_samples], axis=0))
+        return self.data.y.unnormalize_y(np.mean([x.predict(X) for x in self._model_samples], axis=0))
 
     def fit_predict(self, X, y):
         self.fit(X, y)

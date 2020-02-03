@@ -19,7 +19,7 @@ class OLS(SklearnModel):
         SklearnModel.fit(self, X, self.stat_model_fit.resid)
         return self
 
-    def predict(self, X: np.ndarray=None):
+    def predict(self, X: np.ndarray=None) -> np.ndarray:
         if X is None:
             X = self.data.X
         sm_prediction = self.stat_model_fit.predict(X)

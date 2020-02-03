@@ -8,7 +8,7 @@ from bartpy.sklearnmodel import SklearnModel
 
 
 def plot_diagnostics(model: SklearnModel):
-    fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(10, 10))
+    fig, ((ax1, ax2, ax3), (ax4, ax5, _)) = plt.subplots(2, 3, figsize=(10, 10))
     fig.suptitle("Diagnostics")
     plot_qq(model, ax1)
     plot_tree_depth(model, ax2)

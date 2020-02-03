@@ -13,6 +13,8 @@ from bartpy.tree import mutate, Tree
 from bartpy.split import Split, SplitCondition
 
 
+
+
 class TestTreeStructureNodeRetrieval(TestCase):
 
     def setUp(self):
@@ -83,11 +85,11 @@ class TestTreeStructureDataUpdate(TestCase):
         updated_y = np.array([5, 6, 7])
         self.tree.update_y(updated_y)
         # Left child keeps LTE condition
-        self.assertListEqual([5, 6, 7], list(self.a.data.y))
-        self.assertListEqual([5], list(self.b.data.y.compressed()))
-        self.assertListEqual([6, 7], list(self.c.data.y.compressed()))
-        self.assertListEqual([6], list(self.d.data.y.compressed()))
-        self.assertListEqual([7], list(self.e.data.y.compressed()))
+        self.assertListEqual([5, 6, 7], list(self.a.data.y.y))
+        self.assertListEqual([5], list(self.b.data.y.y.compressed()))
+        self.assertListEqual([6, 7], list(self.c.data.y.y.compressed()))
+        self.assertListEqual([6], list(self.d.data.y.y.compressed()))
+        self.assertListEqual([7], list(self.e.data.y.y.compressed()))
 
 
 class TestTreeStructureMutation(TestCase):
@@ -153,18 +155,18 @@ class TestSklearnToBartPyTreeMapping(unittest.TestCase):
         params = {'n_estimators': 1, 'max_depth': 2, 'min_samples_split': 2,
                   'learning_rate': 0.8, 'loss': 'ls'}
         sklearn_model = GradientBoostingRegressor(**params)
-        sklearn_model.fit(self.data.X.data, self.data.y.data)
+        sklearn_model.fit(self.data.X.values, self.data.y.values)
 
         sklearn_tree = sklearn_model.estimators_[0][0].tree_
         bartpy_tree = Tree([LeafNode(Split(self.data))])
 
         map_sklearn_tree_into_bartpy(bartpy_tree, sklearn_tree)
 
-        sklearn_predictions = sklearn_tree.predict(self.data.X.data.astype(np.float32))
+        sklearn_predictions = sklearn_tree.predict(self.data.X.values.astype(np.float32))
         sklearn_predictions = [round(x, 2) for x in sklearn_predictions.reshape(-1)]
 
         bartpy_tree.cache_up_to_date = False
-        bartpy_tree_predictions = bartpy_tree.predict(self.data.X.data)
+        bartpy_tree_predictions = bartpy_tree.predict(self.data.X.values)
         bartpy_tree_predictions = [round(x, 2) for x in bartpy_tree_predictions]
 
         self.assertListEqual(sklearn_predictions, bartpy_tree_predictions)
