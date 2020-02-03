@@ -55,7 +55,7 @@ def make_bartpy_data(X: Union[np.ndarray, pd.DataFrame],
                      normalize: bool=True) -> 'Data':
     X = format_covariate_matrix(X)
     y = y.astype(float)
-    return Data(X, y, np.zeros_like(y).astype(bool), normalize)
+    return Data(X, y, normalize=normalize)
 
 
 class CovariateMatrix(object):

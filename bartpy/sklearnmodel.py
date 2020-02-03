@@ -158,7 +158,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         if type(X) == pd.DataFrame:
             X: pd.DataFrame = X
             X = X.values
-        return Data(deepcopy(X), deepcopy(y), mask=np.zeros_like(y).astype(bool), normalize=True)
+        return Data(deepcopy(X), deepcopy(y), normalize=True)
 
     def _construct_model(self, X: np.ndarray, y: np.ndarray) -> Model:
         if len(X) == 0 or X.shape[1] == 0:

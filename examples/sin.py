@@ -20,8 +20,8 @@ def run(alpha, beta, n_trees, size=100):
     warnings.simplefilter("error", UserWarning)
     x = np.linspace(0, 5, size)
     X = pd.DataFrame(x)
-    y = np.random.normal(0, 0.1, size=size) + np.sin(x)
-    from bartpy.samplers.oblivioustrees.treemutation import get_tree_sampler
+    y = np.random.normal(0, 1.0, size=size) + np.sin(x)
+    from bartpy.samplers.unconstrainedtree.treemutation import get_tree_sampler
 
     model = SklearnModel(
                 n_samples=50,
