@@ -247,7 +247,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
             Error for each observation
         """
         if y is None:
-            return self.model.data.unnormalized_y - self.predict(X)
+            return self.model.data.y.unnormalized_y - self.predict(X)
         else:
             return y - self.predict(X)
 
