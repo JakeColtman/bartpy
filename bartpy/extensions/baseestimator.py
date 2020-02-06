@@ -9,24 +9,14 @@ class ResidualBART(SklearnModel):
 
     def __init__(self,
                  base_estimator: RegressorMixin = None,
-                 n_trees: int = 50,
-                 sigma_a: int = 0.001,
-                 sigma_b: float = 0.001,
-                 n_samples: int = 200,
-                 n_burn: int = 200,
-                 p_grow: float = 0.5,
-                 p_prune: float = 0.5,
-                 alpha: float = 0.95,
-                 beta: float = 2.):
+                 **kwargs):
 
         if base_estimator is not None:
             self.base_estimator = clone(base_estimator)
         else:
             base_estimator = LinearRegression()
         self.base_estimator = base_estimator
-        super().__init__(n_trees=n_trees, sigma_a=sigma_a, sigma_b=sigma_b,
-                         n_samples=n_samples, n_burn=n_burn, p_grow=p_grow,
-                         p_prune=p_prune, alpha=alpha, beta=beta)
+        super().__init__(**kwargs)
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> 'ResidualBART':
         self.base_estimator.fit(X, y)

@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import List, Callable, Mapping
+from typing import List, Callable, Mapping, Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -7,13 +7,15 @@ from joblib import Parallel, delayed
 from sklearn.base import RegressorMixin, BaseEstimator
 
 from bartpy.data import Data
+from bartpy.initializers.initializer import Initializer
+from bartpy.initializers.sklearntreeinitializer import SklearnTreeInitializer
 from bartpy.model import Model
 from bartpy.samplers.leafnode import LeafNodeSampler
 from bartpy.samplers.modelsampler import ModelSampler, Chain
 from bartpy.samplers.schedule import SampleSchedule
 from bartpy.samplers.sigma import SigmaSampler
 from bartpy.samplers.treemutation import TreeMutationSampler
-from bartpy.samplers.unconstrainedtree.treemutation import get_unconstrained_tree_sampler
+from bartpy.samplers.unconstrainedtree.treemutation import get_tree_sampler
 from bartpy.sigma import Sigma
 
 
@@ -72,25 +74,30 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         whether to store acceptance rates of the gibbs samples
         unless you're very memory constrained, you wouldn't want to set this to false
         useful for diagnostics
+    tree_sampler: TreeMutationSampler
+        Method of sampling used on trees
+        defaults to `bartpy.samplers.unconstrainedtree`
+    initializer: Initializer
+        Class that handles the initialization of tree structure and leaf values
     n_jobs: int
         how many cores to use when computing MCMC samples
         set to `-1` to use all cores
     """
 
     def __init__(self,
-                 n_trees: int = 50,
+                 n_trees: int = 200,
                  n_chains: int = 4,
                  sigma_a: float = 0.001,
                  sigma_b: float = 0.001,
                  n_samples: int = 200,
                  n_burn: int = 200,
                  thin: float = 0.1,
-                 p_grow: float = 0.5,
-                 p_prune: float = 0.5,
                  alpha: float = 0.95,
                  beta: float = 2.,
-                 store_in_sample_predictions: bool=True,
-                 store_acceptance_trace: bool=True,
+                 store_in_sample_predictions: bool=False,
+                 store_acceptance_trace: bool=False,
+                 tree_sampler: TreeMutationSampler=get_tree_sampler(0.5, 0.5),
+                 initializer: Optional[Initializer]=None,
                  n_jobs=-1):
         self.n_trees = n_trees
         self.n_chains = n_chains
@@ -98,8 +105,8 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.sigma_b = sigma_b
         self.n_burn = n_burn
         self.n_samples = n_samples
-        self.p_grow = p_grow
-        self.p_prune = p_prune
+        self.p_grow = 0.5
+        self.p_prune = 0.5
         self.alpha = alpha
         self.beta = beta
         self.thin = thin
@@ -107,14 +114,14 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         self.store_in_sample_predictions = store_in_sample_predictions
         self.store_acceptance_trace = store_acceptance_trace
         self.columns = None
-
-        self.tree_sampler: TreeMutationSampler = get_unconstrained_tree_sampler(p_grow, p_prune)
+        self.tree_sampler = tree_sampler
+        self.initializer = initializer
         self.schedule = SampleSchedule(self.tree_sampler, LeafNodeSampler(), SigmaSampler())
         self.sampler = ModelSampler(self.schedule)
 
         self.sigma, self.data, self.model, self._prediction_samples, self._model_samples, self.extract = [None] * 6
 
-    def fit(self, X: np.ndarray, y: np.ndarray) -> 'SklearnModel':
+    def fit(self, X: Union[np.ndarray, pd.DataFrame], y: np.ndarray) -> 'SklearnModel':
         """
         Learn the model based on training data
 
@@ -151,14 +158,19 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         if type(X) == pd.DataFrame:
             X: pd.DataFrame = X
             X = X.values
-        return Data(deepcopy(X), deepcopy(y), mask=np.zeros_like(X).astype(bool), normalize=True)
+        return Data(deepcopy(X), deepcopy(y), normalize=True)
 
     def _construct_model(self, X: np.ndarray, y: np.ndarray) -> Model:
         if len(X) == 0 or X.shape[1] == 0:
             raise ValueError("Empty covariate matrix passed")
         self.data = self._convert_covariates_to_data(X, y)
-        self.sigma = Sigma(self.sigma_a, self.sigma_b, self.data.normalizing_scale)
-        self.model = Model(self.data, self.sigma, n_trees=self.n_trees, alpha=self.alpha, beta=self.beta)
+        self.sigma = Sigma(self.sigma_a, self.sigma_b, self.data.y.normalizing_scale)
+        self.model = Model(self.data,
+                           self.sigma,
+                           n_trees=self.n_trees,
+                           alpha=self.alpha,
+                           beta=self.beta,
+                           initializer=self.initializer)
         return self.model
 
     def f_delayed_chains(self, X: np.ndarray, y: np.ndarray):
@@ -211,7 +223,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
             predictions for the X covariates
         """
         if X is None and self.store_in_sample_predictions:
-            return self.data.unnormalize_y(np.mean(self._prediction_samples, axis=0))
+            return self.data.y.unnormalize_y(np.mean(self._prediction_samples, axis=0))
         elif X is None and not self.store_in_sample_predictions:
             raise ValueError(
                 "In sample predictions only possible if model.store_in_sample_predictions is `True`.  Either set the parameter to True or pass a non-None X parameter")
@@ -235,7 +247,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
             Error for each observation
         """
         if y is None:
-            return self.model.data.unnormalized_y - self.predict(X)
+            return self.model.data.y.unnormalized_y - self.predict(X)
         else:
             return y - self.predict(X)
 
@@ -276,7 +288,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         return np.sqrt(np.sum(self.l2_error(X, y)))
 
     def _out_of_sample_predict(self, X):
-        return self.data.unnormalize_y(np.mean([x.predict(X) for x in self._model_samples], axis=0))
+        return self.data.y.unnormalize_y(np.mean([x.predict(X) for x in self._model_samples], axis=0))
 
     def fit_predict(self, X, y):
         self.fit(X, y)

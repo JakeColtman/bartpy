@@ -20,7 +20,7 @@ class Split:
     def __init__(self, data: Data, combined_condition: Optional[CombinedCondition]=None):
         self._data = data
         if combined_condition is None:
-            combined_condition = CombinedCondition(self._data.variables, [])
+            combined_condition = CombinedCondition(self._data.X.variables, [])
         self._combined_condition = combined_condition
 
     @property
@@ -30,14 +30,14 @@ class Split:
     def combined_condition(self):
         return self._combined_condition
 
-    def condition(self, data: Data=None) -> np.ndarray:
-        if data is None:
-            return ~self._data.mask[:,0]
+    def condition(self, X: np.ndarray=None) -> np.array:
+        if X is None:
+            return ~self._data.mask
         else:
-            return self.out_of_sample_condition(data.X)
+            return self.out_of_sample_condition(X)
 
-    def out_of_sample_condition(self, X: np.ndarray):
-        self._combined_condition.condition(X)
+    def out_of_sample_condition(self, X: np.ndarray) -> np.ndarray:
+        return self._combined_condition.condition(X)
 
     def out_of_sample_conditioner(self) -> CombinedCondition:
         return self._combined_condition
@@ -49,6 +49,3 @@ class Split:
 
     def most_recent_split_condition(self) -> Optional[SplitCondition]:
         return self._combined_condition.most_recent_split_condition()
-
-    def update_y(self, y):
-        self._data.update_y(y)

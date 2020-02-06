@@ -1,6 +1,5 @@
-import itertools
 from collections import Counter
-from typing import List, Mapping, Union
+from typing import List, Mapping, Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -14,7 +13,7 @@ ImportanceMap = Mapping[int, float]
 ImportanceDistributionMap = Mapping[int, List[float]]
 
 
-def feature_split_proportions(model: SklearnModel) -> Mapping[int, float]:
+def feature_split_proportions(model: SklearnModel, columns: Optional[List[int]]=None) -> Mapping[int, float]:
 
     split_variables = []
     for sample in model.model_samples:
@@ -22,19 +21,30 @@ def feature_split_proportions(model: SklearnModel) -> Mapping[int, float]:
             for node in tree.nodes:
                 splitting_var = node.split.splitting_variable
                 split_variables.append(splitting_var)
-    return {x[0]: x[1] / len(split_variables) for x in Counter(split_variables).items() if x[0] is not None}
+    counter = Counter(split_variables)
+    if columns is None:
+        columns = sorted(list([x for x in counter.keys() if x is not None]))
+
+    proportions = {}
+    for column in columns:
+        if column in counter.keys():
+            proportions[column] = counter[column] / len(split_variables)
+        else:
+            proportions[column] = 0.0
+
+    return proportions
 
 
 def plot_feature_split_proportions(model: SklearnModel, ax=None):
     if ax is None:
-        fig, ax = plt.subplots(1, 1)
+        _, ax = plt.subplots(1, 1)
     proportions = feature_split_proportions(model)
 
     y_pos = np.arange(len(proportions))
     name, count = list(proportions.keys()), list(proportions.values())
-
-    plt.barh(y_pos, count, align='center', alpha=0.5)
-    plt.yticks(y_pos, name)
+    props = pd.DataFrame({"name": name, "counts": count}).sort_values("name", ascending=True)
+    plt.barh(y_pos, props.counts, align='center', alpha=0.5)
+    plt.yticks(y_pos, props.name)
     plt.xlabel('Proportion of all splits')
     plt.ylabel('Feature')
     plt.title('Proportion of Splits Made on Each Variable')
@@ -75,7 +85,7 @@ def null_feature_split_proportions_distribution(model: SklearnModel,
     fit_models = run_models(model, X_s, y_s)
 
     for model in fit_models:
-        splits_run = feature_split_proportions(model)
+        splits_run = feature_split_proportions(model, list(range(X.shape[1])))
         for key, value in splits_run.items():
             inclusion_dict[key].append(value)
 
@@ -84,7 +94,7 @@ def null_feature_split_proportions_distribution(model: SklearnModel,
 
 def plot_null_feature_importance_distributions(null_distributions: Mapping[int, List[float]], ax=None) -> None:
     if ax is None:
-        fig, ax = plt.subplots(1, 1)
+        _, ax = plt.subplots(1, 1)
     df = pd.DataFrame(null_distributions)
     df = pd.DataFrame(df.unstack()).reset_index().drop("level_1", axis=1)
     df.columns = ["variable", "p"]
@@ -167,7 +177,7 @@ def kept_features(feature_proportions: Mapping[int, float], thresholds: Mapping[
     List[int]
         Variable selected for inclusion in the final model
     """
-    return [x[0] for x in zip(feature_proportions.keys(), is_kept(feature_proportions, thresholds)) if x[1]]
+    return [x[0] for x in zip(sorted(feature_proportions.keys()), is_kept(feature_proportions, thresholds)) if x[1]]
 
 
 def is_kept(feature_proportions: Mapping[int, float], thresholds: Mapping[int, float]) -> List[bool]:
@@ -187,7 +197,8 @@ def is_kept(feature_proportions: Mapping[int, float], thresholds: Mapping[int, f
         An array of length equal to the width of the covariate matrix
         True if the variable should be kept, False otherwise
     """
-    return [feature_proportions[feature] > thresholds[feature] for feature in feature_proportions]
+    print(sorted(list(feature_proportions.keys())))
+    return [feature_proportions[feature] > thresholds[feature] for feature in sorted(list(feature_proportions.keys()))]
 
 
 def partition_into_passed_and_failed_features(feature_proportions, thresholds):
@@ -199,7 +210,7 @@ def partition_into_passed_and_failed_features(feature_proportions, thresholds):
 
 def plot_feature_proportions_against_thresholds(feature_proportions, thresholds, ax=None):
     if ax is None:
-        fig, ax = plt.subplots(1, 1)
+        _, ax = plt.subplots(1, 1)
     passed_features, failed_features = partition_into_passed_and_failed_features(feature_proportions, thresholds)
 
     ax.bar(thresholds.keys(), [x * 100 for x in thresholds.values()], width=0.01, color="black", alpha=0.5)

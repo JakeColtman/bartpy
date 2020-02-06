@@ -1,3 +1,4 @@
+from operator import gt, le
 import unittest
 
 import pandas as pd
@@ -5,9 +6,9 @@ import numpy as np
 
 from bartpy.data import Data, format_covariate_matrix
 from bartpy.mutation import GrowMutation, PruneMutation
-from bartpy.node import DecisionNode, LeafNode
+from bartpy.node import DecisionNode, LeafNode, split_node
 from bartpy.split import Split
-
+from bartpy.splitcondition import SplitCondition
 
 class TestNode(unittest.TestCase):
 
@@ -38,6 +39,37 @@ class TestNode(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             PruneMutation(e, a)
+
+
+class TestSplitNode(unittest.TestCase):
+
+    def setUp(self):
+        self.X = format_covariate_matrix(pd.DataFrame({"a": [1, 2, 3, 4, 5]}))
+        self.data = Data(format_covariate_matrix(self.X), np.array([1.0, 2.0, 3.0, 4.0, 5.0]))
+        self.split = Split(self.data)
+        self.node = LeafNode(self.split)
+    
+    def test_unsplit(self):
+        self.assertEqual(self.node.data.y.summed_y(), 15.)
+
+    def test_split(self):
+        left_split_condition = SplitCondition(0, 3, le)
+        right_split_condition = SplitCondition(0, 3, gt)
+        updated_node = split_node(self.node, [left_split_condition, right_split_condition])
+        self.assertIsInstance(updated_node, DecisionNode)
+
+        self.assertEqual(updated_node.data.y.summed_y(), 15)
+        self.assertEqual(updated_node.left_child.data.y.summed_y(), 6)
+        self.assertEqual(updated_node.right_child.data.y.summed_y(), 9)
+
+        self.assertEqual(updated_node.data.X.n_obsv, 5)
+        self.assertEqual(updated_node.left_child.data.X.n_obsv, 3)
+        self.assertEqual(updated_node.right_child.data.X.n_obsv, 2)
+
+        updated_node.update_y([2.0, 4.0, 6.0, 8.0, 10.0])
+
+        self.assertEqual(updated_node.left_child.data.y.summed_y(), 12)
+
 
 if __name__ == '__main__':
     unittest.main()

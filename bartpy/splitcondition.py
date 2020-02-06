@@ -15,11 +15,20 @@ class SplitCondition(object):
 
     """
 
-    def __init__(self, splitting_variable: int, splitting_value: float, operator: Callable[[float, float], bool], condition=None):
+    def __init__(self, 
+                 splitting_variable: int, 
+                 splitting_value: float, 
+                 operator: Callable[[float, float], bool], 
+                 condition=None,
+                 carry_y_sum=None,
+                 carry_n_obsv=None):
         self.splitting_variable = splitting_variable
         self.splitting_value = splitting_value
         self._condition = condition
         self.operator = operator
+
+        self.carry_y_sum = carry_y_sum
+        self.carry_n_obsv = carry_n_obsv
 
     def __str__(self):
         return str(self.splitting_variable) + ": " + str(self.splitting_value)

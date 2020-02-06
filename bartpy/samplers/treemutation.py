@@ -74,9 +74,6 @@ class TreeMutationLikihoodRatio(ABC):
         float
             logged ratio of likelihoods
         """
-        #print(self.log_transition_ratio(tree, mutation))
-        #print(self.log_likihood_ratio(model, tree, mutation))
-        #print(self.log_tree_ratio(model, tree, mutation))
         return self.log_transition_ratio(tree, mutation) + self.log_likihood_ratio(model, tree, mutation) + self.log_tree_ratio(model, tree, mutation)
 
     @abstractmethod

@@ -5,11 +5,14 @@ from operator import le, gt
 import pandas as pd
 import numpy as np
 
-from bartpy.data import Data, format_covariate_matrix
+from bartpy.data import Data, format_covariate_matrix, make_bartpy_data
+from bartpy.initializers.sklearntreeinitializer import map_sklearn_tree_into_bartpy
 from bartpy.mutation import TreeMutation, PruneMutation
 from bartpy.node import split_node, LeafNode, DecisionNode
 from bartpy.tree import mutate, Tree
 from bartpy.split import Split, SplitCondition
+
+
 
 
 class TestTreeStructureNodeRetrieval(TestCase):
@@ -82,11 +85,11 @@ class TestTreeStructureDataUpdate(TestCase):
         updated_y = np.array([5, 6, 7])
         self.tree.update_y(updated_y)
         # Left child keeps LTE condition
-        self.assertListEqual([5, 6, 7], list(self.a.data.y))
-        self.assertListEqual([5], list(self.b.data.y.compressed()))
-        self.assertListEqual([6, 7], list(self.c.data.y.compressed()))
-        self.assertListEqual([6], list(self.d.data.y.compressed()))
-        self.assertListEqual([7], list(self.e.data.y.compressed()))
+        self.assertListEqual([5, 6, 7], list(self.a.data.y.values))
+        self.assertListEqual([5], list(self.b.data.y.values[~self.b.data.y._mask]))
+        self.assertListEqual([6, 7], list(self.c.data.y.values[~self.c.data.y._mask]))
+        self.assertListEqual([6], list(self.d.data.y.values[~self.d.data.y._mask]))
+        self.assertListEqual([7], list(self.e.data.y.values[~self.e.data.y._mask]))
 
 
 class TestTreeStructureMutation(TestCase):
@@ -138,6 +141,35 @@ class TestTreeStructureMutation(TestCase):
         self.assertNotIn(self.c, self.tree.nodes)
         self.assertNotIn(self.d, self.tree.nodes)
         self.assertNotIn(self.e, self.tree.nodes)
+
+
+class TestSklearnToBartPyTreeMapping(unittest.TestCase):
+
+    def setUp(self):
+        self.X = np.random.normal(size=20)
+        self.y = self.X + np.random.normal(scale=0.1, size=20)
+        self.data = make_bartpy_data(pd.DataFrame({"a": self.X}), self.y, normalize=False)
+
+    def test_same_prediction(self):
+        from sklearn.ensemble import GradientBoostingRegressor
+        params = {'n_estimators': 1, 'max_depth': 2, 'min_samples_split': 2,
+                  'learning_rate': 0.8, 'loss': 'ls'}
+        sklearn_model = GradientBoostingRegressor(**params)
+        sklearn_model.fit(self.data.X.values, self.data.y.values)
+
+        sklearn_tree = sklearn_model.estimators_[0][0].tree_
+        bartpy_tree = Tree([LeafNode(Split(self.data))])
+
+        map_sklearn_tree_into_bartpy(bartpy_tree, sklearn_tree)
+
+        sklearn_predictions = sklearn_tree.predict(self.data.X.values.astype(np.float32))
+        sklearn_predictions = [round(x, 2) for x in sklearn_predictions.reshape(-1)]
+
+        bartpy_tree.cache_up_to_date = False
+        bartpy_tree_predictions = bartpy_tree.predict(self.data.X.values)
+        bartpy_tree_predictions = [round(x, 2) for x in bartpy_tree_predictions]
+
+        self.assertListEqual(sklearn_predictions, bartpy_tree_predictions)
 
 
 if __name__ == '__main__':

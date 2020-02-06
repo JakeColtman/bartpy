@@ -1,0 +1,10 @@
+
+.vscode/settings.json
+bartpy.egg-info/dependency_links.txt
+bartpy.egg-info/PKG-INFO
+bartpy.egg-info/requires.txt
+bartpy.egg-info/SOURCES.txt
+bartpy.egg-info/top_level.txt
+*.pyc
+*catboost_info*
+*restats*
