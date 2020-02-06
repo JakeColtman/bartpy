@@ -7,9 +7,8 @@ from bartpy.split import Split, SplitCondition
 class TreeNode(object):
     """
     A representation of a node in the Tree
-    Contains two main types of information:
-        - Data relevant for the node
-        - Links to children nodes
+    Encapsulates the details of maintaining the split conditions and data
+    Allows us to reason at the level of abstraction of a tree
     """
     def __init__(self, split: Split, depth: int, left_child: 'TreeNode'=None, right_child: 'TreeNode'=None):
         self.depth = depth
@@ -30,10 +29,10 @@ class TreeNode(object):
         return self._right_child
 
     @property
-    def split(self):
+    def split(self) -> Split:
         return self._split
 
-    def update_y(self, y):
+    def update_y(self, y) -> None:
         self.data.update_y(y)
         if self.left_child is not None:
             self.left_child.update_y(y)
@@ -42,10 +41,12 @@ class TreeNode(object):
 
 class LeafNode(TreeNode):
     """
-    A representation of a leaf node in the tree
-    In addition to the normal work of a `Node`, a `LeafNode` is responsible for:
-        - Interacting with `Data`
-        - Making predictions
+    A representation of a Leaf node in the decision tree
+
+    The primary way a LeafNode differs from a Node is that is stores a prediction value
+
+    Additionally, stores convenience methods to access information about Data:
+      - whether the leaf node can be split in a non-degenerate way
     """
 
     def __init__(self, split: Split, depth=0, value=0.0):
@@ -68,8 +69,11 @@ class LeafNode(TreeNode):
 
 class DecisionNode(TreeNode):
     """
-    A `DecisionNode` encapsulates internal node in the tree
-    Unlike a `LeafNode`, it contains very little actual logic beyond tying the tree together
+    A `DecisionNode` encapsulates internal node in the decision tree
+
+    Additionally, stores convenience methods to access information about Data:
+      - whether the decision node can be pruned
+      - what variable and value the parent was split on
     """
 
     def __init__(self, split: Split, left_child_node: TreeNode, right_child_node: TreeNode, depth=0):

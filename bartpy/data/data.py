@@ -16,14 +16,28 @@ class Data(object):
     Parameters
     ----------
     X: np.ndarray
-        The subset of the covariate matrix that falls into the split
+        The full feature set we're training on
+        Note - contains rows for all observations, not just the ones that meet the conditions of the node in the decision tree
     y: np.ndarray
-        The subset of the target array that falls into the split
+        The target we're trying to predict
+        Note - contains rows for all observations, not just the ones that meet the conditions of the node in the decision tree
+    mask: np.ndarray
+        Whether each observation meets the conditions of the node
+        False is the row falls into this node, True if it does not
     normalize: bool
         Whether to map the target into -0.5, 0.5
-    cache: bool
-        Whether to cache common values.
-        You really only want to turn this off if you're not going to the resulting object for anything (e.g. when testing)
+    unique_columns: Optional[List[int]]
+        Index of columns that were unique in the parent node
+        Used to help avoid needless recomputing
+    unique_columns: Optional[List[Optional[bool]]]
+        Index of columns that were splittable in the parent node
+        Used to help avoid needless recomputing
+    y_sum: Optional[float]
+        The total sum of the target for observations that fall into this node
+        Used to help avoid needless recomputing
+    n_obsv: Optional[int]
+        The total count of observations that fall into this node
+        Used to help avoid needless recomputing
     """
 
     def __init__(self,
@@ -31,17 +45,17 @@ class Data(object):
                  y: np.ndarray,
                  mask: Optional[np.ndarray]=None,
                  normalize: bool=False,
-                 unique_columns: List[int]=None,
+                 unique_columns: Optional[List[int]]=None,
                  splittable_variables: Optional[List[Optional[bool]]]=None,
-                 y_sum: float=None,
-                 n_obsv: int=None):
+                 y_sum: Optional[float]=None,
+                 n_obsv: Optional[int]=None):
 
         if mask is None:
             mask = np.zeros_like(y).astype(bool)
         self._mask: np.ndarray = mask
 
         if n_obsv is None:
-            n_obsv = (~self.mask).astype(int).sum()
+            n_obsv = (~self._mask).astype(int).sum()
 
         self._n_obsv = n_obsv
 
@@ -74,6 +88,7 @@ class Data(object):
                     splittable_variables=self._X._splittable_variables,
                     y_sum=other.carry_y_sum,
                     n_obsv=other.carry_n_obsv)
+
 
 def ensure_numpy_array(X: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
     """

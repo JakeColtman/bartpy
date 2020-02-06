@@ -2,7 +2,15 @@ import numpy as np
 
 
 class Target(object):
+    """
 
+    Encapsualtes the target we're trying to predict at a particular node in the decision tree
+
+    Provides a clean interface for pulling information about the target e.g.
+      - the total summed target
+
+    Additionally, provides aggressive caching to help performance
+    """
     def __init__(self, y, mask, n_obsv, normalize, y_sum=None):
 
         if normalize:
