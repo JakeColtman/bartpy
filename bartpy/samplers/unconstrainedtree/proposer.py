@@ -1,15 +1,16 @@
 from operator import le, gt
 from typing import Callable, List, Mapping, Optional, Tuple
 
-import numpy as np
-
 from bartpy.errors import NoSplittableVariableException, NoPrunableNodeException
 from bartpy.mutation import TreeMutation, GrowMutation, PruneMutation
 from bartpy.node import LeafNode, DecisionNode, split_node
-from bartpy.samplers.scalar import DiscreteSampler
+from bartpy.samplers.scalar import DiscreteSampler, VariableWidthDiscreteSampler
 from bartpy.samplers.treemutation import TreeMutationProposer
 from bartpy.split import SplitCondition
 from bartpy.tree import Tree
+
+
+CHOICE_SAMPLER = VariableWidthDiscreteSampler()
 
 
 def uniformly_sample_grow_mutation(tree: Tree) -> TreeMutation:
@@ -38,7 +39,7 @@ class UniformMutationProposer(TreeMutationProposer):
         self.methods = list(self.prob_method_lookup.keys())
         self.method_sampler = DiscreteSampler(list(self.prob_method_lookup.keys()),
                                               list(self.prob_method_lookup.values()),
-                                              cache_size=1000)
+                                              cache_size=100000)
 
     def propose(self, tree: Tree) -> TreeMutation:
         method = self.method_sampler.sample()
@@ -59,7 +60,7 @@ def random_splittable_leaf_node(tree: Tree) -> LeafNode:
     if len(splittable_nodes) == 0:
         raise NoSplittableVariableException()
     else:
-        return np.random.choice(splittable_nodes)
+        return CHOICE_SAMPLER.sample(splittable_nodes)
 
 
 def random_prunable_decision_node(tree: Tree) -> DecisionNode:
@@ -70,7 +71,7 @@ def random_prunable_decision_node(tree: Tree) -> DecisionNode:
     leaf_parents = tree.prunable_decision_nodes
     if len(leaf_parents) == 0:
         raise NoPrunableNodeException()
-    return np.random.choice(leaf_parents)
+    return CHOICE_SAMPLER.sample(leaf_parents)
 
 
 def sample_split_condition(node: LeafNode) -> Optional[Tuple[SplitCondition, SplitCondition]]:

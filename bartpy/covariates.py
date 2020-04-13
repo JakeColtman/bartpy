@@ -57,15 +57,15 @@ class CovariateMatrix(object, metaclass=ABCMeta):
 
         # Cache initialization
         if unique_columns is not None:
-            self._unique_columns = [x if x is True else None for x in unique_columns]
+            self._unique_columns = [x if x else None for x in unique_columns]
         else:
             self._unique_columns = [None for _ in range(self._n_features)]
+
         if splittable_variables is not None:
             self._splittable_variables = [x if x is False else None for x in splittable_variables]
         else:
             self._splittable_variables = [None for _ in range(self._n_features)]
-        self._max_values = [None] * self._n_features
-        self._X_column_cache = [None] * self._n_features
+
         self._max_value_cache = [None] * self._n_features
         self._X_cache = None
 
@@ -84,7 +84,10 @@ class CovariateMatrix(object, metaclass=ABCMeta):
         return self._X_cache[:, i]
 
     def is_variable_splittable(self, i: int) -> bool:
-        return is_not_constant(self.get_column(i))
+        if self.is_column_unique(i) and self.n_obsv > 1:
+            return True
+        else:
+            return is_not_constant(self.get_column(i))
 
     def splittable_variables(self) -> List[int]:
         """
@@ -97,12 +100,12 @@ class CovariateMatrix(object, metaclass=ABCMeta):
         """
         for i in range(0, self._n_features):
             if self._splittable_variables[i] is None:
-                self._splittable_variables[i] = is_not_constant(self.get_column(i))
+                self._splittable_variables[i] = self.is_variable_splittable(i)
 
-        return [i for (i, x) in enumerate(self._splittable_variables) if x is True]
+        return [i for (i, x) in enumerate(self._splittable_variables) if x]
 
     def is_at_least_one_splittable_variable(self) -> bool:
-        if any(self._splittable_variables):
+        if any(self.splittable_variables_cache):
             return True
         else:
             return len(self.splittable_variables()) > 0

@@ -15,7 +15,7 @@ from bartpy.tree import Tree, LeafNode, deep_copy_tree
 class Model:
 
     def __init__(self,
-                 data: Optional[Data],
+                 data: Data,
                  sigma: Sigma,
                  trees: Optional[List[Tree]]=None,
                  n_trees: int=50,
@@ -40,6 +40,8 @@ class Model:
         else:
             self.n_trees = len(trees)
             self._trees = trees
+
+        self._sigma_m = 0.5 / (self.k * np.power(self.n_trees, 0.5))
 
     def initialize_trees(self) -> List[Tree]:
         trees = [Tree([LeafNode(Split(deepcopy(self.data)))]) for _ in range(self.n_trees)]
@@ -79,7 +81,7 @@ class Model:
 
     @property
     def sigma_m(self) -> float:
-        return 0.5 / (self.k * np.power(self.n_trees, 0.5))
+        return self._sigma_m
 
     @property
     def sigma(self) -> Sigma:

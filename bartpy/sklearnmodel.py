@@ -8,7 +8,6 @@ from sklearn.base import RegressorMixin, BaseEstimator
 
 from bartpy.data import Data
 from bartpy.initializers.initializer import Initializer
-from bartpy.initializers.sklearntreeinitializer import SklearnTreeInitializer
 from bartpy.model import Model
 from bartpy.samplers.leafnode import LeafNodeSampler
 from bartpy.samplers.modelsampler import ModelSampler, Chain
@@ -158,7 +157,12 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         if type(X) == pd.DataFrame:
             X: pd.DataFrame = X
             X = X.values
-        return Data(deepcopy(X), deepcopy(y), normalize=True)
+
+        unique_columns = [
+            len(np.unique(X[:, i])) == X.shape[0] for i in range(X.shape[1])
+        ]
+
+        return Data(deepcopy(X), deepcopy(y), unique_columns=unique_columns, normalize=True)
 
     def _construct_model(self, X: np.ndarray, y: np.ndarray) -> Model:
         if len(X) == 0 or X.shape[1] == 0:

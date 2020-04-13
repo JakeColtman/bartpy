@@ -59,8 +59,6 @@ class Data(object):
                  normalize: bool=False,
                  unique_columns: List[Optional[bool]]=None,
                  splittable_variables: Optional[List[Optional[bool]]]=None,
-                 y_sum: float=None,
-                 n_obsv: int=None,
                  choice_sampler: VariableWidthDiscreteSampler=None):
 
         if mask is None:
@@ -75,16 +73,15 @@ class Data(object):
 
         self._mask: DataFrame = mask
 
-        if n_obsv is None:
-            if isinstance(y, torch.Tensor):
-                n_obsv = int((mask).int().sum())
-            else:
-                n_obsv = (self.mask).astype(int).sum()
+        if isinstance(y, torch.Tensor):
+            n_obsv = int((mask).int().sum())
+        else:
+            n_obsv = (self.mask).astype(int).sum()
 
         self._n_obsv = n_obsv
 
-        self._X = CovariateMatrix(X, mask, n_obsv, unique_columns, splittable_variables, choice_sampler)
-        self._y = Target(y, mask, n_obsv, normalize, y_sum)
+        self._X = CovariateMatrix(X, mask, n_obsv, unique_columns=unique_columns, splittable_variables=splittable_variables, choice_sampler=choice_sampler)
+        self._y = Target(y, mask, n_obsv, normalize)
 
     @property
     def y(self) -> Target:
@@ -110,6 +107,4 @@ class Data(object):
                     normalize=False,
                     unique_columns=self._X.unique_variables_cache,
                     splittable_variables=self._X.splittable_variables_cache,
-                    y_sum=other.carry_y_sum,
-                    n_obsv=other.carry_n_obsv,
                     choice_sampler=self.choice_sampler)

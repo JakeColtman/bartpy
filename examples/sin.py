@@ -50,6 +50,6 @@ if __name__ == "__main__":
     from datetime import datetime as dt
     print(dt.now())
 
-    #run(0.95, 2., 200, size=500000)
-    cProfile.run("run(0.95, 2., 200, size=500)", "restatsto")
+    run(0.95, 2., 200, size=50000)
+    #cProfile.run("run(0.95, 2., 200, size=500)", "restatsto")
     print(dt.now())
