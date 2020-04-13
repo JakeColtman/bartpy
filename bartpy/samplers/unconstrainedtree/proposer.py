@@ -83,7 +83,7 @@ def sample_split_condition(node: LeafNode) -> Optional[Tuple[SplitCondition, Spl
 
     Returns None if there isn't a possible non-degenerate split
     """
-    split_variable = np.random.choice(list(node.split.data.X.splittable_variables()))
+    split_variable = node.split.data.X.random_splittable_variable()
     split_value = node.data.X.random_splittable_value(split_variable)
     if split_value is None:
         return None

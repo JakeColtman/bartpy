@@ -61,11 +61,5 @@ def sample_split_node(node: LeafNode) -> DecisionNode:
     Split a leaf node into a decision node with two leaf children
     The variable and value to split on is determined by sampling from their respective distributions
     """
-    if node.is_splittable():
-        conditions = sample_split_condition(node)
-        return split_node(node, conditions)
-    else:
-        return DecisionNode(node.split,
-                            LeafNode(node.split, depth=node.depth + 1),
-                            LeafNode(node.split, depth=node.depth + 1),
-                            depth=node.depth)
+    conditions = sample_split_condition(node)
+    return split_node(node, conditions)

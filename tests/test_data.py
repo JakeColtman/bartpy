@@ -3,7 +3,9 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from bartpy.data import CovariateMatrix, Data, Target, is_not_constant, format_covariate_matrix
+from bartpy.data import Data, is_not_constant, format_covariate_matrix
+from bartpy.target import Target
+from bartpy.covariates import CovariateMatrix
 from bartpy.errors import NoSplittableVariableException
 
 

@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 
-from bartpy.extensions.baseestimator import ResidualBART
 from bartpy.sklearnmodel import SklearnModel
 
 
@@ -24,7 +23,7 @@ if __name__ == "__main__":
     import cProfile
     from datetime import datetime as dt
     print(dt.now())
-    # model, x, y = run(0.95, 2., 200, 50, n_obsv=100000)
+    #model, x, y = run(0.95, 2., 200, 50, n_obsv=10000)
     cProfile.run("run(0.95, 2., 200, 40)", "restats")
 
     print(dt.now())
