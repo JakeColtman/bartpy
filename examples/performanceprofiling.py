@@ -74,17 +74,17 @@ def ols_with_significant_categorical_variables(alpha, beta, n_trees, n_regressor
 
 if __name__ == "__main__":
     from timeit import default_timer as timer
-    #
-    # start = timer()
-    # all_unique_small_n = ols_with_all_unique_columns(0.95, 2., 200, 50, n_obsv=10000)
-    # end = timer()
-    # all_unique_small_n = end - start
-    #
-    # start = timer()
-    # all_unique_big_n = ols_with_all_unique_columns(0.95, 2., 200, 50, n_obsv=100000)
-    # end = timer()
-    # all_unique_big_n = end - start
-    #
+
+    start = timer()
+    all_unique_small_n = ols_with_all_unique_columns(0.95, 2., 200, 50, n_obsv=100)
+    end = timer()
+    all_unique_small_n = end - start
+
+    start = timer()
+    all_unique_big_n = ols_with_all_unique_columns(0.95, 2., 200, 50, n_obsv=100000)
+    end = timer()
+    all_unique_big_n = end - start
+
     start = timer()
     some_duplication_small_n = ols_with_all_small_amount_of_duplication(0.95, 2., 200, 50, n_obsv=100)
     end = timer()
@@ -96,8 +96,8 @@ if __name__ == "__main__":
     significant_categorical_variables = end - start
 
     print({
-        # "all_unique_small_n": all_unique_small_n,
-        # "all_unique_big_n": all_unique_big_n,
+        "all_unique_small_n": all_unique_small_n,
+        "all_unique_big_n": all_unique_big_n,
         "some_duplication_small_n": some_duplication_small_n,
         "significant_categorical_variables": significant_categorical_variables,
     })

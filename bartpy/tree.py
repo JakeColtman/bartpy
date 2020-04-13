@@ -88,7 +88,7 @@ class Tree:
             self._prediction = np.zeros(self.nodes[0].data.X.n_obsv)
 
         for leaf in self.leaf_nodes:
-            self._prediction[leaf.split.condition()] = leaf.predict()
+            self._prediction += leaf.data.y.mask_int * leaf.predict()
 
         self.cache_up_to_date = True
         return self._prediction
