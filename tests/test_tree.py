@@ -13,8 +13,6 @@ from bartpy.tree import mutate, Tree
 from bartpy.split import Split, SplitCondition
 
 
-
-
 class TestTreeStructureNodeRetrieval(TestCase):
 
     def setUp(self):
@@ -86,10 +84,10 @@ class TestTreeStructureDataUpdate(TestCase):
         self.tree.update_y(updated_y)
         # Left child keeps LTE condition
         self.assertListEqual([5, 6, 7], list(self.a.data.y.values))
-        self.assertListEqual([5], list(self.b.data.y.values[~self.b.data.y._mask]))
-        self.assertListEqual([6, 7], list(self.c.data.y.values[~self.c.data.y._mask]))
-        self.assertListEqual([6], list(self.d.data.y.values[~self.d.data.y._mask]))
-        self.assertListEqual([7], list(self.e.data.y.values[~self.e.data.y._mask]))
+        self.assertListEqual([5], list(self.b.data.y.values[self.b.data.y._mask]))
+        self.assertListEqual([6, 7], list(self.c.data.y.values[self.c.data.y._mask]))
+        self.assertListEqual([6], list(self.d.data.y.values[self.d.data.y._mask]))
+        self.assertListEqual([7], list(self.e.data.y.values[self.e.data.y._mask]))
 
 
 class TestTreeStructureMutation(TestCase):

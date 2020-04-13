@@ -4,15 +4,6 @@ from matplotlib import pyplot as plt
 import torch
 from bartpy.initializers.initializer import Initializer
 from bartpy.sklearnmodel import SklearnModel
-# from bartpy.diagnostics.trees import plot_tree_depth
-# from bartpy.diagnostics.features import plot_feature_split_proportions
-# from bartpy.diagnostics.residuals import plot_qq
-#
-# from bartpy.samplers.oblivioustrees.treemutation import get_tree_sampler
-# import statsmodels.api as sm
-# from bartpy.extensions.baseestimator import ResidualBART
-# from bartpy.extensions.ols import OLS
-#
 
 def run(alpha, beta, n_trees, size=100):
     import warnings
@@ -50,6 +41,6 @@ if __name__ == "__main__":
     from datetime import datetime as dt
     print(dt.now())
 
-    run(0.95, 2., 200, size=50000)
+    run(0.95, 2., 200, size=1000)
     #cProfile.run("run(0.95, 2., 200, size=500)", "restatsto")
     print(dt.now())

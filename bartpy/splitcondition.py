@@ -78,7 +78,9 @@ class CombinedCondition(object):
 
     @property
     def variable_conditions(self):
-        self._variable_conditions = {v: CombinedVariableCondition(v, -np.inf, np.inf) for v in self.variables}
-        for condition in self.conditions:
-            self._variable_conditions[condition.splitting_variable] = self._variable_conditions[condition.splitting_variable].add_condition(
-                condition)
+        if self._variable_conditions is None:
+            self._variable_conditions = {v: CombinedVariableCondition(v, -np.inf, np.inf) for v in self.variables}
+            for condition in self.conditions:
+                self._variable_conditions[condition.splitting_variable] = self._variable_conditions[condition.splitting_variable].add_condition(
+                    condition)
+        return self._variable_conditions
