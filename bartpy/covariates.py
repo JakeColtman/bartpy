@@ -39,6 +39,17 @@ def is_not_constant(series: np.ndarray) -> bool:
     return False
 
 
+def is_unique(series: np.ndarray) -> bool:
+    vals = set()
+    for i in range(0, len(series)):
+        if series[i] in vals:
+            return False
+        else:
+            vals.add(series[i])
+    else:
+        return True
+
+
 class CovariateMatrix(object, metaclass=ABCMeta):
 
     def __init__(self,
@@ -144,7 +155,7 @@ class CovariateMatrix(object, metaclass=ABCMeta):
         List[int]
         """
         if self._unique_columns[i] is None:
-            self._unique_columns[i] = len(np.unique(self.get_column(i))) == self._n_obsv
+            self._unique_columns[i] = is_unique(self.get_column(i))
         return self._unique_columns[i]
 
     def max_value_of_column(self, i: int):
