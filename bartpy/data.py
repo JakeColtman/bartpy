@@ -2,7 +2,6 @@ from typing import List, Optional, Union
 
 import numpy as np
 import pandas as pd
-import torch
 
 from bartpy.covariates import CovariateMatrix, DataFrame
 from bartpy.splitcondition import SplitCondition
@@ -62,10 +61,7 @@ class Data(object):
                  choice_sampler: VariableWidthDiscreteSampler=None):
 
         if mask is None:
-            if isinstance(y, torch.Tensor):
-                mask = torch.ones_like(y, dtype=torch.bool)
-            else:
-                mask = np.ones_like(y).astype(bool)
+            mask = np.ones_like(y).astype(bool)
 
         if choice_sampler is None:
             choice_sampler = VariableWidthDiscreteSampler()
@@ -73,10 +69,7 @@ class Data(object):
 
         self._mask: DataFrame = mask
 
-        if isinstance(y, torch.Tensor):
-            n_obsv = int((mask).int().sum())
-        else:
-            n_obsv = (self.mask).astype(int).sum()
+        n_obsv = (self.mask).astype(int).sum()
 
         self._n_obsv = n_obsv
 

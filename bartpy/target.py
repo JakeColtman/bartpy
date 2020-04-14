@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 
 
 class Target(object):
@@ -74,8 +73,5 @@ class Target(object):
     @property
     def mask_int(self):
         if self._mask_int is None:
-            if isinstance(self._y, torch.Tensor):
-                self._mask_int = self._mask.int()
-            else:
-                self._mask_int = self._mask.astype(int)
+            self._mask_int = self._mask.astype(int)
         return self._mask_int

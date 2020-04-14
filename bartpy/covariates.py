@@ -4,14 +4,13 @@ from typing import List, Any, Union, Optional
 
 import numpy as np
 import pandas as pd
-import torch
 
 from bartpy.errors import NoSplittableVariableException
 from bartpy.splitcondition import SplitCondition
 from bartpy.samplers.scalar import VariableWidthDiscreteSampler
 
 
-DataFrame = Union[np.ndarray, pd.DataFrame, torch.Tensor]
+DataFrame = Union[np.ndarray, pd.DataFrame]
 
 
 def is_not_constant(series: np.ndarray) -> bool:
@@ -82,16 +81,7 @@ class CovariateMatrix(object, metaclass=ABCMeta):
 
     def get_column(self, i: int) -> np.ndarray:
         if self._X_cache is None:
-            if isinstance(self.values, torch.Tensor):
-                values = self.values.numpy()
-            else:
-                values = self.values
-
-            filtered_values = values[self.mask, :]
-            if isinstance(self.values, torch.Tensor):
-                filtered_values = torch.from_numpy(filtered_values)
-
-            self._X_cache = filtered_values
+            self._X_cache = self.values[self.mask, :]
         return self._X_cache[:, i]
 
     def is_variable_splittable(self, i: int) -> bool:

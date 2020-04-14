@@ -1,8 +1,6 @@
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
-import torch
-from bartpy.initializers.initializer import Initializer
 from bartpy.sklearnmodel import SklearnModel
 
 def run(alpha, beta, n_trees, size=100):
@@ -12,8 +10,6 @@ def run(alpha, beta, n_trees, size=100):
     x = np.linspace(0, 5, size)
     y = np.random.normal(0, 1.0, size=size) + np.sin(x)
     X = pd.DataFrame(x)
-    # X = torch.from_numpy(x.reshape(-1, 1))
-    # y = torch.from_numpy(y)
     from bartpy.samplers.unconstrainedtree.treemutation import get_tree_sampler
 
     model = SklearnModel(

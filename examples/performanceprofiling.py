@@ -83,10 +83,10 @@ if __name__ == "__main__":
     end = timer()
     all_unique_small_n = end - start
 
-    # start = timer()
-    # all_unique_big_n = ols_with_all_unique_columns(0.95, 2., 200, 50, n_obsv=100000)
-    # end = timer()
-    # all_unique_big_n = end - start
+    start = timer()
+    all_unique_big_n = ols_with_all_unique_columns(0.95, 2., 200, 50, n_obsv=100000)
+    end = timer()
+    all_unique_big_n = end - start
     #
     # start = timer()
     # some_duplication_small_n = ols_with_all_small_amount_of_duplication(0.95, 2., 200, 50, n_obsv=100)
