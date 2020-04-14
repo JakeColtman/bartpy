@@ -61,7 +61,6 @@ class CombinedCondition(object):
             self.splitting_variable = None
 
     def condition(self, X: np.ndarray) -> np.ndarray:
-        print("here")
         c = np.array([True] * len(X))
         for variable in self.variables:
             c = c & (X[:, variable] > self.variable_conditions[variable].min_value) & (X[:, variable] <= self.variable_conditions[variable].max_value)

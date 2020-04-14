@@ -16,7 +16,6 @@ class TestSplitModel(unittest.TestCase):
         self.data = Data(format_covariate_matrix(self.X), self.raw_y, normalize=True)
         normalizing_scale = self.data.y.normalizing_scale
         self.model = Model(self.data, Sigma(0.001, 0.001, scaling_factor=normalizing_scale), n_trees=2)
-        self.model.initialize_trees()
 
     def test_tree_updating(self):
         updated_y = np.ones(5)

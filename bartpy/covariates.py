@@ -58,7 +58,7 @@ class CovariateMatrix(object, metaclass=ABCMeta):
                  n_obsv: int,
                  unique_columns: List[Optional[bool]],
                  splittable_variables: List[Optional[bool]],
-                 choice_sampler: VariableWidthDiscreteSampler):
+                 choice_sampler: VariableWidthDiscreteSampler=VariableWidthDiscreteSampler()):
 
         self._X = X
         self._n_obsv = n_obsv
@@ -139,6 +139,8 @@ class CovariateMatrix(object, metaclass=ABCMeta):
         -----
           - Won't create degenerate splits, all splits will have at least one row on both sides of the split
         """
+        if not self.is_variable_splittable(variable):
+            raise NoSplittableVariableException()
         max_value = self.max_value_of_column(variable)
         candidate = self.choice_sampler.sample(self.get_column(variable))
         while candidate == max_value:

@@ -22,7 +22,7 @@ class Model:
                  alpha: float=0.95,
                  beta: float=2.,
                  k: int=2.,
-                 initializer: Initializer=SklearnTreeInitializer()):
+                 initializer: Optional[Initializer]=None):
 
         self.data = deepcopy(data)
         self.alpha = float(alpha)
@@ -46,7 +46,7 @@ class Model:
     def initialize_trees(self) -> List[Tree]:
         trees = [Tree([LeafNode(Split(deepcopy(self.data)))]) for _ in range(self.n_trees)]
         for tree in trees:
-            tree.update_y(tree.update_y(self.data.y.values / self.n_trees))
+            tree.update_y(self.data.y.values / self.n_trees)
         return trees
 
     def residuals(self) -> np.ndarray:

@@ -36,7 +36,7 @@ class SklearnTreeInitializer(Initializer):
         }
 
         clf = GradientBoostingRegressor(**params)
-        fit = clf.fit(tree.nodes[0].data.X.data, tree.nodes[0].data.y.data)
+        fit = clf.fit(tree.nodes[0].data.X.values, tree.nodes[0].data.y.values)
         sklearn_tree = fit.estimators_[0][0].tree_
         map_sklearn_tree_into_bartpy(tree, sklearn_tree)
 
