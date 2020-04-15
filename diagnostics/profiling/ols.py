@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-from matplotlib import pyplot as plt
 
 from bartpy.sklearnmodel import SklearnModel
 
@@ -10,12 +9,18 @@ def run(alpha, beta, n_trees, n_regressors, n_burn=50, n_samples=200, n_obsv=100
     x = np.random.normal(0, 1, size=n_obsv * n_regressors).reshape(n_obsv, n_regressors)
     X = pd.DataFrame(x)
     y = np.random.normal(0, 0.1, size=n_obsv) + np.array(X.multiply(b_true, axis = 1).sum(axis=1))
-    model = SklearnModel(n_samples=n_samples, n_burn=n_burn, n_trees=n_trees, alpha=alpha, beta=beta, n_jobs=1, n_chains=1, initializer=None, store_acceptance_trace=False, store_in_sample_predictions=False)
+    model = SklearnModel(n_samples=n_samples,
+                         n_burn=n_burn,
+                         n_trees=n_trees,
+                         alpha=alpha,
+                         beta=beta,
+                         n_jobs=1,
+                         n_chains=1,
+                         initializer=None,
+                         store_acceptance_trace=False,
+                         store_in_sample_predictions=False)
     model.fit(X, y)
-    predictions = model.predict()
-    plt.scatter(y, predictions)
-    plt.show()
-    return model, x, y
+    model.predict(X)
 
 
 if __name__ == "__main__":
