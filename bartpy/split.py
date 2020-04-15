@@ -32,7 +32,7 @@ class Split:
 
     def condition(self, X: np.ndarray=None) -> np.array:
         if X is None:
-            return ~self._data.mask
+            return self._data.mask
         else:
             return self.out_of_sample_condition(X)
 

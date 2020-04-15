@@ -3,32 +3,41 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from bartpy.data import CovariateMatrix, Data, Target, is_not_constant, format_covariate_matrix
+from bartpy.covariates import is_not_constant, is_unique
+from bartpy.data import Data, format_covariate_matrix
+from bartpy.target import Target
+from bartpy.covariates import CovariateMatrix
 from bartpy.errors import NoSplittableVariableException
 
 
 class TestIsNotConstant(unittest.TestCase):
 
     def setUp(self):
-        self.non_constant_array = np.array([1, 1, 2, 3]).view(np.ma.MaskedArray)
-        self.non_constant_array.mask = np.zeros_like(self.non_constant_array)
-        self.constant_array = np.array([1, 1, 1, 1]).view(np.ma.MaskedArray)
-        self.constant_array.mask = np.zeros_like(self.constant_array)
+        self.non_constant_array = np.array([1, 1, 2, 3])
+        self.constant_array = np.array([1, 1, 1, 1])
 
-    def test_unmasked(self):
+    def test(self):
         self.assertTrue(is_not_constant(self.non_constant_array))
         self.assertFalse(is_not_constant(self.constant_array))
 
-    def test_masked(self):
-        self.non_constant_array.mask = np.array([False, False, True, True])
-        self.assertFalse(is_not_constant(self.non_constant_array))
+
+
+class TestIsUnique(unittest.TestCase):
+
+    def setUp(self):
+        self.unique_array = np.array([1, 2, 3, 4])
+        self.non_unique_array = np.array([1, 2, 3, 3])
+
+    def test(self):
+        self.assertTrue(is_unique(self.unique_array))
+        self.assertFalse(is_unique(self.non_unique_array))
 
 
 class TestDataNormalization(unittest.TestCase):
 
     def setUp(self):
         self.y_raw = [1, 2, 3, 4, 5]
-        self.y = Target(np.array(self.y_raw), mask=np.zeros(5).astype(bool), n_obsv=5, normalize=True)
+        self.y = Target(np.array(self.y_raw), mask=np.ones(5).astype(bool), n_obsv=5, normalize=True)
 
     def test_unnormalization(self):
         self.assertListEqual(list(self.y.unnormalized_y), self.y_raw)
@@ -43,7 +52,7 @@ class TestTargetCaching(unittest.TestCase):
 
     def setUp(self):
         self.y_raw = np.array([1, 2, 3, 4, 5])
-        self.y = Target(self.y_raw, np.zeros(5).astype(bool), 5, False)
+        self.y = Target(self.y_raw, np.ones(5).astype(bool), 5, False)
 
     def test_summed_y(self):
         self.assertEqual(self.y.summed_y(), np.sum(self.y_raw))
@@ -63,10 +72,11 @@ class TestMasking(unittest.TestCase):
         self.y = np.array([1, 2, 3, 4, 5])
         self.X = pd.DataFrame({"a": [1, 2, 3, 4, 5], "b": [1, 1, 1, 1, 1], "c": [1, 2, 3, 3, 4]})
         self.X = format_covariate_matrix(self.X)
-        self.mask = np.array([True, True, False, False, False])
+        self.mask = np.array([False, False, True, True, True])
         self.data = Data(self.X, self.y, self.mask, normalize=False)
 
     def test_y_sum(self):
+        print(self.data.y.summed_y())
         self.assertEqual(self.data.y.summed_y(), 12)
 
     def test_updating_y_sum(self):
@@ -82,9 +92,9 @@ class TestMasking(unittest.TestCase):
         s = SplitCondition(0, 4, le)
         updated_data = self.data + s
 
-        self.assertListEqual(list(updated_data.mask), [True, True, False, False, True])
-        self.assertListEqual(list(updated_data.X.mask), [True, True, False, False, True])
-        self.assertListEqual(list(updated_data.y._mask), [True, True, False, False, True])
+        self.assertListEqual(list(updated_data.mask), [False, False, True, True, False])
+        self.assertListEqual(list(updated_data.X.mask), [False, False, True, True, False])
+        self.assertListEqual(list(updated_data.y._mask), [False, False, True, True, False])
         self.assertEqual(updated_data.X.n_obsv, 2)
         self.assertEqual(updated_data.X._n_obsv, 2)
         self.assertEqual(updated_data.y.summed_y(), 7)
@@ -95,7 +105,7 @@ class TestCovariateMatrix(unittest.TestCase):
     def setUp(self):
         self.X = pd.DataFrame({"a": [1, 2, 3, 4, 5], "b": [1, 1, 1, 1, 1], "c": [1, 2, 3, 3, 4]})
         self.X = format_covariate_matrix(self.X)
-        self.X = CovariateMatrix(self.X, mask=np.zeros(5).astype(bool), n_obsv=5, unique_columns=None, splittable_variables=None)
+        self.X = CovariateMatrix(self.X, mask=np.ones(5).astype(bool), n_obsv=5, unique_columns=None, splittable_variables=None)
 
     def test_unique_proportion_of_value_in_variable(self):
         self.assertEqual(self.X.proportion_of_value_in_variable(0, 1), 0.2)
@@ -115,7 +125,7 @@ class TestCovariateMatrix(unittest.TestCase):
         self.assertListEqual(list(self.X.splittable_variables()), [0, 2])
 
     def test_random_splittable_value(self):
-        for _ in range(10000):
+        for _ in range(100):
             self.assertIn(self.X.random_splittable_value(0), [1, 2, 3, 4])
         with self.assertRaises(NoSplittableVariableException):
             self.assertIsNone(self.X.random_splittable_value(1))
@@ -124,9 +134,9 @@ class TestCovariateMatrix(unittest.TestCase):
         for _ in range(100):
             self.assertIn(self.X.random_splittable_variable(), [0, 2])
 
-        filtered_X = CovariateMatrix(self.X.values[:, [1]], mask=np.zeros(5).astype(bool), n_obsv=5, unique_columns=None, splittable_variables=None)
+        filtered_X = CovariateMatrix(self.X.values[:, [1]], mask=np.ones(5).astype(bool), n_obsv=5, unique_columns=None, splittable_variables=None)
         with self.assertRaises(NoSplittableVariableException):
-            filtered_X.random_splittable_variable()
+            print(filtered_X.random_splittable_variable())
 
     def test_n_splittable_variables(self):
         self.assertEqual(self.X.n_splittable_variables, 2)

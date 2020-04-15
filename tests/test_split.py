@@ -63,8 +63,8 @@ class TestCombinedCondition(unittest.TestCase):
         ]
 
         combined_condition = CombinedCondition([0], conditions)
-        self.assertEqual(combined_condition.variables[0].min_value, 2)
-        self.assertEqual(combined_condition.variables[0].max_value, 5)
+        self.assertEqual(combined_condition.variable_conditions[0].min_value, 2)
+        self.assertEqual(combined_condition.variable_conditions[0].max_value, 5)
         self.assertListEqual(list(combined_condition.condition(self.X)), [False, False, True, False, True, True])
 
     def test_multiple_variables(self):

@@ -6,9 +6,8 @@ import pandas as pd
 from joblib import Parallel, delayed
 from sklearn.base import RegressorMixin, BaseEstimator
 
-from bartpy.data import Data
+from bartpy.data import Data, DataFrame
 from bartpy.initializers.initializer import Initializer
-from bartpy.initializers.sklearntreeinitializer import SklearnTreeInitializer
 from bartpy.model import Model
 from bartpy.samplers.leafnode import LeafNodeSampler
 from bartpy.samplers.modelsampler import ModelSampler, Chain
@@ -158,7 +157,12 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         if type(X) == pd.DataFrame:
             X: pd.DataFrame = X
             X = X.values
-        return Data(deepcopy(X), deepcopy(y), normalize=True)
+
+        unique_columns = [
+            len(np.unique(X[:, i])) == X.shape[0] for i in range(X.shape[1])
+        ]
+
+        return Data(deepcopy(X), deepcopy(y), unique_columns=unique_columns, normalize=True)
 
     def _construct_model(self, X: np.ndarray, y: np.ndarray) -> Model:
         if len(X) == 0 or X.shape[1] == 0:
@@ -205,7 +209,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
         """
         return [delayed_run_chain() for _ in range(self.n_chains)]
 
-    def predict(self, X: np.ndarray=None) -> np.ndarray:
+    def predict(self, X: Optional[DataFrame]=None) -> np.ndarray:
         """
         Predict the target corresponding to the provided covariate matrix
         If X is None, will predict based on training covariates
@@ -214,7 +218,7 @@ class SklearnModel(BaseEstimator, RegressorMixin):
 
         Parameters
         ----------
-        X: pd.DataFrame
+        X: DataFrame
             covariates to predict from
 
         Returns

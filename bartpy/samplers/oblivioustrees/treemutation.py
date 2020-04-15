@@ -53,8 +53,8 @@ class UnconstrainedTreeMutationSampler(Sampler):
         return mutations
 
 
-def get_tree_sampler(p_grow: float,
-                     p_prune: float):
+def get_tree_sampler(p_grow: float=0.5,
+                     p_prune: float=0.5):
     proposer = UniformMutationProposer(p_grow, p_prune)
     likihood = UniformTreeMutationLikihoodRatio([p_grow, p_prune])
     return UnconstrainedTreeMutationSampler(proposer, likihood)

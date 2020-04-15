@@ -21,10 +21,12 @@ class Tree:
         All nodes contained in the tree, i.e. decision and leaf nodes
     """
 
-    def __init__(self, nodes: List[TreeNode]):
+    def __init__(self, nodes: List[TreeNode], n_obsv=None):
         self._nodes = nodes
         self.cache_up_to_date = False
         self._prediction = None
+        if n_obsv is None:
+            self.n_obsv = nodes[0].data.X.n_obsv
 
     @property
     def nodes(self) -> List[TreeNode]:
@@ -83,10 +85,10 @@ class Tree:
 
         if self.cache_up_to_date:
             return self._prediction
+
+        self._prediction = np.zeros(self.n_obsv)
         for leaf in self.leaf_nodes:
-            if self._prediction is None:
-                self._prediction = np.zeros(self.nodes[0].data.X.n_obsv)
-            self._prediction[leaf.split.condition()] = leaf.predict()
+            self._prediction += leaf.data.y.mask_int * leaf.predict()
         self.cache_up_to_date = True
         return self._prediction
 
@@ -171,4 +173,4 @@ def deep_copy_tree(tree: Tree):
     Tree
         Version of the tree optimized to be low memory
     """
-    return Tree([deep_copy_node(x) for x in tree.nodes])
+    return Tree([deep_copy_node(x) for x in tree.nodes], n_obsv=tree.n_obsv)

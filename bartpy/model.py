@@ -15,14 +15,14 @@ from bartpy.tree import Tree, LeafNode, deep_copy_tree
 class Model:
 
     def __init__(self,
-                 data: Optional[Data],
+                 data: Data,
                  sigma: Sigma,
                  trees: Optional[List[Tree]]=None,
                  n_trees: int=50,
                  alpha: float=0.95,
                  beta: float=2.,
                  k: int=2.,
-                 initializer: Initializer=SklearnTreeInitializer()):
+                 initializer: Optional[Initializer]=None):
 
         self.data = deepcopy(data)
         self.alpha = float(alpha)
@@ -41,10 +41,12 @@ class Model:
             self.n_trees = len(trees)
             self._trees = trees
 
+        self._sigma_m = 0.5 / (self.k * np.power(self.n_trees, 0.5))
+
     def initialize_trees(self) -> List[Tree]:
         trees = [Tree([LeafNode(Split(deepcopy(self.data)))]) for _ in range(self.n_trees)]
         for tree in trees:
-            tree.update_y(tree.update_y(self.data.y.values / self.n_trees))
+            tree.update_y(self.data.y.values / self.n_trees)
         return trees
 
     def residuals(self) -> np.ndarray:
@@ -79,7 +81,7 @@ class Model:
 
     @property
     def sigma_m(self) -> float:
-        return 0.5 / (self.k * np.power(self.n_trees, 0.5))
+        return self._sigma_m
 
     @property
     def sigma(self) -> Sigma:
