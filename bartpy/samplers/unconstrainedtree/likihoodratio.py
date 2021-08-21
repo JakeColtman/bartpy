@@ -17,16 +17,16 @@ def log_grow_ratio(combined_node: LeafNode, left_node: LeafNode, right_node: Lea
     n_l = left_node.data.X.n_obsv
     n_r = right_node.data.X.n_obsv
 
-    first_term = (var * (var + n * sigma_mu)) / ((var + n_l * var_mu) * (var + n_r * var_mu))
+    first_term = (var * (var + n * var_mu)) / ((var + n_l * var_mu) * (var + n_r * var_mu))
     first_term = np.log(np.sqrt(first_term))
 
     combined_y_sum = combined_node.data.y.summed_y()
     left_y_sum = left_node.data.y.summed_y()
     right_y_sum = right_node.data.y.summed_y()
 
-    left_resp_contribution = np.square(left_y_sum) / (var + n_l * sigma_mu)
-    right_resp_contribution = np.square(right_y_sum) / (var + n_r * sigma_mu)
-    combined_resp_contribution = np.square(combined_y_sum) / (var + n * sigma_mu)
+    left_resp_contribution = np.square(left_y_sum) / (var + n_l * var_mu)
+    right_resp_contribution = np.square(right_y_sum) / (var + n_r * var_mu)
+    combined_resp_contribution = np.square(combined_y_sum) / (var + n * var_mu)
 
     resp_contribution = left_resp_contribution + right_resp_contribution - combined_resp_contribution
 
