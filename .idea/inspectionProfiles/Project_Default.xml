@@ -1,18 +1,24 @@
 <component name="InspectionProjectProfileManager">
   <profile version="1.0">
     <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <value>
+          <list size="6">
+            <item index="0" class="java.lang.String" itemvalue="tensorflow" />
+            <item index="1" class="java.lang.String" itemvalue="googleapiclient" />
+            <item index="2" class="java.lang.String" itemvalue="pandas" />
+            <item index="3" class="java.lang.String" itemvalue="biopython" />
+            <item index="4" class="java.lang.String" itemvalue="pyvcf" />
+            <item index="5" class="java.lang.String" itemvalue="spliceai" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
     <inspection_tool class="PyPep8NamingInspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
       <option name="ignoredErrors">
         <list>
-          <option value="N803" />
-          <option value="N806" />
-        </list>
-      </option>
-      <option name="ignoredBaseClasses">
-        <list>
-          <option value="unittest.TestCase" />
-          <option value="unittest.case.TestCase" />
-          <option value="bartpy.data.Data" />
+          <option value="N802" />
         </list>
       </option>
     </inspection_tool>

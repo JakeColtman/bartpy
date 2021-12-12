@@ -11,7 +11,8 @@ class TreeNode(object):
         - Data relevant for the node
         - Links to children nodes
     """
-    def __init__(self, split: Split, depth: int, left_child: 'TreeNode'=None, right_child: 'TreeNode'=None):
+
+    def __init__(self, split: Split, depth: int, left_child: 'TreeNode' = None, right_child: 'TreeNode' = None):
         self.depth = depth
         self._split = split
         self._left_child = left_child
@@ -65,6 +66,10 @@ class LeafNode(TreeNode):
     def is_splittable(self) -> bool:
         return self.data.X.is_at_least_one_splittable_variable()
 
+    @property
+    def n_obs(self):
+        return self.data.X.n_obsv
+
 
 class DecisionNode(TreeNode):
     """
@@ -80,6 +85,21 @@ class DecisionNode(TreeNode):
 
     def most_recent_split_condition(self) -> SplitCondition:
         return self.left_child.split.most_recent_split_condition()
+
+    @property
+    def n_obs(self):
+        n_l = self.left_child.n_obs
+        n_r = self.right_child.n_obs
+        return n_l + n_r
+
+
+    @property
+    def current_value(self):
+        n_l = self.left_child.n_obs
+        n_r = self.right_child.n_obs
+        l_sum = self.left_child.current_value * n_l
+        r_sum = self.right_child.current_value * n_r
+        return (l_sum + r_sum) / self.n_obs
 
 
 def split_node(node: LeafNode, split_conditions: Tuple[SplitCondition, SplitCondition]) -> DecisionNode:

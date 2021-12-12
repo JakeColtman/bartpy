@@ -26,12 +26,12 @@ class LeafNodeSampler(Sampler):
     def sample(self, model: Model, node: LeafNode) -> float:
         prior_var = model.sigma_m ** 2
         n = node.data.X.n_obsv
-        likihood_var = (model.sigma.current_value() ** 2) / n
+        likihood_var = (model.sigma.current_value() ** 2) / n  # TODO: change to 1 for classification
         likihood_mean = node.data.y.summed_y() / n
         posterior_variance = 1. / (1. / prior_var + 1. / likihood_var)
         posterior_mean = likihood_mean * (prior_var / (likihood_var + prior_var))
-        return posterior_mean + (self._scalar_sampler.sample() * np.power(posterior_variance / model.n_trees, 0.5))
-
+        val = posterior_mean + (self._scalar_sampler.sample() * np.power(posterior_variance / model.n_trees, 0.5))
+        return val
 
 # class VectorizedLeafNodeSampler(Sampler):
 
@@ -45,5 +45,3 @@ class LeafNodeSampler(Sampler):
 #         prior_var = model.sigma_m ** 2
 #         n_s = []
 #         sum_s = []
-        
-
