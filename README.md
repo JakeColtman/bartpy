@@ -8,7 +8,7 @@ BartPy is a pure python implementation of the Bayesian additive regressions tree
 
 ### Reasons to use BART
 
- * Much less parameter optimization required that GBT
+ * Much less parameter optimization required than GBT
  * Provides confidence intervals in addition to point estimates
  * Extremely flexible through use of priors and embedding in bigger models
 
@@ -26,7 +26,7 @@ BartPy is a pure python implementation of the Bayesian additive regressions tree
 
 ### How to use:
 
-There are two main APIs for BaryPy:
+There are two main APIs for BartPy:
   1. High level sklearn API
   2. Low level access for implementing custom conditions
 
