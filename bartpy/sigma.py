@@ -1,5 +1,4 @@
 
-
 class Sigma:
     """
     A representation of the sigma term in the model.
@@ -18,16 +17,19 @@ class Sigma:
 
     """
 
-    def __init__(self, alpha: float, beta: float, scaling_factor: float):
+    def __init__(self, alpha: float, beta: float, scaling_factor: float, classification :bool = False):
         self.alpha = alpha
         self.beta = beta
         self._current_value = 1.0
         self.scaling_factor = scaling_factor
+        self._classification = classification
 
     def set_value(self, value: float) -> None:
         self._current_value = value
 
     def current_value(self) -> float:
+        if self._classification:
+            return 1
         return self._current_value
 
     def current_unnormalized_value(self) -> float:

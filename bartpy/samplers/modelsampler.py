@@ -1,3 +1,4 @@
+import copy
 from collections import defaultdict
 from typing import List, Mapping, Union, Any, Type
 
@@ -16,9 +17,11 @@ class ModelSampler(Sampler):
 
     def __init__(self,
                  schedule: SampleSchedule,
-                 trace_logger_class: Type[TraceLogger]=TraceLogger):
+                 trace_logger_class: Type[TraceLogger]=TraceLogger,
+                 n_rules: int=None):
         self.schedule = schedule
         self.trace_logger_class = trace_logger_class
+        self.n_rules = n_rules
 
     def step(self, model: Model, trace_logger: TraceLogger):
         step_result = defaultdict(list)
@@ -35,21 +38,27 @@ class ModelSampler(Sampler):
                 thin: float=0.1,
                 store_in_sample_predictions: bool=True,
                 store_acceptance: bool=True) -> Chain:
-        print("Starting burn")
+        # print("Starting burn")
 
         trace_logger = self.trace_logger_class()
+        y = copy.deepcopy(model.data.y.unnormalized_y)
 
-        for _ in tqdm(range(n_burn)):
+        for _ in range(n_burn):
+            model.update_z_values(y)
             self.step(model, trace_logger)
+
         trace = []
         model_trace = []
         acceptance_trace = []
-        print("Starting sampling")
+        # print("Starting sampling")
 
         thin_inverse = 1. / thin
 
-        for ss in tqdm(range(n_samples)):
+        for ss in range(n_samples):
+            model.update_z_values(y)
             step_trace_dict = self.step(model, trace_logger)
+            # print(step_trace_dict)
+
             if ss % thin_inverse == 0:
                 if store_in_sample_predictions:
                     in_sample_log = trace_logger["In Sample Prediction"](model.predict())
