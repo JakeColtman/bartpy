@@ -18,7 +18,6 @@ setup(
         'pandas',
         'scipy',
         'seaborn',
-        'sklearn',
         'statsmodels',
         'tqdm',
     ]
