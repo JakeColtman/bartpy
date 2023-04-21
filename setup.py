@@ -5,7 +5,7 @@ here = path.abspath(path.dirname(__file__))
 
 setup(
     name='bartpy',
-    version='0.0.2',
+    version='0.0.2b',
     description='Bayesian Additive Regression Trees for Python',
     url='https://github.com/JakeColtman/bartpy',
     author='Jake Coltman',
