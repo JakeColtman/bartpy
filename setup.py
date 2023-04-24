@@ -16,9 +16,9 @@ setup(
         'matplotlib',
         'numpy',
         'pandas',
+        'scikit-learn',
         'scipy',
         'seaborn',
-        'sklearn',
         'statsmodels',
         'tqdm',
     ]
